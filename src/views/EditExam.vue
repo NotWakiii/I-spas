@@ -29,14 +29,13 @@
 
         </div>
 
-        <button
-            class="save-btn"
-            @click="saveExam"
-        >
-
-            💾 Save Changes
-
-        </button>
+     <button
+    class="save-btn"
+    :disabled="saving"
+    @click="saveExam"
+>
+    {{ saving ? 'Saving...' : '💾 Save Changes' }}
+</button>
 
     </div>
 
@@ -176,81 +175,41 @@
 
                 
 
-        <div class="options-grid">
+       <div class="form-group">
+    <label>Question Type</label>
 
-            <div>
+    <select v-model="question.type">
+        <option>Multiple Choice</option>
+        <option>True or False</option>
+        <option>Identification</option>
+        <option>Essay</option>
+    </select>
+</div>
 
-                <label>
+<div
+    v-if="question.type === 'Multiple Choice'"
+    class="options-grid"
+>
+    <div>
+        <label>Choice A</label>
+        <input v-model="question.options[0]" type="text">
+    </div>
 
-                    Choice A
+    <div>
+        <label>Choice B</label>
+        <input v-model="question.options[1]" type="text">
+    </div>
 
-                </label>
+    <div>
+        <label>Choice C</label>
+        <input v-model="question.options[2]" type="text">
+    </div>
 
-                <input
-
-                    v-model="question.options[0]"
-
-                    type="text"
-
-                >
-
-            </div>
-
-            <div>
-
-                <label>
-
-                    Choice B
-
-                </label>
-
-                <input
-
-                    v-model="question.options[1]"
-
-                    type="text"
-
-                >
-
-            </div>
-
-            <div>
-
-                <label>
-
-                    Choice C
-
-                </label>
-
-                <input
-
-                    v-model="question.options[2]"
-
-                    type="text"
-
-                >
-
-            </div>
-
-            <div>
-
-                <label>
-
-                    Choice D
-
-                </label>
-
-                <input
-
-                    v-model="question.options[3]"
-
-                    type="text"
-
-                >
-
-            </div>
-
-        </div>
+    <div>
+        <label>Choice D</label>
+        <input v-model="question.options[3]" type="text">
+    </div>
+</div>
 
         
 
@@ -265,40 +224,29 @@
                 </label>
 
                 <select
+    v-if="question.type === 'Multiple Choice'"
+    v-model="question.answer"
+>
+    <option>A</option>
+    <option>B</option>
+    <option>C</option>
+    <option>D</option>
+</select>
 
-                    v-model="question.answer"
+<select
+    v-else-if="question.type === 'True or False'"
+    v-model="question.answer"
+>
+    <option>True</option>
+    <option>False</option>
+</select>
 
-                >
-
-                    <option>A</option>
-
-                    <option>B</option>
-
-                    <option>C</option>
-
-                    <option>D</option>
-
-                </select>
-
-            </div>
-
-            <div>
-
-                <label>
-
-                    Points
-
-                </label>
-
-                <input
-
-                    v-model="question.points"
-
-                    type="number"
-
-                    min="1"
-
-                >
+<input
+    v-else
+    v-model="question.answer"
+    type="text"
+    placeholder="Correct answer"
+/>
 
             </div>
 
@@ -329,175 +277,142 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import api from '../services/api'
 
 const router = useRouter()
+const route = useRoute()
 
-
+const loading = ref(false)
+const saving = ref(false)
 
 const exam = ref({
-
-    id: 1,
-
-    title: 'Exam 2 : App Dev 2',
-
-    course: 'App Dev 2',
-
-    duration: 90,
-
-    passing: 70
-
+    id: 0,
+    title: '',
+    description: '',
+    course: '',
+    duration: 60,
+    passing: 75
 })
 
-// ==========================================
-// QUESTIONS
-// (Dummy Data)
-// Replace with Laravel later
-// ==========================================
-
-const questions = ref([
-
-{
-
-    id:1,
-
-    question:'What does HTML stand for?',
-
-    options:[
-
-        'Hyper Text Markup Language',
-
-        'Home Tool Markup Language',
-
-        'Hyperlinks Text Language',
-
-        'Hyper Tool Machine Language'
-
-    ],
-
-    answer:'A',
-
-    points:2
-
-},
-
-{
-
-    id:2,
-
-    question:'Which company created Vue.js?',
-
-    options:[
-
-        'Google',
-
-        'Microsoft',
-
-        'Facebook',
-
-        'Evan You'
-
-    ],
-
-    answer:'D',
-
-    points:2
-
-},
-
-{
-
-    id:3,
-
-    question:'Which language is used by Vue?',
-
-    options:[
-
-        'Python',
-
-        'JavaScript',
-
-        'Java',
-
-        'C#'
-
-    ],
-
-    answer:'B',
-
-    points:2
-
-}
-
-])
-
-
-
-function addQuestion(){
-
-    questions.value.push({
-
-        id:Date.now(),
-
-        question:'',
-
-        options:[
-
-            '',
-
-            '',
-
-            '',
-
-            ''
-
-        ],
-
-        answer:'A',
-
-        points:1
-
-    })
-
-}
-
-
-
-function deleteQuestion(index:number){
-
-    if(
-
-        confirm(
-
-            'Delete this question?'
-
-        )
-
-    ){
-
-        questions.value.splice(index,1)
-
+const questions = ref<any[]>([])
+
+async function fetchExam() {
+    loading.value = true
+
+    try {
+        const response = await api.get(`/exams/${route.params.id}`)
+
+        const data = response.data.data
+
+        exam.value = {
+            id: data.id,
+            title: data.title,
+            description: data.description || '',
+            course: data.course || '',
+            duration: data.duration || 60,
+            passing: data.passing || 75
+        }
+
+        questions.value = (data.questions || []).map((q:any) => {
+            let type = 'Multiple Choice'
+
+            if (q.question_type === 'true_false') {
+                type = 'True or False'
+            }
+
+            if (q.question_type === 'identification') {
+                type = 'Identification'
+            }
+
+            if (q.question_type === 'essay') {
+                type = 'Essay'
+            }
+
+            const options = ['', '', '', '']
+
+            if (q.options && q.options.length) {
+                q.options.forEach((option:any, index:number) => {
+                    options[index] = option.option_text
+                })
+            }
+
+            let answer = q.answer || ''
+
+            if (q.question_type === 'multiple_choice' && q.options) {
+                const correctIndex = q.options.findIndex((option:any) => option.is_correct)
+
+                if (correctIndex >= 0) {
+                    answer = String.fromCharCode(65 + correctIndex)
+                }
+            }
+
+            return {
+                id: q.id,
+                type,
+                question: q.question,
+                options,
+                answer,
+                points: q.points || 1,
+                time: q.time_limit || 30
+            }
+        })
+
+    } catch (error) {
+        console.error(error)
+        alert('Failed to load exam.')
+    } finally {
+        loading.value = false
     }
-
 }
 
-// ==========================================
-// SAVE
-// ==========================================
-
-function saveExam(){
-
-    alert(
-
-        'Changes saved successfully!\n\nLater this will save to Laravel.'
-
-    )
-
-    router.push('/faculty/dashboard')
-
+function addQuestion() {
+    questions.value.push({
+        id: Date.now(),
+        type: 'Multiple Choice',
+        question: '',
+        options: ['', '', '', ''],
+        answer: 'A',
+        points: 1,
+        time: 30
+    })
 }
 
+function deleteQuestion(index:number) {
+    if (confirm('Delete this question?')) {
+        questions.value.splice(index, 1)
+    }
+}
+
+async function saveExam() {
+    saving.value = true
+
+    try {
+        await api.put(`/exams/${exam.value.id}`, {
+            title: exam.value.title,
+            description: exam.value.description,
+            course: exam.value.course,
+            duration: exam.value.duration,
+            passing: exam.value.passing,
+            questions: questions.value
+        })
+
+        alert('Exam updated successfully!')
+
+        router.push('/faculty/dashboard')
+
+    } catch (error:any) {
+        console.error(error.response?.data || error)
+        alert('Failed to update exam.')
+    } finally {
+        saving.value = false
+    }
+}
+
+onMounted(() => {
+    fetchExam()
+})
 </script>
 
 <style scoped>

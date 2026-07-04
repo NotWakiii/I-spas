@@ -112,69 +112,54 @@
 
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import api from '../services/api'
 
 const search = ref('')
 const selectedSubject = ref('All Subjects')
 const selectedExamType = ref('All Exam Types')
 
-const history = ref([
-  {
-    id: 1,
-    studentName: 'Juan Dela Cruz',
-    subject: 'App Dev 2',
-    exam: 'Midterm',
-    examType: 'Midterm',
-    score: 17,
-    totalItems: 20,
-    percentage: 85,
-    dateTime: 'July 3, 2026 • 10:42:15 AM'
-  },
-  {
-    id: 2,
-    studentName: 'Juan Dela Cruz',
-    subject: 'Networking',
-    exam: 'Quiz 1',
-    examType: 'Quiz',
-    score: 19,
-    totalItems: 20,
-    percentage: 95,
-    dateTime: 'July 1, 2026 • 8:15:42 AM'
-  },
-  {
-    id: 3,
-    studentName: 'Juan Dela Cruz',
-    subject: 'Data Structures',
-    exam: 'Final Exam',
-    examType: 'Final',
-    score: 42,
-    totalItems: 50,
-    percentage: 84,
-    dateTime: 'June 28, 2026 • 2:34:18 PM'
-  },
-  {
-    id: 4,
-    studentName: 'Maria Santos',
-    subject: 'App Dev 2',
-    exam: 'Midterm',
-    examType: 'Midterm',
-    score: 18,
-    totalItems: 20,
-    percentage: 90,
-    dateTime: 'July 3, 2026 • 10:50:03 AM'
-  },
-  {
-    id: 5,
-    studentName: 'Carlos Reyes',
-    subject: 'Networking',
-    exam: 'Quiz 1',
-    examType: 'Quiz',
-    score: 14,
-    totalItems: 20,
-    percentage: 70,
-    dateTime: 'July 1, 2026 • 8:22:11 AM'
+const history = ref<any[]>([])
+
+async function fetchHistory() {
+  try {
+    const response = await api.get('/results')
+
+    history.value = response.data.data
+      .filter((session:any) => session.status === 'submitted')
+      .map((session:any) => {
+        const exam = session.exam || {}
+        const totalItems = exam.questions_count || session.answers?.length || 0
+
+        return {
+          id: session.id,
+          studentName: session.student_name,
+          subject: exam.course || 'No Subject',
+          exam: exam.title || 'Untitled Exam',
+          examType: detectExamType(exam.title || ''),
+          score: session.score || 0,
+          totalItems,
+          percentage: Number(session.percentage || 0),
+          dateTime: session.submitted_at
+            ? new Date(session.submitted_at).toLocaleString()
+            : '-'
+        }
+      })
+  } catch (error) {
+    console.error(error)
+    alert('Failed to load student history.')
   }
-])
+}
+
+function detectExamType(title:string) {
+  const lower = title.toLowerCase()
+
+  if (lower.includes('quiz')) return 'Quiz'
+  if (lower.includes('midterm')) return 'Midterm'
+  if (lower.includes('final')) return 'Final'
+
+  return 'Exam'
+}
 
 const subjects = computed(() => {
   return [...new Set(history.value.map(item => item.subject))]
@@ -217,20 +202,16 @@ const studentSummary = computed(() => {
 
   const scores = records.map(record => record.percentage)
 
-  const total = records.length
-  const average = Math.round(
-    scores.reduce((sum, score) => sum + score, 0) / total
-  )
-
-  const highest = Math.max(...scores)
-  const lowest = Math.min(...scores)
-
   return {
-    total,
-    average,
-    highest,
-    lowest
+    total: records.length,
+    average: Math.round(scores.reduce((sum, score) => sum + score, 0) / records.length),
+    highest: Math.max(...scores),
+    lowest: Math.min(...scores)
   }
+})
+
+onMounted(() => {
+  fetchHistory()
 })
 </script>
 

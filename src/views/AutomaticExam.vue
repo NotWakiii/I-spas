@@ -28,6 +28,10 @@
             <label>Duration (minutes)</label>
             <input v-model="duration" type="number">
           </div>
+          <div class="form-group">
+  <label>Passing Score (%)</label>
+  <input type="number" v-model="passing">
+</div>
 
           <div class="form-group">
             <label>Course</label>
@@ -247,9 +251,13 @@
             Still Edit
           </button>
 
-          <button class="confirm-btn" @click="confirmCreateExam">
-            Create Exam
-          </button>
+          <button
+  class="confirm-btn"
+  :disabled="creatingExam"
+  @click="confirmCreateExam"
+>
+  {{ creatingExam ? 'Creating...' : 'Create Exam' }}
+</button>
         </div>
       </div>
     </div>
@@ -259,8 +267,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import api from '../services/api'
 
 const router = useRouter()
+
+const passing = ref(75)
+const creatingExam = ref(false)
 
 const examTitle = ref('')
 const description = ref('')
@@ -534,12 +546,29 @@ function stillEdit() {
   showCreatePopup.value = false
 }
 
-function confirmCreateExam() {
+async function confirmCreateExam() {
   showCreatePopup.value = false
+  creatingExam.value = true
 
-  alert('Generated exam created successfully! Later this will be saved to Laravel.')
+  try {
+    await api.post('/exams', {
+      title: examTitle.value,
+      description: description.value,
+      course: course.value,
+      duration: duration.value,
+      passing: passing.value,
+      questions: questions.value
+    })
 
-  router.push('/faculty/dashboard')
+    alert('Generated exam created successfully!')
+
+    router.push('/faculty/dashboard')
+  } catch (error) {
+    console.error(error)
+    alert('Failed to create generated exam.')
+  } finally {
+    creatingExam.value = false
+  }
 }
 </script>
 

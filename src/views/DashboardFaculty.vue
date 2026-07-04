@@ -240,35 +240,29 @@
 
                         <!-- Draft -->
 
-                        <button
+                       <button
+  v-if="exam.status === 'Draft'"
+  class="publish-btn"
+  @click="publishExam(exam)"
+>
+  📢 Publish
+</button>
 
-                            v-if="exam.status==='Draft'"
+<button
+  v-else-if="exam.status === 'Published'"
+  class="start-btn"
+  @click="startExam(exam)"
+>
+  ▶ Start Exam
+</button>
 
-                            class="publish"
-
-                            @click="publishExam(exam)"
-
-                        >
-
-                            📢 Publish
-
-                        </button>
-
-                        <!-- Published -->
-
-                        <button
-
-                            v-else
-
-                            class="start"
-
-                            @click="startExam(exam)"
-
-                        >
-
-                            ▶ Start Exam
-
-                        </button>
+<button
+  v-else-if="exam.status === 'Finished'"
+  class="start-btn"
+  @click="startAgain(exam)"
+>
+  🔁 Start Again
+</button>
 
                         <button
 
@@ -525,7 +519,7 @@
 
                 <strong>
 
-                    {{ selectedExam.items }}
+                   {{ selectedExam.questions.length }}
 
                 </strong>
 
@@ -549,47 +543,41 @@
 
         </div>
 
-        <!-- SAMPLE QUESTION -->
+        
 
-        <div class="question-preview">
+<div
+  v-for="(question,index) in selectedExam.questions"
+  :key="question.id"
+  v-show="previewQuestion === index + 1"
+  class="question-preview"
+>
+  <h3>
+    Question {{ index + 1 }}
+  </h3>
 
-            <h3>
+  <p>
+    {{ question.question }}
+  </p>
 
-                Question {{ previewQuestion }}
+  <div
+    v-if="question.question_type === 'multiple_choice'"
+  >
+    <div
+      v-for="option in question.options"
+      :key="option.id"
+      class="option"
+    >
+      ○ {{ option.option_text }}
+    </div>
+  </div>
 
-            </h3>
-
-            <p>
-
-                What does HTML stand for?
-
-            </p>
-
-            <div class="option">
-
-                ○ Hyper Text Markup Language
-
-            </div>
-
-            <div class="option">
-
-                ○ Home Tool Markup Language
-
-            </div>
-
-            <div class="option">
-
-                ○ Hyperlinks Text Language
-
-            </div>
-
-            <div class="option">
-
-                ○ Hyper Tool Machine Language
-
-            </div>
-
-        </div>
+  <div
+    v-else
+    class="option"
+  >
+    Answer: {{ question.answer || 'No answer provided' }}
+  </div>
+</div>
 
         
 
@@ -773,6 +761,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import api from '../services/api'
+import { onMounted } from 'vue'
+
 
 const router = useRouter()
 
@@ -812,7 +803,11 @@ const selectedExam = ref({
 
     students:'',
 
+    questions: [] as any[],
+
     created:''
+
+    
 
 })
 
@@ -824,86 +819,57 @@ const showStartDialog = ref(false)
 
 const selectedStartExam = ref<any>(null)
 
-// ===========================================
-// DUMMY DATABASE
-// Replace with Laravel later
-// ===========================================
 
-const exams = ref([
 
-{
+const exams = ref<any[]>([])
+const loading = ref(false)
 
-    id:1,
+async function fetchExams() {
+  loading.value = true
 
-    title:'Exam 2 : App Dev 2',
+  try {
+    const response = await api.get('/exams')
 
-    course:'App Dev 2',
+   exams.value = response.data.data.map((exam:any) => {
+  const questions = exam.questions || []
 
-    status:'Draft',
-
-    duration:90,
-
-    items:100,
-
-    points:200,
-
-    passing:70,
-
-    students:'0 / 60',
-
-    created:'Jan. 30, 2026'
-
-},
-
-{
-
-    id:2,
-
-    title:'Quiz 1 : App Dev 1',
-
-    course:'App Dev 1',
-
-    status:'Published',
-
-    duration:45,
-
-    items:40,
-
-    points:40,
-
-    passing:75,
-
-    students:'38 / 40',
-
-    created:'Feb. 03, 2026'
-
-},
-
-{
-
-    id:3,
-
-    title:'Networking Midterm',
-
-    course:'Networking',
-
-    status:'Draft',
-
-    duration:120,
-
-    items:80,
-
-    points:100,
-
-    passing:70,
-
-    students:'0 / 45',
-
-    created:'Feb. 10, 2026'
-
+  return {
+    id: exam.id,
+    title: exam.title,
+    course: exam.course || 'No Course',
+   status:
+  exam.status === 'draft'
+    ? 'Draft'
+    : exam.status === 'published'
+    ? 'Published'
+    : exam.status === 'started'
+    ? 'Started'
+    : exam.status === 'finished'
+    ? 'Finished'
+    : exam.status,
+    duration: exam.duration,
+    items: questions.length,
+    points: questions.reduce(
+      (sum:number, q:any) => sum + Number(q.points || 0),
+      0
+    ),
+    passing: exam.passing || 0,
+    students: '0 / 0',
+    created: new Date(exam.created_at).toLocaleDateString(),
+    questions: questions
+  }
+})
+  } catch (error) {
+    console.error(error)
+    alert('Failed to load exams.')
+  } finally {
+    loading.value = false
+  }
 }
 
-])
+onMounted(() => {
+  fetchExams()
+})
 
 
 
@@ -925,6 +891,24 @@ const courses = computed(() => {
 
 })
 
+async function startAgain(exam:any) {
+  const confirmed = confirm(
+    'Start this exam again?\n\nA new access code will be generated for remedial or late students.'
+  )
+
+  if (!confirmed) return
+
+  try {
+    await api.post(`/exams/${exam.id}/restart`)
+
+    await fetchExams()
+
+    alert('Exam is ready again with a new access code.')
+  } catch (error) {
+    console.error(error)
+    alert('Failed to restart exam.')
+  }
+}
 
 
 const filteredExams = computed(() => {
@@ -1021,6 +1005,8 @@ function goToCreateExam() {
 
 
 
+
+
 function editExam(id:number){
 
     router.push(`/faculty/edit-exam/${id}`)
@@ -1048,9 +1034,12 @@ function closePreview(){
 
 
 
-function nextQuestion(){
+function nextQuestion() {
 
-    if(previewQuestion.value < selectedExam.value.items){
+    if (
+        previewQuestion.value <
+        selectedExam.value.questions.length
+    ) {
 
         previewQuestion.value++
 
@@ -1070,9 +1059,31 @@ function previousQuestion(){
 
 
 
-function publishExam(exam:any){
+async function publishExam(exam:any) {
+
+  const confirmed = confirm(
+    'Publish this examination?\n\nStudents will be able to join after publishing.'
+  )
+
+  if (!confirmed) return
+
+  try {
+
+    await api.post(`/exams/${exam.id}/publish`)
 
     exam.status = 'Published'
+
+    alert('Exam published successfully!')
+
+  }
+
+  catch (error) {
+
+    console.error(error)
+
+    alert('Failed to publish examination.')
+
+  }
 
 }
 
@@ -1080,9 +1091,7 @@ function publishExam(exam:any){
 
 function startExam(exam:any){
 
-    selectedStartExam.value = exam
-
-    showStartDialog.value = true
+    router.push(`/faculty/lobby/${exam.id}`)
 
 }
 
@@ -1114,22 +1123,18 @@ function cancelStartExam(){
 
 
 
-function deleteExam(id:number){
+async function deleteExam(id:number) {
+  const confirmed = confirm('Delete this examination?')
 
-    const confirmed = confirm(
+  if (!confirmed) return
 
-        'Delete this examination?'
+  try {
+    await api.delete(`/exams/${id}`)
 
-    )
-
-    if(!confirmed) return
-
-    exams.value = exams.value.filter(
-
-        exam => exam.id !== id
-
-    )
-
+    exams.value = exams.value.filter(exam => exam.id !== id)
+  } catch (error) {
+    alert('Failed to delete exam.')
+  }
 }
 
 

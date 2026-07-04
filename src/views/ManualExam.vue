@@ -28,6 +28,10 @@
             <label>Duration (minutes)</label>
             <input type="number" v-model="duration">
           </div>
+          <div class="form-group">
+  <label>Passing Score (%)</label>
+  <input type="number" v-model="passing">
+</div>
 
           <div class="form-group">
             <label>Course</label>
@@ -151,9 +155,15 @@
             Still Edit
           </button>
 
-          <button class="confirm-btn" @click="confirmCreateExam">
-            Create Exam
-          </button>
+          <button
+    class="confirm-btn"
+    :disabled="creatingExam"
+    @click="confirmCreateExam"
+>
+
+{{ creatingExam ? 'Creating...' : 'Create Exam' }}
+
+</button>
         </div>
       </div>
     </div>
@@ -163,6 +173,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import api from '../services/api'
 
 const router = useRouter()
 
@@ -175,11 +186,13 @@ const questionType = ref('Multiple Choice')
 const question = ref('')
 const answer = ref('')
 const points = ref(1)
+const passing = ref(75)
 const timeLimit = ref(30)
 const options = ref(['', '', '', ''])
 
 const questions = ref<any[]>([])
 const showCreatePopup = ref(false)
+const creatingExam = ref(false)
 
 const totalPoints = computed(() => {
   return questions.value.reduce((sum, item) => sum + item.points, 0)
@@ -235,15 +248,42 @@ function stillEdit() {
   showCreatePopup.value = false
 }
 
-function confirmCreateExam() {
+async function confirmCreateExam() {
+
   showCreatePopup.value = false
+  creatingExam.value = true
 
-  // Laravel later:
-  // axios.post('/api/exams', { exam details + questions })
+  try {
 
-  alert('Exam created successfully! Later this will be saved to Laravel.')
+   await api.post('/exams', {
+  title: examTitle.value,
+  description: description.value,
+  course: course.value,
+  duration: Number(duration.value),
+  passing: Number(passing.value),
+  questions: questions.value
+})
 
-  router.push('/faculty/dashboard')
+    alert('Exam created successfully!')
+
+    router.push('/faculty/dashboard')
+
+  }
+
+  catch(error:any){
+
+    console.error(error)
+
+    alert('Failed to create exam.')
+
+  }
+
+  finally{
+
+    creatingExam.value = false
+
+  }
+
 }
 </script>
 

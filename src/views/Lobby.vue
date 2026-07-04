@@ -1,529 +1,282 @@
 <template>
-
-<div class="lobby-page">
-
-   
+  <div class="lobby-page">
 
     <div class="top-bar">
-
-        <button
-            class="back-btn"
-            @click="goBack"
-        >
-
-            ← Back to Dashboard
-
-        </button>
-
+      <button class="back-btn" @click="goBack">
+        ← Back to Dashboard
+      </button>
     </div>
 
     <div class="page-header">
-
-        <div>
-
-            <h1>
-
-                Exam Lobby
-
-            </h1>
-
-            <p>
-
-                Wait for students to join before starting the examination.
-
-            </p>
-
-        </div>
-
+      <div>
+        <h1>Exam Lobby</h1>
+        <p>Wait for students to join before starting the examination.</p>
+      </div>
     </div>
 
-   
-
-    <div class="content">
-
-        <!-- ===========================================
-             LEFT PANEL
-        ============================================ -->
-
-        <div class="students-panel">
-
-            <div class="panel-header">
-
-                <h2>
-
-                    Students in Lobby
-
-                </h2>
-
-                <span class="student-counter">
-
-                    👥 {{ students.length }} Students
-
-                </span>
-
-            </div>
-
-           
-
-            <div class="students-grid">
-
-                <div
-
-                    class="student-card"
-
-                    v-for="student in students"
-
-                    :key="student.id"
-
-                >
-
-                    <div class="student-left">
-
-                        <div class="avatar">
-
-                            {{ student.initials }}
-
-                        </div>
-
-                        <div>
-
-                            <h4>
-
-                                {{ student.name }}
-
-                            </h4>
-
-                        </div>
-
-                    </div>
-
-                    <div class="ready">
-
-                        <span class="dot"></span>
-
-                        Ready
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-               
-
-        <div class="right-panel">
-
-            <!-- ACCESS CODE -->
-
-            <div class="access-card">
-
-                <h3>
-
-                    Exam Access Code
-
-                </h3>
-
-                <p>
-
-                    Share this code with students
-
-                </p>
-
-                <div class="access-code">
-
-                    {{ accessCode }}
-
-                </div>
-
-                <button
-                    class="copy-btn"
-                    @click="copyCode"
-                >
-
-                    📋 Copy Code
-
-                </button>
-
-            </div>
-
-            
-
-            <div class="exam-details">
-
-                <div class="detail-box">
-
-                    <small>
-
-                        Exam Title
-
-                    </small>
-
-                    <strong>
-
-                        {{ exam.title }}
-
-                    </strong>
-
-                </div>
-
-                <div class="detail-box">
-
-                    <small>
-
-                        Course
-
-                    </small>
-
-                    <strong>
-
-                        {{ exam.course }}
-
-                    </strong>
-
-                </div>
-
-                <div class="detail-box">
-
-                    <small>
-
-                        Duration
-
-                    </small>
-
-                    <strong>
-
-                        {{ exam.duration }} Minutes
-
-                    </strong>
-
-                </div>
-
-                <div class="detail-box">
-
-                    <small>
-
-                        Total Questions
-
-                    </small>
-
-                    <strong>
-
-                        {{ exam.items }}
-
-                    </strong>
-
-                </div>
-
-                <div class="detail-box">
-
-                    <small>
-
-                        Passing Score
-
-                    </small>
-
-                    <strong>
-
-                        {{ exam.passing }}%
-
-                    </strong>
-
-                </div>
-
-            </div>
-
-            <!-- START BUTTON -->
-
-         <button
-    class="start-btn"
-    @click="startExamNow"
->
-
-    ▶ Start Exam Now
-
-</button>
-
-            <div class="footer-note">
-
-                {{ students.length }} students ready to begin
-
-            </div>
-
-        </div>
-
+    <div v-if="loading" class="loading">
+      Loading lobby...
     </div>
 
-</div>
+    <div v-else class="content">
 
+      <!-- LEFT PANEL -->
+      <div class="students-panel">
+        <div class="panel-header">
+          <h2>Students in Lobby</h2>
 
-
-<div
-    v-if="showStartPopup"
-    class="popup-overlay"
->
-
-    <div class="popup-card">
-
-        <div class="popup-icon">
-
-            ▶
-
+          <span class="student-counter">
+            👥 {{ students.length }} Students
+          </span>
         </div>
 
-        <h2>
+        <div v-if="students.length === 0" class="empty-students">
+          No students joined yet.
+        </div>
 
-            Start Examination?
+        <div v-else class="students-grid">
+          <div
+            class="student-card"
+            v-for="student in students"
+            :key="student.id"
+          >
+            <div class="student-left">
+              <div class="avatar">
+                {{ student.initials }}
+              </div>
 
-        </h2>
+              <div>
+                <h4>{{ student.name }}</h4>
+              </div>
+            </div>
+
+            <div class="ready">
+              <span class="dot"></span>
+              Ready
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div class="right-panel">
+
+        <div class="access-card">
+          <h3>Exam Access Code</h3>
+          <p>Share this code with students</p>
+
+          <div class="access-code">
+            {{ accessCode }}
+          </div>
+
+          <button class="copy-btn" @click="copyCode">
+            📋 Copy Code
+          </button>
+        </div>
+
+        <div class="exam-details">
+          <div class="detail-box">
+            <small>Exam Title</small>
+            <strong>{{ exam.title }}</strong>
+          </div>
+
+          <div class="detail-box">
+            <small>Course</small>
+            <strong>{{ exam.course }}</strong>
+          </div>
+
+          <div class="detail-box">
+            <small>Duration</small>
+            <strong>{{ exam.duration }} Minutes</strong>
+          </div>
+
+          <div class="detail-box">
+            <small>Total Questions</small>
+            <strong>{{ exam.items }}</strong>
+          </div>
+
+          <div class="detail-box">
+            <small>Passing Score</small>
+            <strong>{{ exam.passing }}%</strong>
+          </div>
+
+          <div class="detail-box">
+            <small>Status</small>
+            <strong>{{ exam.status }}</strong>
+          </div>
+        </div>
+
+        <button class="start-btn" @click="startExamNow">
+          ▶ Start Exam Now
+        </button>
+
+        <div class="footer-note">
+          {{ students.length }} students ready to begin
+        </div>
+      </div>
+    </div>
+
+    <!-- START POPUP -->
+    <div v-if="showStartPopup" class="popup-overlay">
+      <div class="popup-card">
+        <div class="popup-icon">▶</div>
+
+        <h2>Start Examination?</h2>
 
         <p>
-
-            Students will immediately begin the examination.
-
-            <br><br>
-
-            Once started, the examination timer will begin.
-
+          Students will immediately begin the examination.
+          <br><br>
+          Once started, the examination timer will begin.
         </p>
 
         <div class="popup-buttons">
+          <button class="cancel-btn" @click="cancelStartExam">
+            Cancel
+          </button>
 
-            <button
-                class="cancel-btn"
-                @click="cancelStartExam"
-            >
-
-                Cancel
-
-            </button>
-
-            <button
-                class="confirm-btn"
-                @click="confirmStartExam"
-            >
-
-                Start Exam
-
-            </button>
-
+          <button
+            class="confirm-btn"
+            :disabled="startingExam"
+            @click="confirmStartExam"
+          >
+            {{ startingExam ? 'Starting...' : 'Start Exam' }}
+          </button>
         </div>
-
+      </div>
     </div>
 
-</div>
-
+  </div>
 </template>
 
+
+
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import api from '../services/api'
 
 const router = useRouter()
+const route = useRoute()
 
-// ===========================================
-// EXAM INFORMATION
-// Replace with Laravel API later
-// ===========================================
-
-const exam = ref({
-
-    id:1,
-
-    title:'Quiz 1 - Data Structures',
-
-    course:'BSIT 3A',
-
-    duration:45,
-
-    items:20,
-
-    passing:75
-
-})
-
-// ===========================================
-// ACCESS CODE
-// Laravel will generate this automatically
-// ===========================================
-
-const accessCode = ref('ABC123')
-
-// ===========================================
-// STUDENTS
-// Replace with Laravel later
-// ===========================================
-
-const students = ref([
-
-{
-
-    id:1,
-
-    initials:'JD',
-
-    name:'John Doe'
-
-},
-
-{
-
-    id:2,
-
-    initials:'JS',
-
-    name:'Jane Smith'
-
-},
-
-{
-
-    id:3,
-
-    initials:'MJ',
-
-    name:'Michael Johnson'
-
-},
-
-{
-
-    id:4,
-
-    initials:'SW',
-
-    name:'Sarah Williams'
-
-},
-
-{
-
-    id:5,
-
-    initials:'DB',
-
-    name:'David Brown'
-
-},
-
-{
-
-    id:6,
-
-    initials:'ED',
-
-    name:'Emma Davis'
-
-},
-
-{
-
-    id:7,
-
-    initials:'JW',
-
-    name:'James Wilson'
-
-},
-
-{
-
-    id:8,
-
-    initials:'OM',
-
-    name:'Olivia Martinez'
-
-},
-
-{
-
-    id:9,
-
-    initials:'RG',
-
-    name:'Robert Garcia'
-
-},
-
-{
-
-    id:10,
-
-    initials:'SA',
-
-    name:'Sophia Anderson'
-
-}
-
-])
-
-
-
-function goBack(){
-
-    router.push('/faculty/dashboard')
-
-}
-
-
-
-async function copyCode(){
-
-    try{
-
-        await navigator.clipboard.writeText(
-
-            accessCode.value
-
-        )
-
-        alert('Access Code Copied.')
-
-    }
-
-    catch{
-
-        alert('Unable to copy code.')
-
-    }
-
-}
-
-// ===========================================
-// START EXAM
-// Later:
-// Laravel will lock the access code
-// then redirect to Monitoring.vue
-// ===========================================
-
-// ===========================================
-// START EXAM POPUP
-// ===========================================
-
+const loading = ref(false)
+const startingExam = ref(false)
 const showStartPopup = ref(false)
 
-function startExamNow(){
+const exam = ref({
+  id: 0,
+  title: '',
+  course: '',
+  duration: 0,
+  items: 0,
+  passing: 0,
+  status: ''
+})
 
-    showStartPopup.value = true
+const accessCode = ref('')
 
+const students = ref<any[]>([])
+
+async function fetchLobby() {
+  loading.value = true
+
+  try {
+    const examId = route.params.id
+
+    const response = await api.get(`/exams/${examId}`)
+
+    const data = response.data.data
+    const questions = data.questions || []
+
+    exam.value = {
+      id: data.id,
+      title: data.title,
+      course: data.course || 'No Course',
+      duration: data.duration,
+      items: questions.length,
+      passing: data.passing || 75,
+      status: data.status
+    }
+
+    accessCode.value = data.access_code
+
+    const lobbyResponse = await api.get(`/exams/${examId}/lobby`)
+
+    students.value = lobbyResponse.data.data.map((session:any) => {
+      const name = session.student_name || 'Unknown Student'
+
+      return {
+        id: session.id,
+        name,
+        initials: name
+          .split(' ')
+          .map((word:string) => word[0])
+          .join('')
+          .substring(0, 2)
+          .toUpperCase()
+      }
+    })
+
+  } catch (error) {
+    console.error(error)
+    alert('Failed to load lobby.')
+  } finally {
+    loading.value = false
+  }
 }
 
-function confirmStartExam(){
+let lobbyInterval:any = null
 
+function goBack() {
+  router.push('/faculty/dashboard')
+}
+
+async function copyCode() {
+  try {
+    await navigator.clipboard.writeText(accessCode.value)
+    alert('Access Code Copied.')
+  } catch {
+    alert('Unable to copy code.')
+  }
+}
+
+function startExamNow() {
+  showStartPopup.value = true
+}
+
+async function confirmStartExam() {
+  startingExam.value = true
+
+  try {
     showStartPopup.value = false
 
-    router.push(`/faculty/monitoring/${exam.value.id}`)
+    await api.post(`/exams/${exam.value.id}/start`)
 
+router.push(`/faculty/monitoring/${exam.value.id}`)
+  } catch (error) {
+    console.error(error)
+    alert('Failed to start exam.')
+  } finally {
+    startingExam.value = false
+  }
 }
 
-function cancelStartExam(){
-
-    showStartPopup.value = false
-
+function cancelStartExam() {
+  showStartPopup.value = false
 }
 
+onMounted(() => {
+  fetchLobby()
+
+  lobbyInterval = setInterval(() => {
+    fetchLobby()
+  }, 8000)
+})
+
+onUnmounted(() => {
+  if (lobbyInterval) {
+    clearInterval(lobbyInterval)
+  }
+})
 </script>
 
 <style scoped>
@@ -1146,6 +899,24 @@ function cancelStartExam(){
 
     background:#15803d;
 
+}
+
+.loading{
+    background:white;
+    border-radius:18px;
+    padding:40px;
+    text-align:center;
+    color:#666;
+    font-weight:600;
+    box-shadow:0 10px 30px rgba(0,0,0,.05);
+}
+
+.empty-students{
+    padding:50px;
+    text-align:center;
+    color:#777;
+    background:#f8fafc;
+    border-radius:14px;
 }
 
 </style>

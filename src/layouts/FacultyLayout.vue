@@ -48,9 +48,12 @@
 
       <div class="bottom">
 
-        <button class="logout">
-           ↩  Logout
-        </button>
+        <button
+    class="logout-btn"
+    @click="openLogoutDialog"
+>
+    ↩ Logout
+</button>
 
       </div>
 
@@ -83,9 +86,94 @@
     </div>
 
   </div>
+
+  <div
+    v-if="showLogoutDialog"
+    class="dialog-overlay"
+>
+    <div class="dialog">
+
+        <div class="dialog-icon">
+            🚪
+        </div>
+
+        <h2>
+            Logout
+        </h2>
+
+
+
+        <p>
+            Are you sure you want to logout from the Faculty Portal?
+        </p>
+
+        <div class="dialog-buttons">
+
+            <button
+                class="cancel-btn"
+                @click="cancelLogout"
+            >
+                Cancel
+            </button>
+
+        
+            <button
+                class="start-btn"
+                @click="confirmLogout"
+            >
+                Logout
+            </button>
+
+        </div>
+
+    </div>
+</div>
 </template>
 
+
+
 <script setup lang="ts">
+
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import api from '../services/api'
+
+const router = useRouter()
+
+const showLogoutDialog = ref(false)
+
+function openLogoutDialog() {
+    showLogoutDialog.value = true
+}
+
+function cancelLogout() {
+    showLogoutDialog.value = false
+}
+
+async function confirmLogout() {
+
+    showLogoutDialog.value = false
+
+    try {
+
+        const token = localStorage.getItem('token')
+
+        if (token) {
+            await api.post('/logout')
+        }
+
+    } catch (error) {
+
+        console.log('Logout API failed, continuing logout.')
+
+    }
+
+    localStorage.removeItem('token')
+
+    router.push('/')
+
+}
+
 </script>
 
 
@@ -203,24 +291,18 @@
     border-top:1px solid #ececec;
 }
 
-.logout{
+.logout-btn{
     width:100%;
     padding:14px;
-
     border:none;
-
     background:#f4f4f4;
-
     border-radius:10px;
-
     cursor:pointer;
-
     font-size:15px;
-
     transition:.3s;
 }
 
-.logout:hover{
+.logout-btn:hover{
     background:#ff4d4d;
     color:white;
 }
@@ -320,6 +402,7 @@
     }
 }
 
+
 /* ======================
    iPad
 ====================== */
@@ -367,6 +450,72 @@
     .content{
         padding:24px;
     }
+}
+
+.dialog-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.45);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:9999;
+}
+
+.dialog{
+    width:420px;
+    background:#fff;
+    border-radius:18px;
+    padding:30px;
+    text-align:center;
+    box-shadow:0 15px 40px rgba(0,0,0,.25);
+}
+
+.dialog-icon{
+    font-size:55px;
+    margin-bottom:15px;
+}
+
+.dialog h2{
+    margin-bottom:10px;
+    color:#112244;
+}
+
+.dialog p{
+    color:#666;
+    line-height:1.6;
+}
+
+.dialog-buttons{
+    display:flex;
+    justify-content:center;
+    gap:15px;
+    margin-top:25px;
+}
+
+.cancel-btn{
+    padding:12px 28px;
+    border:none;
+    border-radius:10px;
+    background:#ddd;
+    cursor:pointer;
+}
+
+.cancel-btn:hover{
+    background:#ccc;
+}
+
+.start-btn{
+    padding:12px 28px;
+    border:none;
+    border-radius:10px;
+    background:#16a34a;
+    color:white;
+    cursor:pointer;
+}
+
+.start-btn:hover{
+    background:#15803d;
 }
 
 </style>

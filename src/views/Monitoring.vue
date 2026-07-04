@@ -419,387 +419,143 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import api from '../services/api'
 
 const router = useRouter()
-
-// ===========================================
-// EXAM
-// Replace with Laravel later
-// ===========================================
-
-const exam = ref({
-
-    id:1,
-
-    title:'App Dev 2 - Midterm Exam',
-
-    items:100,
-
-    duration:20 // minutes
-
-})
-
-// ===========================================
-// CONTROLS
-// ===========================================
-
-
+const route = useRoute()
 
 const alertMessage = ref('')
+const showEndPopup = ref(false)
 
-// ===========================================
-// TIMER
-// ===========================================
-
-const remainingSeconds = ref(
-
-    exam.value.duration * 60
-
-)
-
-const examTimer = computed(() => {
-
-    const minutes = Math.floor(
-
-        remainingSeconds.value / 60
-
-    )
-
-    const seconds = remainingSeconds.value % 60
-
-    return `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`
-
+const exam = ref({
+  id: 0,
+  title: '',
+  items: 0,
+  duration: 0
 })
 
-// ===========================================
-// STUDENTS
-// Replace with Laravel later
-// ===========================================
+const students = ref<any[]>([])
+const remainingSeconds = ref(0)
 
-const students = ref([
+const examTimer = computed(() => {
+  const minutes = Math.floor(remainingSeconds.value / 60)
+  const seconds = remainingSeconds.value % 60
 
-{
-
-    id:1,
-
-    initials:'JD',
-
-    name:'John Doe',
-
-    status:'Active',
-
-    progress:80,
-
-    currentQuestion:79,
-
-    tabSwitches:0,
-
-    idleTime:0
-
-},
-
-{
-
-    id:2,
-
-    initials:'JS',
-
-    name:'Jane Smith',
-
-    status:'Active',
-
-    progress:63,
-
-    currentQuestion:63,
-
-    tabSwitches:2,
-
-    idleTime:45
-
-},
-
-{
-
-    id:3,
-
-    initials:'MJ',
-
-    name:'Michael Johnson',
-
-    status:'Active',
-
-    progress:54,
-
-    currentQuestion:54,
-
-    tabSwitches:0,
-
-    idleTime:0
-
-},
-
-{
-
-    id:4,
-
-    initials:'ED',
-
-    name:'Emma Davis',
-
-    status:'Idle',
-
-    progress:49,
-
-    currentQuestion:49,
-
-    tabSwitches:1,
-
-    idleTime:90
-
-},
-
-{
-
-    id:5,
-
-    initials:'RG',
-
-    name:'Robert Garcia',
-
-    status:'Active',
-
-    progress:72,
-
-    currentQuestion:72,
-
-    tabSwitches:0,
-
-    idleTime:0
-
-}
-
-])
-
-// ===========================================
-// DASHBOARD COUNTS
-// ===========================================
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+})
 
 const activeStudents = computed(() =>
-
-students.value.filter(
-
-s => s.status === 'Active'
-
-).length
-
+  students.value.filter(s => s.status === 'Active').length
 )
 
 const idleStudents = computed(() =>
-
-students.value.filter(
-
-s => s.status === 'Idle'
-
-).length
-
+  students.value.filter(s => s.status === 'Idle').length
 )
 
 const suspiciousStudents = computed(() =>
-
-students.value.filter(
-
-s => s.tabSwitches >= 3
-
-).length
-
+  students.value.filter(s => s.tabSwitches >= 3).length
 )
 
 const averageProgress = computed(() => {
+  if (students.value.length === 0) return 0
 
-const total = students.value.reduce(
+  const total = students.value.reduce(
+    (sum, s) => sum + Number(s.progress || 0),
+    0
+  )
 
-(sum,s)=>sum+s.progress,
-
-0
-
-)
-
-return Math.round(
-
-total / students.value.length
-
-)
-
+  return Math.round(total / students.value.length)
 })
 
-// ===========================================
-// TIMER
-// ===========================================
+async function fetchMonitoring() {
+  try {
+    const examId = route.params.id
 
-let timer:any
+    const examResponse = await api.get(`/exams/${examId}`)
+    const data = examResponse.data.data
+    const questions = data.questions || []
 
-let simulator:any
+    exam.value = {
+      id: data.id,
+      title: data.title,
+      items: questions.length,
+      duration: data.duration
+    }
 
-// ===========================================
-// START TIMER
-// ===========================================
+    if (remainingSeconds.value === 0) {
+      remainingSeconds.value = Number(data.duration || 0) * 60
+    }
 
-function startTimer(){
+    const lobbyResponse = await api.get(`/exams/${examId}/lobby`)
 
-timer = setInterval(()=>{
+    students.value = lobbyResponse.data.data.map((session:any) => {
+      const name = session.student_name || 'Unknown Student'
 
+      return {
+        id: session.id,
+        initials: name
+          .split(' ')
+          .map((word:string) => word[0])
+          .join('')
+          .substring(0, 2)
+          .toUpperCase(),
+        name,
+        status: Number(session.idle_seconds || 0) >= 30 ? 'Idle' : 'Active',
+        progress: Number(session.progress || 0),
+        currentQuestion: Math.max(
+          1,
+          Math.ceil((Number(session.progress || 0) / 100) * questions.length)
+        ),
+        tabSwitches: Number(session.tab_switches || 0),
+        idleTime: Number(session.idle_seconds || 0)
+      }
+    })
 
-
-if(remainingSeconds.value>0){
-
-remainingSeconds.value--
-
+  } catch (error) {
+    console.error(error)
+    alert('Failed to load monitoring.')
+  }
 }
 
-else{
+let timer:any = null
 
-clearInterval(timer)
-
-clearInterval(simulator)
-
-alert('Exam Finished.')
-
-router.push('/faculty/results')
-
+function startTimer() {
+  timer = setInterval(() => {
+    if (remainingSeconds.value > 0) {
+      remainingSeconds.value--
+    }
+  }, 1000)
 }
 
-},1000)
-
+function endExam() {
+  showEndPopup.value = true
 }
 
-// ===========================================
-// LIVE SIMULATION
-// ===========================================
+async function confirmEndExam() {
+  showEndPopup.value = false
 
-function simulateStudents(){
+  try {
+   clearInterval(timer)
 
-simulator = setInterval(()=>{
+await api.post(`/exams/${exam.value.id}/end`)
 
-
-
-students.value.forEach(student=>{
-
-if(student.progress<100){
-
-const increase=Math.floor(
-
-Math.random()*2
-
-)
-
-student.progress+=increase
-
-student.currentQuestion=Math.min(
-
-student.progress,
-
-exam.value.items
-
-)
-
+router.push(`/faculty/results/${exam.value.id}`)
+  } catch (error) {
+    console.error(error)
+    alert('Failed to end exam.')
+  }
 }
 
-if(Math.random()<0.12){
-
-student.idleTime+=5
-
-student.status='Idle'
-
+function cancelEndExam() {
+  showEndPopup.value = false
 }
 
-else{
-
-student.status='Active'
-
-if(student.idleTime>0){
-
-student.idleTime--
-
-}
-
-}
-
-if(Math.random()<0.05){
-
-student.tabSwitches++
-
-alertMessage.value=
-
-`${student.name} switched tabs!`
-
-setTimeout(()=>{
-
-alertMessage.value=''
-
-},3000)
-
-}
-
+onMounted(async () => {
+  await fetchMonitoring()
+  startTimer()
 })
-
-},3000)
-
-}
-
-// ===========================================
-// BUTTONS
-// ===========================================
-
-
-
-const showEndPopup = ref(false)
-
-function endExam(){
-
-    showEndPopup.value = true
-
-}
-
-function confirmEndExam(){
-
-    showEndPopup.value = false
-
-    clearInterval(timer)
-
-    clearInterval(simulator)
-
-    router.push('/faculty/results')
-
-}
-
-function cancelEndExam(){
-
-    showEndPopup.value = false
-
-}
-
-// ===========================================
-// LIFE CYCLE
-// ===========================================
-
-onMounted(()=>{
-
-startTimer()
-
-simulateStudents()
-
-})
-
-onUnmounted(()=>{
-
-clearInterval(timer)
-
-clearInterval(simulator)
-
-})
-
 </script>
 
 <style scoped>

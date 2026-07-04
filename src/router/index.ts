@@ -91,11 +91,11 @@ const router = createRouter({
         // EXAM RESULTS
         // ==========================================
 
-        {
-          path: 'results',
-          name: 'Results',
-          component: Results,
-        },
+              {
+        path: 'results/:id',
+        name: 'Results',
+        component: Results,
+         },
 
         // ==========================================
         // ITEM ANALYSIS HUB

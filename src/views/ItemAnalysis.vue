@@ -173,12 +173,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import api from '../services/api'
+
+const route = useRoute()
 
 const exam = ref({
-  id: 1,
-  title: 'Quiz 1 - Data Structures',
-  course: 'BSIT 3A'
+    id: 0,
+    title: '',
+    course: ''
 })
 
 const search = ref('')
@@ -186,387 +190,263 @@ const selectedFilter = ref('All Questions')
 const sortBy = ref('number')
 
 const filters = [
-  'All Questions',
-  'Easy',
-  'Medium',
-  'Hard',
-  'Very Hard',
-  'Needs Review'
+    'All Questions',
+    'Easy',
+    'Medium',
+    'Hard',
+    'Very Hard',
+    'Needs Review'
 ]
 
-const items = ref([
-  {
-    id: 1,
-    number: 1,
-    question: 'What does HTML stand for?',
-    type: 'Multiple Choice',
-    successRate: 92,
-    correct: 46,
-    wrong: 4,
-    total: 50,
-    discrimination: 0.78,
-    commonWrongAnswer: 'B. Home Tool Markup Language'
-  },
-  {
-    id: 2,
-    number: 2,
-    question: 'Which data structure uses FIFO?',
-    type: 'Multiple Choice',
-    successRate: 64,
-    correct: 32,
-    wrong: 18,
-    total: 50,
-    discrimination: 0.51,
-    commonWrongAnswer: 'Stack'
-  },
-  {
-    id: 3,
-    number: 3,
-    question: 'What is the time complexity of binary search?',
-    type: 'Multiple Choice',
-    successRate: 41,
-    correct: 21,
-    wrong: 29,
-    total: 50,
-    discrimination: 0.33,
-    commonWrongAnswer: 'O(n)'
-  },
-  {
-    id: 4,
-    number: 4,
-    question: 'Which traversal visits the root first?',
-    type: 'Multiple Choice',
-    successRate: 18,
-    correct: 9,
-    wrong: 41,
-    total: 50,
-    discrimination: 0.18,
-    commonWrongAnswer: 'Inorder Traversal'
-  },
-  {
-    id: 5,
-    number: 5,
-    question: 'Which tag creates a paragraph in HTML?',
-    type: 'Multiple Choice',
-    successRate: 96,
-    correct: 48,
-    wrong: 2,
-    total: 50,
-    discrimination: 0.82,
-    commonWrongAnswer: '<div>'
-  }
-])
-// ===========================================
-// COMPUTED ITEM ANALYSIS
-// ===========================================
+const items = ref<any[]>([])
+
+async function fetchItemAnalysis() {
+
+    try {
+
+        const examId = route.params.id
+
+        const examResponse = await api.get(`/exams/${examId}`)
+
+        exam.value = {
+            id: examResponse.data.data.id,
+            title: examResponse.data.data.title,
+            course: examResponse.data.data.course
+        }
+
+        const response = await api.get(`/exams/${examId}/item-analysis`)
+
+        items.value = response.data.data
+
+    } catch (error) {
+
+        console.error(error)
+
+        alert('Failed to load item analysis.')
+
+    }
+
+}
 
 const analyzedItems = computed(() => {
 
-  return items.value.map(item => {
+    return items.value.map(item => {
 
-    let difficulty = ''
-    let difficultyClass = ''
+        let difficulty = ''
+        let difficultyClass = ''
 
-    let recommendationTitle = ''
-    let recommendation = ''
-    let recommendationClass = ''
+        let recommendationTitle = ''
+        let recommendation = ''
+        let recommendationClass = ''
 
-    if (item.successRate >= 90) {
+        if (item.successRate >= 90) {
 
-      difficulty = 'Easy'
-      difficultyClass = 'easy'
+            difficulty = 'Easy'
+            difficultyClass = 'easy'
 
-      recommendationTitle = 'Excellent Question'
-      recommendation =
-        'Students clearly understood this concept. Keep this question.'
+            recommendationTitle = 'Excellent Question'
+            recommendation =
+                'Students clearly understood this concept.'
 
-      recommendationClass = 'excellent'
+            recommendationClass = 'excellent'
 
-    }
+        }
 
-    else if (item.successRate >= 75) {
+        else if (item.successRate >= 75) {
 
-      difficulty = 'Medium'
-      difficultyClass = 'medium'
+            difficulty = 'Medium'
+            difficultyClass = 'medium'
 
-      recommendationTitle = 'Good Question'
-      recommendation =
-        'Question performs well. Minor improvements may be considered.'
+            recommendationTitle = 'Good Question'
+            recommendation =
+                'Question performs well.'
 
-      recommendationClass = 'good'
+            recommendationClass = 'good'
 
-    }
+        }
 
-    else if (item.successRate >= 50) {
+        else if (item.successRate >= 50) {
 
-      difficulty = 'Hard'
-      difficultyClass = 'hard'
+            difficulty = 'Hard'
+            difficultyClass = 'hard'
 
-      recommendationTitle = 'Needs Review'
-      recommendation =
-        'A noticeable number of students answered incorrectly. Review the wording or lesson coverage.'
+            recommendationTitle = 'Needs Review'
+            recommendation =
+                'Review wording or lesson coverage.'
 
-      recommendationClass = 'review'
+            recommendationClass = 'review'
 
-    }
+        }
 
-    else {
+        else {
 
-      difficulty = 'Very Hard'
-      difficultyClass = 'very-hard'
+            difficulty = 'Very Hard'
+            difficultyClass = 'very-hard'
 
-      recommendationTitle = 'Replace Question'
-      recommendation =
-        'Very low success rate. Consider revising or replacing this question.'
+            recommendationTitle = 'Replace Question'
+            recommendation =
+                'Question should be revised.'
 
-      recommendationClass = 'replace'
+            recommendationClass = 'replace'
 
-    }
+        }
 
-    return {
+        return {
 
-      ...item,
+            ...item,
 
-      difficulty,
+            difficulty,
 
-      difficultyClass,
+            difficultyClass,
 
-      recommendationTitle,
+            recommendationTitle,
 
-      recommendation,
+            recommendation,
 
-      recommendationClass
+            recommendationClass
 
-    }
+        }
 
-  })
+    })
 
 })
-
-
 
 const totalQuestions = computed(() => analyzedItems.value.length)
 
 const averageSuccess = computed(() => {
 
-  const total = analyzedItems.value.reduce(
+    if (analyzedItems.value.length === 0) return 0
 
-    (sum, item) => sum + item.successRate,
+    const total = analyzedItems.value.reduce(
+        (sum, item) => sum + item.successRate,
+        0
+    )
 
-    0
-
-  )
-
-  return Math.round(total / analyzedItems.value.length)
+    return Math.round(total / analyzedItems.value.length)
 
 })
 
 const hardItems = computed(() =>
-
-  analyzedItems.value.filter(
-
-    item =>
-
-      item.difficulty === 'Hard' ||
-
-      item.difficulty === 'Very Hard'
-
-  ).length
-
+    analyzedItems.value.filter(i =>
+        i.difficulty === 'Hard' ||
+        i.difficulty === 'Very Hard'
+    ).length
 )
 
 const needsReview = computed(() =>
-
-  analyzedItems.value.filter(
-
-    item =>
-
-      item.recommendationTitle !== 'Excellent Question'
-
-  ).length
-
+    analyzedItems.value.filter(i =>
+        i.recommendationTitle !== 'Excellent Question'
+    ).length
 )
-
-// ===========================================
-// DIFFICULTY CHART
-// ===========================================
 
 const difficultyDistribution = computed(() => {
 
-  const easy = analyzedItems.value.filter(i => i.difficulty === 'Easy').length
+    const total = analyzedItems.value.length || 1
 
-  const medium = analyzedItems.value.filter(i => i.difficulty === 'Medium').length
+    const easy = analyzedItems.value.filter(i => i.difficulty === 'Easy').length
+    const medium = analyzedItems.value.filter(i => i.difficulty === 'Medium').length
+    const hard = analyzedItems.value.filter(i => i.difficulty === 'Hard').length
+    const veryHard = analyzedItems.value.filter(i => i.difficulty === 'Very Hard').length
 
-  const hard = analyzedItems.value.filter(i => i.difficulty === 'Hard').length
+    return [
 
-  const veryHard = analyzedItems.value.filter(i => i.difficulty === 'Very Hard').length
+        {
+            label:'Easy',
+            count:easy,
+            percent:(easy/total)*100,
+            className:'easy'
+        },
 
-  const total = analyzedItems.value.length
+        {
+            label:'Medium',
+            count:medium,
+            percent:(medium/total)*100,
+            className:'medium'
+        },
 
-  return [
+        {
+            label:'Hard',
+            count:hard,
+            percent:(hard/total)*100,
+            className:'hard'
+        },
 
-    {
-      label: 'Easy',
-      count: easy,
-      percent: easy / total * 100,
-      className: 'easy'
-    },
+        {
+            label:'Very Hard',
+            count:veryHard,
+            percent:(veryHard/total)*100,
+            className:'very-hard'
+        }
 
-    {
-      label: 'Medium',
-      count: medium,
-      percent: medium / total * 100,
-      className: 'medium'
-    },
-
-    {
-      label: 'Hard',
-      count: hard,
-      percent: hard / total * 100,
-      className: 'hard'
-    },
-
-    {
-      label: 'Very Hard',
-      count: veryHard,
-      percent: veryHard / total * 100,
-      className: 'very-hard'
-    }
-
-  ]
+    ]
 
 })
-
-// ===========================================
-// FILTER + SEARCH + SORT
-// ===========================================
 
 const filteredItems = computed(() => {
 
-  let result = [...analyzedItems.value]
+    let result = [...analyzedItems.value]
 
-  if (selectedFilter.value !== 'All Questions') {
+    if (selectedFilter.value !== 'All Questions') {
 
-    if (selectedFilter.value === 'Needs Review') {
+        if (selectedFilter.value === 'Needs Review') {
 
-      result = result.filter(
-        item => item.recommendationTitle !== 'Excellent Question'
-      )
+            result = result.filter(
+                item => item.recommendationTitle !== 'Excellent Question'
+            )
 
-    } else {
+        } else {
 
-      result = result.filter(
-        item => item.difficulty === selectedFilter.value
-      )
+            result = result.filter(
+                item => item.difficulty === selectedFilter.value
+            )
+
+        }
 
     }
 
-  }
+    if (search.value.trim()) {
 
-  if (search.value.trim() !== '') {
+        result = result.filter(item =>
+            item.question
+                .toLowerCase()
+                .includes(search.value.toLowerCase())
+        )
 
-    result = result.filter(
-      item =>
-        item.question
-          .toLowerCase()
-          .includes(search.value.toLowerCase())
-    )
-
-  }
-
-  if (sortBy.value === 'number') {
-
-    result.sort((a, b) => a.number - b.number)
-
-  }
-
-  if (sortBy.value === 'lowest') {
-
-    result.sort((a, b) => a.successRate - b.successRate)
-
-  }
-
-  if (sortBy.value === 'highest') {
-
-    result.sort((a, b) => b.successRate - a.successRate)
-
-  }
-
-  if (sortBy.value === 'difficulty') {
-
-    const order: Record<string, number> = {
-      'Very Hard': 1,
-      'Hard': 2,
-      'Medium': 3,
-      'Easy': 4
     }
 
-   result.sort((a, b) => {
-  return (order[a.difficulty as keyof typeof order] || 99) -
-         (order[b.difficulty as keyof typeof order] || 99)
-})
-
-  }
-
-  return result
+    return result
 
 })
-
-// ===========================================
-// EXPORT CSV
-// ===========================================
 
 function exportCSV() {
 
-  const headers = [
-    'Question Number',
-    'Question',
-    'Type',
-    'Success Rate',
-    'Correct',
-    'Wrong',
-    'Difficulty',
-    'Discrimination',
-    'Most Common Wrong Answer',
-    'Recommendation'
-  ]
+    const csv = analyzedItems.value
+        .map(item =>
+            `${item.number},"${item.question}",${item.successRate}%`
+        )
+        .join('\n')
 
-  const rows = analyzedItems.value.map(item => [
-    item.number,
-    `"${item.question}"`,
-    item.type,
-    item.successRate + '%',
-    item.correct,
-    item.wrong,
-    item.difficulty,
-    item.discrimination,
-    `"${item.commonWrongAnswer}"`,
-    `"${item.recommendationTitle}: ${item.recommendation}"`
-  ])
+    const blob = new Blob([csv], {
+        type:'text/csv'
+    })
 
-  const csv = [
-    headers.join(','),
-    ...rows.map(row => row.join(','))
-  ].join('\n')
+    const url = URL.createObjectURL(blob)
 
-  const blob = new Blob(
-    [csv],
-    { type: 'text/csv;charset=utf-8;' }
-  )
+    const link = document.createElement('a')
 
-  const url = URL.createObjectURL(blob)
+    link.href = url
+    link.download = 'Item_Analysis.csv'
+    link.click()
 
-  const link = document.createElement('a')
-
-  link.href = url
-
-  link.download = 'Item_Analysis_Report.csv'
-
-  link.click()
-
-  URL.revokeObjectURL(url)
+    URL.revokeObjectURL(url)
 
 }
+
+onMounted(() => {
+
+    fetchItemAnalysis()
+
+})
 </script>
 
 <style scoped>

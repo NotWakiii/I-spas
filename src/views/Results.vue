@@ -1,563 +1,241 @@
 <template>
-
-<div class="results-page">
-
-   
+  <div class="results-page">
 
     <div class="page-header">
+      <div>
+        <h1>Exam Results</h1>
+        <p>{{ exam.title }}</p>
+      </div>
 
-        <div>
+      <div class="header-buttons">
+        <button class="analysis-btn" @click="goToItemAnalysis">
+          📊 Item Analysis
+        </button>
 
-            <h1>
-
-                Exam Results
-
-            </h1>
-
-            <p>
-
-                {{ exam.title }}
-
-            </p>
-
-        </div>
-
-        <div class="header-buttons">
-
-            <button
-                class="analysis-btn"
-                @click="goToItemAnalysis"
-            >
-
-                📊 Item Analysis
-
-            </button>
-
-            <button
-                class="export-btn"
-                @click="exportCSV"
-            >
-
-                ⬇ Export Results
-
-            </button>
-
-        </div>
-
+        <button class="export-btn" @click="exportCSV">
+          ⬇ Export Results
+        </button>
+      </div>
     </div>
-
-    <!-- ===========================================
-         STATISTICS
-    ============================================ -->
 
     <div class="stats">
-
-        <!-- Total Students -->
-
-        <div class="card">
-
-            <div>
-
-                <small>
-
-                    Total Students
-
-                </small>
-
-                <h2>
-
-                    {{ totalStudents }}
-
-                </h2>
-
-            </div>
-
-            <div class="icon blue">
-
-                🏆
-
-            </div>
-
+      <div class="card">
+        <div>
+          <small>Total Students</small>
+          <h2>{{ totalStudents }}</h2>
         </div>
+        <div class="icon blue">🏆</div>
+      </div>
 
-       
-
-        <div class="card">
-
-            <div>
-
-                <small>
-
-                    Average Score
-
-                </small>
-
-                <h2 class="blue-text">
-
-                    {{ averageScore }}%
-
-                </h2>
-
-            </div>
-
-            <div class="icon light-blue">
-
-                📊
-
-            </div>
-
+      <div class="card">
+        <div>
+          <small>Average Score</small>
+          <h2 class="blue-text">{{ averageScore }}%</h2>
         </div>
+        <div class="icon light-blue">📊</div>
+      </div>
 
-        <!-- Pass Rate -->
-
-        <div class="card">
-
-            <div>
-
-                <small>
-
-                    Pass Rate
-
-                </small>
-
-                <h2 class="green-text">
-
-                    {{ passRate }}%
-
-                </h2>
-
-            </div>
-
-            <div class="icon green">
-
-                ✅
-
-            </div>
-
+      <div class="card">
+        <div>
+          <small>Pass Rate</small>
+          <h2 class="green-text">{{ passRate }}%</h2>
         </div>
+        <div class="icon green">✅</div>
+      </div>
 
-       
-
-        <div class="card">
-
-            <div>
-
-                <small>
-
-                    Highest Score
-
-                </small>
-
-                <h2 class="purple-text">
-
-                    {{ highestScore }}%
-
-                </h2>
-
-            </div>
-
-            <div class="icon purple">
-
-                🏅
-
-            </div>
-
+      <div class="card">
+        <div>
+          <small>Highest Score</small>
+          <h2 class="purple-text">{{ highestScore }}%</h2>
         </div>
-
+        <div class="icon purple">🏅</div>
+      </div>
     </div>
-
-    
 
     <div class="results-table">
-
-        <table>
-
-            <thead>
-
-                <tr>
-
-                    <th>
-
-                        Rank
-
-                    </th>
-
-                    <th>
-
-                        Student
-
-                    </th>
-
-                    <th>
-
-                        Score
-
-                    </th>
-
-                    <th>
-
-                        Correct
-
-                    </th>
-
-                    <th>
-
-                        Wrong
-
-                    </th>
-
-                    <th>
-
-                        Time Spent
-
-                    </th>
-
-                    <th>
-
-                        Performance
-
-                    </th>
-
-                    <th>
-
-                        Submitted
-
-                    </th>
-
-                </tr>
-
-            </thead>
-
-            <tbody>
-
-                          <tr
-                v-for="(student,index) in rankedStudents"
-                :key="student.id"
-            >
-
-                
-
-                <td class="rank">
-
-                    <span
-                        v-if="index===0"
-                        class="gold"
-                    >
-
-                        🥇
-
-                    </span>
-
-                    <span
-                        v-else-if="index===1"
-                        class="silver"
-                    >
-
-                        🥈
-
-                    </span>
-
-                    <span
-                        v-else-if="index===2"
-                        class="bronze"
-                    >
-
-                        🥉
-
-                    </span>
-
-                    <span
-                        v-else
-                        class="rank-number"
-                    >
-
-                        {{ index + 1 }}
-
-                    </span>
-
-                </td>
-
-                
-
-                <td>
-
-                    {{ student.name }}
-
-                </td>
-
-                <td>
-
-                    <strong>
-
-                        {{ student.score }}%
-
-                    </strong>
-
-                    <br>
-
-                    <small>
-
-                        {{ student.correct }}/{{ exam.totalQuestions }}
-
-                    </small>
-
-                </td>
-
-               
-
-                <td class="correct">
-
-                    ✔ {{ student.correct }}
-
-                </td>
-
-              
-
-                <td class="wrong">
-
-                    ✖ {{ student.wrong }}
-
-                </td>
-
-               
-
-                <td>
-
-                    {{ student.timeSpent }}
-
-                </td>
-
-              
-
-                <td>
-
-                    <span
-                        class="badge"
-                        :class="student.performanceClass"
-                    >
-
-                        {{ student.performance }}
-
-                    </span>
-
-                </td>
-
-               
-
-                <td>
-
-                    {{ student.submitted }}
-
-                </td>
-
-            </tr>
-
-            </tbody>
-
-        </table>
-
+      <table>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Student</th>
+            <th>Score</th>
+            <th>Correct</th>
+            <th>Wrong</th>
+            <th>Time Spent</th>
+            <th>Performance</th>
+            <th>Submitted</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr
+            v-for="(student,index) in rankedStudents"
+            :key="student.id"
+          >
+            <td class="rank">
+              <span v-if="index===0" class="gold">🥇</span>
+              <span v-else-if="index===1" class="silver">🥈</span>
+              <span v-else-if="index===2" class="bronze">🥉</span>
+              <span v-else class="rank-number">{{ index + 1 }}</span>
+            </td>
+
+            <td>{{ student.name }}</td>
+
+            <td>
+              <strong>{{ student.score }}%</strong>
+              <br>
+              <small>{{ student.correct }}/{{ exam.totalQuestions }}</small>
+            </td>
+
+            <td class="correct">✔ {{ student.correct }}</td>
+            <td class="wrong">✖ {{ student.wrong }}</td>
+            <td>{{ student.timeSpent }}</td>
+
+            <td>
+              <span class="badge" :class="student.performanceClass">
+                {{ student.performance }}
+              </span>
+            </td>
+
+            <td>{{ student.submitted }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div v-if="rankedStudents.length === 0" class="empty-results">
+        No submitted results yet.
+      </div>
     </div>
 
-</div>
-
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import api from '../services/api'
 
 const router = useRouter()
-
-// ===========================================
-// EXAM
-// ===========================================
+const route = useRoute()
 
 const exam = ref({
-
-    title:'Quiz 1 - Data Structures',
-
-    totalQuestions:20,
-
-    passingScore:75
-
+    id: 0,
+    title: '',
+    totalQuestions: 0,
+    passingScore: 75
 })
 
-// ===========================================
-// STUDENTS
-// Replace with Laravel later
-// ===========================================
+const students = ref<any[]>([])
 
-const students = ref([
+async function fetchResults() {
+    try {
 
-{
-    id:1,
-    name:'Alice Johnson',
-    score:95,
-    correct:19,
-    wrong:1,
-    timeSpent:'38 min',
-    submitted:'10:45 AM'
-},
+        const examId = route.params.id
 
-{
-    id:2,
-    name:'Bob Smith',
-    score:92,
-    correct:18,
-    wrong:2,
-    timeSpent:'42 min',
-    submitted:'10:47 AM'
-},
+        const response = await api.get(`/exams/${examId}/results`)
 
-{
-    id:3,
-    name:'Charlie Brown',
-    score:88,
-    correct:18,
-    wrong:2,
-    timeSpent:'40 min',
-    submitted:'10:44 AM'
-},
+        exam.value = {
+            id: response.data.exam.id,
+            title: response.data.exam.title,
+            totalQuestions: response.data.exam.questions_count ?? 0,
+            passingScore: response.data.exam.passing ?? 75
+        }
 
-{
-    id:4,
-    name:'Diana Prince',
-    score:85,
-    correct:17,
-    wrong:3,
-    timeSpent:'44 min',
-    submitted:'10:48 AM'
-},
+        students.value = response.data.data.map((student:any) => {
 
-{
-    id:5,
-    name:'Eve Adams',
-    score:82,
-    correct:16,
-    wrong:4,
-    timeSpent:'41 min',
-    submitted:'10:46 AM'
+            let performance = 'Excellent'
+            let performanceClass = 'excellent'
+
+            if (student.percentage < 90) {
+                performance = 'Very Good'
+                performanceClass = 'very-good'
+            }
+
+            if (student.percentage < 80) {
+                performance = 'Good'
+                performanceClass = 'good'
+            }
+
+            if (student.percentage < 70) {
+                performance = 'Fair'
+                performanceClass = 'fair'
+            }
+
+            if (student.percentage < 60) {
+                performance = 'Failed'
+                performanceClass = 'failed'
+            }
+
+            return {
+                id: student.id,
+                name: student.student_name,
+                score: Number(student.percentage),
+                correct: student.correct,
+                wrong: student.wrong,
+                timeSpent: student.time_spent
+                    ? `${student.time_spent} sec`
+                    : '-',
+                submitted: student.submitted_at
+                    ? new Date(student.submitted_at).toLocaleTimeString()
+                    : '-',
+                performance,
+                performanceClass
+            }
+
+        })
+
+    } catch (error) {
+
+        console.error(error)
+
+        alert('Failed to load exam results.')
+
+    }
 }
-
-])
-
-// ===========================================
-// SORT BY SCORE
-// ===========================================
 
 const rankedStudents = computed(() => {
+    return [...students.value].sort((a, b) => b.score - a.score)
+})
 
-    return [...students.value]
+const totalStudents = computed(() => students.value.length)
 
-    .sort((a,b)=>b.score-a.score)
+const highestScore = computed(() => {
+    if (students.value.length === 0) return 0
+    return Math.max(...students.value.map(s => s.score))
+})
 
-    .map(student=>{
+const averageScore = computed(() => {
+    if (students.value.length === 0) return 0
 
-        let performance='Excellent'
-        let performanceClass='excellent'
+    const total = students.value.reduce(
+        (sum, s) => sum + s.score,
+        0
+    )
 
-        if(student.score<90){
+    return Number((total / students.value.length).toFixed(1))
+})
 
-            performance='Very Good'
-            performanceClass='very-good'
+const passRate = computed(() => {
 
-        }
+    if (students.value.length === 0) return 0
 
-        if(student.score<80){
+    const passed = students.value.filter(
+        s => s.score >= exam.value.passingScore
+    ).length
 
-            performance='Good'
-            performanceClass='good'
-
-        }
-
-        if(student.score<70){
-
-            performance='Fair'
-            performanceClass='fair'
-
-        }
-
-        if(student.score<60){
-
-            performance='Failed'
-            performanceClass='failed'
-
-        }
-
-        return{
-
-            ...student,
-
-            performance,
-
-            performanceClass
-
-        }
-
-    })
+    return Math.round(
+        (passed / students.value.length) * 100
+    )
 
 })
 
-
-
-const totalStudents = computed(()=>
-
-students.value.length
-
-)
-
-const highestScore = computed(()=>
-
-Math.max(...students.value.map(s=>s.score))
-
-)
-
-const averageScore = computed(()=>{
-
-const total=students.value.reduce(
-
-(sum,s)=>sum+s.score,
-
-0
-
-)
-
-return Number(
-
-(total/students.value.length).toFixed(1)
-
-)
-
-})
-
-const passRate = computed(()=>{
-
-const passed=students.value.filter(
-
-s=>s.score>=exam.value.passingScore
-
-).length
-
-return Math.round(
-
-(passed/students.value.length)*100
-
-)
-
-})
-
-
-
-function goToItemAnalysis(){
-
-    alert('Item Analysis page will be built next.')
-
+function goToItemAnalysis() {
+    router.push(`/faculty/item-analysis/${exam.value.id}`)
 }
 
-function exportCSV(){
+function exportCSV() {
 
     const headers = [
-
         'Rank',
         'Student',
         'Score',
@@ -566,10 +244,9 @@ function exportCSV(){
         'Time Spent',
         'Performance',
         'Submitted'
-
     ]
 
-    const rows = rankedStudents.value.map((student,index)=>[
+    const rows = rankedStudents.value.map((student, index) => [
 
         index + 1,
         student.name,
@@ -583,23 +260,15 @@ function exportCSV(){
     ])
 
     const csv = [
-
         headers.join(','),
-
-        ...rows.map(row=>row.join(','))
-
+        ...rows.map(r => r.join(','))
     ].join('\n')
 
     const blob = new Blob(
-
         [csv],
-
         {
-
-            type:'text/csv;charset=utf-8;'
-
+            type: 'text/csv;charset=utf-8;'
         }
-
     )
 
     const url = URL.createObjectURL(blob)
@@ -607,14 +276,16 @@ function exportCSV(){
     const link = document.createElement('a')
 
     link.href = url
-
-    link.download = 'Exam_Results.csv'
+    link.download = `${exam.value.title}_Results.csv`
 
     link.click()
 
     URL.revokeObjectURL(url)
-
 }
+
+onMounted(() => {
+    fetchResults()
+})
 </script>
 
 <style scoped>
@@ -1029,6 +700,12 @@ tbody tr:hover{
 
     color:#dc2626;
 
+}
+
+.empty-results{
+  text-align:center;
+  padding:35px;
+  color:#777;
 }
 
 /* ==========================================

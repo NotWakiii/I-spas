@@ -81,46 +81,44 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import api from '../services/api'
 
 const router = useRouter()
 
 const search = ref('')
 const selectedCourse = ref('All Courses')
+const exams = ref<any[]>([])
 
-const exams = ref([
-  {
-    id: 1,
-    title: 'Quiz 1 - Data Structures',
-    course: 'BSIT 3A',
-    type: 'Quiz',
-    questions: 20,
-    students: 40,
-    success: 78,
-    hardItems: 4
-  },
-  {
-    id: 2,
-    title: 'Midterm Exam - App Dev 2',
-    course: 'App Dev 2',
-    type: 'Midterm',
-    questions: 100,
-    students: 60,
-    success: 72,
-    hardItems: 12
-  },
-  {
-    id: 3,
-    title: 'Networking Final Exam',
-    course: 'Networking',
-    type: 'Final',
-    questions: 80,
-    students: 45,
-    success: 68,
-    hardItems: 15
+async function fetchExams() {
+  try {
+    const response = await api.get('/exams')
+
+    exams.value = response.data.data
+      .filter((exam:any) => exam.status === 'finished')
+      .map((exam:any) => {
+
+        const questions = exam.questions || []
+
+        return {
+          id: exam.id,
+          title: exam.title,
+          course: exam.course || 'No Course',
+          type: 'Finished',
+          questions: questions.length,
+          students: 0,
+          success: 0,
+          hardItems: 0
+        }
+
+      })
+
+  } catch (error) {
+    console.error(error)
+    alert('Failed to load exams.')
   }
-])
+}
 
 const courses = computed(() => {
   return [...new Set(exams.value.map(exam => exam.course))]
@@ -142,6 +140,10 @@ const filteredExams = computed(() => {
 function viewAnalysis(id: number) {
   router.push(`/faculty/item-analysis/${id}`)
 }
+
+onMounted(() => {
+  fetchExams()
+})
 </script>
 
 <style scoped>
