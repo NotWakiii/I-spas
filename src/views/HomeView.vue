@@ -14,10 +14,9 @@
             WELCOME BACK TO I-SPAS
           </p>
 
-          <button class="role-btn">
-            <span class="icon">👥</span>
-            STUDENT
-          </button>
+         <button class="role-btn" @click="$router.push('/student')">
+  👥 STUDENT
+</button>
    <button
   class="role-btn"
   @click="showFacultyLogin = true"
