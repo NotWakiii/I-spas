@@ -417,97 +417,117 @@ function applyStoredExam(storedExam: StoredExam) {
 async function fetchLobby() {
   const storedData = readStoredData()
 
-  if (!storedData) return
+  if (!storedData || countdownStarted.value) return
 
-  const examId =
-    Number(
-      storedData.exam.id ||
-      storedData.session.exam_id
-    )
+  const examId = Number(
+    storedData.exam.id ||
+    storedData.session.exam_id
+  )
 
   if (!examId) {
-    errorMessage.value =
-      'Invalid examination information.'
-
+    errorMessage.value = 'Invalid examination information.'
     return
   }
 
   try {
     errorMessage.value = ''
 
-    const [
-      statusResponse,
-      lobbyResponse,
-    ] = await Promise.all([
-      api.get(
-        `/student/exams/${examId}/status`
-      ),
+    /*
+     * Check status separately so a failed student-list request
+     * cannot prevent the countdown.
+     */
+    const statusResponse = await api.get(
+      `/student/exams/${examId}/status`,
+      {
+        params: {
+          timestamp: Date.now(),
+        },
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      }
+    )
 
-      api.get(
-        `/student/exams/${examId}/lobby`
-      ),
-    ])
-
-    const examData =
-      statusResponse.data?.data as StoredExam
+    const examData = statusResponse.data?.data as StoredExam
 
     if (!examData) {
-      throw new Error(
-        'Laravel returned no examination data.'
-      )
+      throw new Error('Laravel returned no examination data.')
     }
 
     const backendStatus = String(
-      examData.status || 'published'
-    ).toLowerCase()
+      examData.status || ''
+    )
+      .trim()
+      .toLowerCase()
+
+    console.log(
+      'Student detected exam status:',
+      backendStatus
+    )
 
     exam.value = {
       id: Number(examData.id),
-
       title:
         examData.title ||
         'Untitled Examination',
-
       course:
         examData.course ||
         'No course specified',
-
       duration:
         Number(examData.duration || 0),
-
       total_questions:
         getQuestionCount(examData),
-
       passing:
         Number(examData.passing || 75),
-
       status:
         getStudentStatus(backendStatus),
     }
-
-    students.value =
-      Array.isArray(lobbyResponse.data?.data)
-        ? lobbyResponse.data.data
-        : []
 
     localStorage.setItem(
       'student_exam',
       JSON.stringify(examData)
     )
 
-    if (
-      backendStatus === 'started' &&
-      !countdownStarted.value
-    ) {
+    /*
+     * Start countdown immediately.
+     */
+    if (backendStatus === 'started') {
       startCountdown()
+      return
     }
 
     if (backendStatus === 'finished') {
       router.replace('/student/results')
+      return
+    }
+
+    /*
+     * Fetch student list separately.
+     */
+    try {
+      const lobbyResponse = await api.get(
+        `/student/exams/${examId}/lobby`,
+        {
+          params: {
+            timestamp: Date.now(),
+          },
+        }
+      )
+
+      students.value = Array.isArray(
+        lobbyResponse.data?.data
+      )
+        ? lobbyResponse.data.data
+        : []
+    } catch (lobbyError) {
+      console.error(
+        'LOBBY STUDENT LIST ERROR:',
+        lobbyError
+      )
     }
   } catch (error: unknown) {
     console.error(
-      'STUDENT LOBBY ERROR:',
+      'STUDENT STATUS ERROR:',
       error
     )
 
@@ -522,7 +542,7 @@ async function fetchLobby() {
 
     errorMessage.value =
       apiError.response?.data?.message ||
-      'Unable to update the lobby. Retrying...'
+      'Unable to check examination status. Retrying...'
   } finally {
     loading.value = false
   }
@@ -530,6 +550,8 @@ async function fetchLobby() {
 
 function startCountdown() {
   if (countdownStarted.value) return
+
+  console.log('Starting student countdown')
 
   countdownStarted.value = true
   countdown.value = 10
@@ -539,8 +561,17 @@ function startCountdown() {
     lobbyInterval = null
   }
 
+  if (countdownInterval) {
+    clearInterval(countdownInterval)
+  }
+
   countdownInterval = setInterval(() => {
     countdown.value -= 1
+
+    console.log(
+      'Countdown:',
+      countdown.value
+    )
 
     if (countdown.value <= 0) {
       if (countdownInterval) {

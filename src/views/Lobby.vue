@@ -106,9 +106,13 @@
           </div>
         </div>
 
-        <button class="start-btn" @click="startExamNow">
-          ▶ Start Exam Now
-        </button>
+        <button
+  class="start-btn"
+  :disabled="startingExam"
+  @click="confirmStartExam"
+>
+  {{ startingExam ? 'Starting...' : 'Start Exam' }}
+</button>
 
         <div class="footer-note">
           {{ students.length }} students ready to begin
@@ -244,17 +248,31 @@ function startExamNow() {
 }
 
 async function confirmStartExam() {
+  if (!exam.value.id || startingExam.value) return
+
   startingExam.value = true
 
   try {
-    showStartPopup.value = false
-
     await api.post(`/exams/${exam.value.id}/start`)
 
-router.push(`/faculty/monitoring/${exam.value.id}`)
-  } catch (error) {
-    console.error(error)
-    alert('Failed to start exam.')
+    showStartPopup.value = false
+
+    router.push(`/faculty/monitoring/${exam.value.id}`)
+  } catch (error: unknown) {
+    console.error('START EXAM ERROR:', error)
+
+    const apiError = error as {
+      response?: {
+        data?: {
+          message?: string
+        }
+      }
+    }
+
+    alert(
+      apiError.response?.data?.message ||
+      'Failed to start exam.'
+    )
   } finally {
     startingExam.value = false
   }
