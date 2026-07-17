@@ -1109,4 +1109,121 @@ onUnmounted(() => {
         align-items:flex-start;
     }
 }
+
+/* ==========================================
+   RESPONSIVE IMPROVEMENTS
+========================================== */
+
+.lobby-page{
+    min-height:100dvh;
+    padding:clamp(16px,3vw,32px);
+}
+
+.lobby-card{
+    width:min(100%,1100px);
+    padding:clamp(22px,3vw,36px);
+    -webkit-backdrop-filter:blur(12px);
+}
+
+.header > div,
+.student-item > div:last-child{
+    min-width:0;
+}
+
+.header h1,
+.student-item strong{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.exam-grid{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+}
+
+.exam-grid > div,
+.student-item{
+    min-width:0;
+}
+
+.student-list{
+    max-height:300px;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    overscroll-behavior:contain;
+}
+
+.countdown-overlay{
+    padding:max(20px,env(safe-area-inset-top)) 20px max(20px,env(safe-area-inset-bottom));
+    -webkit-backdrop-filter:blur(12px);
+}
+
+.countdown-box{
+    max-height:calc(100dvh - 40px);
+    overflow-y:auto;
+}
+
+@media(max-width:900px){
+    .lobby-card{
+        width:min(100%,820px);
+    }
+
+    .exam-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+
+    .student-list{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+}
+
+@media(max-width:600px){
+    .lobby-page{
+        padding:0;
+        align-items:stretch;
+    }
+
+    .lobby-card{
+        width:100%;
+        min-height:100dvh;
+        margin:0;
+        padding:max(20px,env(safe-area-inset-top)) 16px max(28px,env(safe-area-inset-bottom));
+        border:none;
+        border-radius:0;
+        box-shadow:none;
+    }
+
+    .header{
+        gap:14px;
+    }
+
+    .header h1{
+        white-space:normal;
+    }
+
+    .exam-grid{
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:10px;
+    }
+
+    .student-list{
+        grid-template-columns:1fr;
+    }
+}
+
+@media(max-width:390px){
+    .exam-grid{
+        grid-template-columns:1fr;
+    }
+}
+
+@media(prefers-reduced-motion:reduce){
+    *,
+    *::before,
+    *::after{
+        animation-duration:.01ms !important;
+        animation-iteration-count:1 !important;
+        transition-duration:.01ms !important;
+    }
+}
+
 </style>
