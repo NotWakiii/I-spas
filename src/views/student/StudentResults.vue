@@ -3457,4 +3457,88 @@ button{
     }
 }
 
+
+/* ==========================================
+   FINAL MOBILE WIDTH FIX
+   Prevent cards from shrinking on Android/iOS
+========================================== */
+
+@media(max-width:900px){
+
+    .score-tab{
+        width:100%;
+        display:flex;
+        flex-direction:column;
+        align-items:stretch;
+    }
+
+    .score-tab > *{
+        width:100%;
+        max-width:100%;
+        min-width:0;
+    }
+
+    .private-result-card,
+    .score-statistics,
+    .accuracy-card,
+    .score-details-card,
+    .result-message-card{
+        width:100%;
+        max-width:100%;
+        min-width:0;
+        align-self:stretch;
+    }
+
+}
+
+@media(max-width:600px){
+
+    .private-result-card{
+        min-height:150px;
+        padding:18px;
+        display:grid;
+        grid-template-columns:94px minmax(0,1fr);
+        align-items:center;
+        gap:14px;
+    }
+
+    .score-ring-wrapper{
+        width:94px;
+        min-width:94px;
+    }
+
+    .private-result-info{
+        width:100%;
+        min-width:0;
+    }
+
+    .private-result-info h2,
+    .private-result-info p{
+        width:100%;
+        max-width:100%;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+    }
+
+    .result-decoration{
+        pointer-events:none;
+    }
+
+}
+
+@media(max-width:390px){
+
+    .private-result-card{
+        grid-template-columns:84px minmax(0,1fr);
+        gap:12px;
+    }
+
+    .score-ring-wrapper{
+        width:84px;
+        min-width:84px;
+    }
+
+}
+
 </style>

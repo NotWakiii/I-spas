@@ -74,9 +74,7 @@
           Paste Questions
         </button>
 
-        <button :class="{ active: activeMethod === 'upload' }" @click="activeMethod = 'upload'">
-          Upload File
-        </button>
+        
       </div>
 
       <div v-if="activeMethod === 'paste'" class="method-content">
@@ -99,29 +97,8 @@
         </button>
       </div>
 
-      <div v-if="activeMethod === 'upload'" class="method-content">
-        <div class="drop-area">
-          <div class="upload-icon">📄</div>
+      
 
-          <h3>Upload PDF, DOCX, PPTX or TXT</h3>
-
-          <p>Later Laravel will extract text from the uploaded file and generate questions.</p>
-
-          <input
-            type="file"
-            accept=".pdf,.docx,.pptx,.txt"
-            @change="handleFileUpload"
-          >
-
-          <div v-if="selectedFile" class="file-selected">
-            Selected File: <strong>{{ selectedFile.name }}</strong>
-          </div>
-        </div>
-
-        <button class="generate-btn" @click="generateFromUpload">
-          Generate From Uploaded File
-        </button>
-      </div>
     </div>
 
     <div class="card">

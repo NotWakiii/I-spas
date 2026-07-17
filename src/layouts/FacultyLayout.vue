@@ -94,7 +94,7 @@
     <div class="dialog">
 
         <div class="dialog-icon">
-            🚪
+            
         </div>
 
         <h2>
@@ -293,13 +293,14 @@ async function confirmLogout() {
 
 .logout-btn{
     width:100%;
-    padding:14px;
+    padding:13px;
     border:none;
-    background:#f4f4f4;
+    background:rgb(222, 0, 0);
     border-radius:10px;
     cursor:pointer;
-    font-size:15px;
+    font-size:14px;
     transition:.3s;
+    color: white;
 }
 
 .logout-btn:hover{
