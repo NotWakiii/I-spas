@@ -14,15 +14,19 @@
             WELCOME BACK TO I-SPAS
           </p>
 
-         <button class="role-btn" @click="$router.push('/student')">
-  👥 STUDENT
-</button>
-   <button
-  class="role-btn"
-  @click="showFacultyLogin = true"
->
-  🎓 FACULTY
-</button>
+          <button
+            class="role-btn"
+            @click="$router.push('/student')"
+          >
+            👥 STUDENT
+          </button>
+
+          <button
+            class="role-btn"
+            @click="showFacultyLogin = true"
+          >
+            🎓 FACULTY
+          </button>
 
           <p class="help">
             Need Help?
@@ -36,29 +40,33 @@
       <!-- RIGHT PANEL -->
       <div class="right">
 
-        <div class="logo-container">
-          <img
-            src="@/assets/logo.png"
-            class="logo"
-            alt="Logo"
-          />
-        </div>
+        <div class="right-content">
 
-        <h2>I-SPAS</h2>
+          <div class="logo-container">
+            <img
+              src="@/assets/logo.png"
+              class="logo"
+              alt="Logo"
+            />
+          </div>
 
-        <p class="subtitle">
-          An Intranet-Based Student Performance Assessment System
-        </p>
+          <h2>I-SPAS</h2>
 
-        <div class="description">
-          This is I-SPAS, an advanced offline examination and assessment
-          platform designed for educational institutions.
+          <p class="subtitle">
+            An Intranet-Based Student Performance Assessment System
+          </p>
 
-          Conduct secure, real-time monitored exams with automatic grading,
-          comprehensive item analysis, and detailed performance tracking.
+          <div class="description">
+            This is I-SPAS, an advanced offline examination and assessment
+            platform designed for educational institutions.
 
-          Built for seamless operation on local networks without requiring
-          internet connectivity, ensuring data privacy and system reliability.
+            Conduct secure, real-time monitored exams with automatic grading,
+            comprehensive item analysis, and detailed performance tracking.
+
+            Built for seamless operation on local networks without requiring
+            internet connectivity, ensuring data privacy and system reliability.
+          </div>
+
         </div>
 
       </div>
@@ -68,49 +76,56 @@
   </div>
 
   <div
-  v-if="showFacultyLogin"
-  class="login-overlay"
->
-  <div class="login-modal">
-    <h2>Faculty Login</h2>
-    <p>Enter your assigned username and password.</p>
+    v-if="showFacultyLogin"
+    class="login-overlay"
+  >
+    <div class="login-modal">
 
-    <input
-      v-model="username"
-      type="text"
-      placeholder="Username"
-    >
+      <h2>Faculty Login</h2>
 
-    <input
-      v-model="password"
-      type="password"
-      placeholder="Password"
-    >
+      <p>
+        Enter your assigned username and password.
+      </p>
 
-    <div
-      v-if="loginError"
-      class="error"
-    >
-      {{ loginError }}
-    </div>
-
-    <div class="login-actions">
-      <button
-        class="cancel-btn"
-        @click="closeLogin"
+      <input
+        v-model="username"
+        type="text"
+        placeholder="Username"
       >
-        Cancel
-      </button>
 
-      <button
-        class="login-btn"
-        @click="facultyLogin"
+      <input
+        v-model="password"
+        type="password"
+        placeholder="Password"
       >
-        Login
-      </button>
+
+      <div
+        v-if="loginError"
+        class="error"
+      >
+        {{ loginError }}
+      </div>
+
+      <div class="login-actions">
+
+        <button
+          class="cancel-btn"
+          @click="closeLogin"
+        >
+          Cancel
+        </button>
+
+        <button
+          class="login-btn"
+          @click="facultyLogin"
+        >
+          Login
+        </button>
+
+      </div>
+
     </div>
   </div>
-</div>
 </template>
 
 <script setup lang="ts">
@@ -150,13 +165,23 @@ async function facultyLogin() {
   }
 
   try {
-    const response = await axios.post('http://127.0.0.1:8000/api/login', {
-      name: username.value,
-      password: password.value
-    })
+    const response = await axios.post(
+      'http://127.0.0.1:8000/api/login',
+      {
+        name: username.value,
+        password: password.value
+      }
+    )
 
-    localStorage.setItem('token', response.data.token)
-    localStorage.setItem('user', JSON.stringify(response.data.user))
+    localStorage.setItem(
+      'token',
+      response.data.token
+    )
+
+    localStorage.setItem(
+      'user',
+      JSON.stringify(response.data.user)
+    )
 
     router.push('/faculty/dashboard')
   } catch (error) {
@@ -216,7 +241,10 @@ async function facultyLogin() {
   display:flex;
   border-radius:24px;
   overflow:hidden;
-  box-shadow:0 22px 55px rgba(0,0,0,.35);
+  border:1px solid rgba(255,255,255,.22);
+  box-shadow:
+    0 22px 55px rgba(0,0,0,.35),
+    inset 0 1px 0 rgba(255,255,255,.18);
   animation:fadeIn .8s ease;
 }
 
@@ -224,6 +252,7 @@ async function facultyLogin() {
   width:50%;
   background:rgba(255,255,255,.95);
   backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
   display:flex;
   justify-content:center;
   align-items:center;
@@ -288,14 +317,89 @@ async function facultyLogin() {
   font-weight:700;
 }
 
+/* ==========================================
+   GLASS RIGHT PANEL
+========================================== */
+
 .right{
+  position:relative;
+  isolation:isolate;
   width:50%;
-  background:#05cf59;
   color:white;
   display:flex;
   flex-direction:column;
   justify-content:center;
   padding:42px 48px;
+  overflow:hidden;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(0,128,69,.58),
+      rgba(0,200,83,.30)
+    );
+
+  backdrop-filter:blur(22px);
+  -webkit-backdrop-filter:blur(22px);
+
+  border-left:1px solid rgba(255,255,255,.28);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.22),
+    inset 0 0 45px rgba(255,255,255,.04);
+}
+
+/* Large transparent logo in the background */
+.right::before{
+  content:"";
+  position:absolute;
+  width:430px;
+  height:430px;
+  left:50%;
+  top:50%;
+  transform:translate(-50%, -50%);
+
+  background-image:url("@/assets/logo.png");
+  background-size:contain;
+  background-position:center;
+  background-repeat:no-repeat;
+
+  opacity:.13;
+  filter:
+    saturate(.85)
+    contrast(1.05)
+    drop-shadow(0 15px 30px rgba(0,0,0,.18));
+
+  z-index:-2;
+  pointer-events:none;
+}
+
+/* Transparent dark layer for readable text */
+.right::after{
+  content:"";
+  position:absolute;
+  inset:0;
+
+  background:
+    radial-gradient(
+      circle at top,
+      rgba(255,255,255,.18),
+      transparent 42%
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(0,70,40,.12),
+      rgba(0,55,34,.32)
+    );
+
+  z-index:-1;
+  pointer-events:none;
+}
+
+.right-content{
+  position:relative;
+  z-index:1;
+  width:100%;
 }
 
 .logo-container{
@@ -306,6 +410,17 @@ async function facultyLogin() {
 
 .logo{
   width:105px;
+  height:105px;
+  object-fit:contain;
+
+  filter:
+    drop-shadow(0 10px 18px rgba(0,0,0,.28));
+
+  transition:.3s ease;
+}
+
+.logo:hover{
+  transform:scale(1.04);
 }
 
 .right h2{
@@ -313,29 +428,66 @@ async function facultyLogin() {
   font-weight:800;
   text-align:center;
   margin-bottom:18px;
+  letter-spacing:1px;
+
+  color:#ffffff;
+
+  text-shadow:
+    0 3px 12px rgba(0,0,0,.32);
 }
 
 .subtitle{
   font-size:18px;
   line-height:1.5;
   margin-bottom:24px;
+  color:rgba(255,255,255,.97);
+
+  text-shadow:
+    0 2px 8px rgba(0,0,0,.28);
 }
 
 .description{
-  background:rgba(255,255,255,.16);
-  backdrop-filter:blur(10px);
-  border:1px solid rgba(255,255,255,.25);
-  border-radius:12px;
+  position:relative;
+
+  background:
+    linear-gradient(
+      135deg,
+      rgba(255,255,255,.20),
+      rgba(255,255,255,.09)
+    );
+
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+
+  border:1px solid rgba(255,255,255,.32);
+  border-radius:16px;
+
   padding:24px;
+
   line-height:1.8;
   font-size:13px;
+  color:rgba(255,255,255,.98);
+
+  white-space:normal;
+
+  box-shadow:
+    0 12px 32px rgba(0,0,0,.14),
+    inset 0 1px 0 rgba(255,255,255,.18);
+
+  text-shadow:
+    0 1px 5px rgba(0,0,0,.18);
 }
+
+/* ==========================================
+   LOGIN MODAL
+========================================== */
 
 .login-overlay{
   position:fixed;
   inset:0;
   background:rgba(0,0,0,.55);
   backdrop-filter:blur(5px);
+  -webkit-backdrop-filter:blur(5px);
   display:flex;
   justify-content:center;
   align-items:center;
@@ -405,6 +557,10 @@ async function facultyLogin() {
   color:white;
 }
 
+/* ==========================================
+   RESPONSIVE
+========================================== */
+
 @media(max-width:960px){
   .page{
     padding:18px;
@@ -429,6 +585,8 @@ async function facultyLogin() {
 
   .right{
     padding:38px 32px;
+    border-left:none;
+    border-top:1px solid rgba(255,255,255,.28);
   }
 
   .content{
@@ -437,6 +595,12 @@ async function facultyLogin() {
 
   .logo{
     width:88px;
+    height:88px;
+  }
+
+  .right::before{
+    width:390px;
+    height:390px;
   }
 
   .subtitle{
@@ -459,6 +623,12 @@ async function facultyLogin() {
 
   .right{
     padding:34px 24px;
+  }
+
+  .right::before{
+    width:310px;
+    height:310px;
+    opacity:.12;
   }
 
   .role-btn{
