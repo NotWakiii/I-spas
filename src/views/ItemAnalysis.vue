@@ -1,7 +1,7 @@
 <template>
   <div class="analysis-detail-page">
 
-   
+
     <div class="page-header">
       <div>
         <button class="back-btn" @click="$router.back()">
@@ -12,12 +12,12 @@
         <p>{{ exam.title }} • {{ exam.course }}</p>
       </div>
 
-      <button class="export-btn" @click="exportCSV">
-        ⬇ Export Analysis
+      <button class="export-btn" @click="exportExcel">
+        📥 Export Excel
       </button>
     </div>
 
-  
+
     <div class="summary-grid">
       <div class="summary-card">
         <small>Total Questions</small>
@@ -40,7 +40,7 @@
       </div>
     </div>
 
-    
+
     <div class="filter-panel">
       <div class="filter-buttons">
         <button
@@ -93,7 +93,7 @@
       </div>
     </div>
 
-    
+
     <div class="questions-list">
       <div
         v-for="item in filteredItems"
@@ -176,6 +176,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../services/api'
+import * as XLSX from 'xlsx'
 
 const route = useRoute()
 
@@ -418,27 +419,211 @@ const filteredItems = computed(() => {
 
 })
 
-function exportCSV() {
+function exportExcel() {
 
-    const csv = analyzedItems.value
-        .map(item =>
-            `${item.number},"${item.question}",${item.successRate}%`
+    if (analyzedItems.value.length === 0) {
+
+        alert('There is no item analysis to export.')
+
+        return
+
+    }
+
+
+    /*
+     * Convert all item analysis data
+     * into rows for Excel.
+     */
+    const excelData = analyzedItems.value.map(
+        (item, index) => {
+
+            return {
+
+                'No.':
+                    index + 1,
+
+                'Question Number':
+                    item.number,
+
+                'Question':
+                    item.question,
+
+                'Question Type':
+                    item.type,
+
+                'Success Rate':
+                    `${item.successRate}%`,
+
+                'Students Correct':
+                    item.correct,
+
+                'Total Students':
+                    item.total,
+
+                'Wrong Answers':
+                    item.wrong,
+
+                'Difficulty':
+                    item.difficulty,
+
+                'Discrimination Index':
+                    item.discrimination,
+
+                'Most Common Wrong Answer':
+                    item.commonWrongAnswer || '-',
+
+                'Recommendation':
+                    item.recommendationTitle,
+
+                'Recommendation Details':
+                    item.recommendation
+
+            }
+
+        }
+    )
+
+
+    /*
+     * Create worksheet.
+     */
+    const worksheet =
+        XLSX.utils.json_to_sheet(excelData)
+
+
+    /*
+     * Adjust Excel column widths.
+     */
+    worksheet['!cols'] = [
+
+        { wch: 6 },     // No.
+
+        { wch: 16 },    // Question Number
+
+        { wch: 55 },    // Question
+
+        { wch: 18 },    // Question Type
+
+        { wch: 15 },    // Success Rate
+
+        { wch: 18 },    // Correct
+
+        { wch: 16 },    // Total
+
+        { wch: 16 },    // Wrong
+
+        { wch: 15 },    // Difficulty
+
+        { wch: 22 },    // Discrimination
+
+        { wch: 35 },    // Common Wrong
+
+        { wch: 25 },    // Recommendation
+
+        { wch: 50 }     // Recommendation Details
+
+    ]
+
+
+    /*
+     * Create workbook.
+     */
+    const workbook =
+        XLSX.utils.book_new()
+
+
+    /*
+     * Add the item analysis worksheet.
+     */
+    XLSX.utils.book_append_sheet(
+        workbook,
+        worksheet,
+        'Item Analysis'
+    )
+
+
+    /*
+     * Create a second worksheet
+     * for the exam summary.
+     */
+    const summaryData = [
+
+        {
+            'Exam Title':
+                exam.value.title,
+
+            'Course':
+                exam.value.course,
+
+            'Total Questions':
+                totalQuestions.value,
+
+            'Average Success':
+                `${averageSuccess.value}%`,
+
+            'Hard Items':
+                hardItems.value,
+
+            'Needs Review':
+                needsReview.value
+        }
+
+    ]
+
+
+    const summaryWorksheet =
+        XLSX.utils.json_to_sheet(
+            summaryData
         )
-        .join('\n')
 
-    const blob = new Blob([csv], {
-        type:'text/csv'
-    })
 
-    const url = URL.createObjectURL(blob)
+    summaryWorksheet['!cols'] = [
 
-    const link = document.createElement('a')
+        { wch: 35 },
 
-    link.href = url
-    link.download = 'Item_Analysis.csv'
-    link.click()
+        { wch: 20 },
 
-    URL.revokeObjectURL(url)
+        { wch: 18 },
+
+        { wch: 18 },
+
+        { wch: 15 },
+
+        { wch: 18 }
+
+    ]
+
+
+    /*
+     * Add summary as another Excel sheet.
+     */
+    XLSX.utils.book_append_sheet(
+        workbook,
+        summaryWorksheet,
+        'Summary'
+    )
+
+
+    /*
+     * Make the exam title safe
+     * for the filename.
+     */
+    const examTitle =
+        exam.value.title
+            ?.replace(
+                /[\\/:*?"<>|]/g,
+                '-'
+            )
+        || 'Exam'
+
+
+    /*
+     * Download Excel file.
+     */
+    XLSX.writeFile(
+        workbook,
+        `${examTitle}-Item-Analysis.xlsx`
+    )
 
 }
 

@@ -2,7 +2,7 @@
 
 <div class="dashboard">
 
- 
+
 
     <div class="dashboard-header">
 
@@ -33,7 +33,7 @@
 
     </div>
 
- 
+
 
     <div class="stats">
 
@@ -91,27 +91,23 @@
 
         </div>
 
-        <div class="card">
+      <div class="card">
 
-            <div>
+        <div>
+          <span>Exam Finished</span>
 
-                <span>Students</span>
-
-                <h2>{{ totalStudents }}</h2>
-
-            </div>
-
-            <div class="emoji">
-
-                👤
-
-            </div>
-
+          <h2>{{ totalFinished }}</h2>
         </div>
+
+        <div class="emoji">
+          ✅
+        </div>
+
+      </div>
 
     </div>
 
-  
+
 
     <div class="exam-section">
 
@@ -184,7 +180,7 @@
 
             >
 
-                
+
 
                 <div class="exam-title">
 
@@ -442,7 +438,7 @@
 
     <div class="preview-modal">
 
-        
+
 
         <div class="preview-header">
 
@@ -473,7 +469,7 @@
 
         </div>
 
-        
+
 
         <div class="preview-info">
 
@@ -543,7 +539,7 @@
 
         </div>
 
-        
+
 
 <div
   v-for="(question,index) in selectedExam.questions"
@@ -579,7 +575,7 @@
   </div>
 </div>
 
-        
+
 
         <div class="preview-footer">
 
@@ -626,7 +622,7 @@
 
     <div class="dialog">
 
-        
+
 
         <div class="dialog-icon">
 
@@ -634,7 +630,7 @@
 
         </div>
 
-        
+
 
         <h2>
 
@@ -642,7 +638,7 @@
 
         </h2>
 
-        
+
 
         <p>
 
@@ -655,7 +651,7 @@
 
         </p>
 
-        
+
 
         <div
             v-if="selectedStartExam"
@@ -728,7 +724,7 @@
 
         </div>
 
-        
+
 
         <div class="dialog-buttons">
 
@@ -764,7 +760,6 @@ import { useRouter } from 'vue-router'
 import api from '../services/api'
 import { onMounted } from 'vue'
 
-
 const router = useRouter()
 
 // ===========================================
@@ -772,7 +767,6 @@ const router = useRouter()
 // ===========================================
 
 const search = ref('')
-
 const selectedCourse = ref('All Courses')
 
 // ===========================================
@@ -784,31 +778,17 @@ const showPreview = ref(false)
 const previewQuestion = ref(1)
 
 const selectedExam = ref({
-
     id:0,
-
     title:'',
-
     course:'',
-
     status:'',
-
     duration:0,
-
     items:0,
-
     points:0,
-
     passing:0,
-
     students:'',
-
     questions: [] as any[],
-
     created:''
-
-    
-
 })
 
 // ===========================================
@@ -816,11 +796,7 @@ const selectedExam = ref({
 // ===========================================
 
 const showStartDialog = ref(false)
-
 const selectedStartExam = ref<any>(null)
-
-
-
 const exams = ref<any[]>([])
 const loading = ref(false)
 
@@ -830,7 +806,7 @@ async function fetchExams() {
   try {
     const response = await api.get('/exams')
 
-   exams.value = response.data.data.map((exam:any) => {
+   exams.value = response.data.data.map((exam:any) =>{
   const questions = exam.questions || []
 
   return {
@@ -973,29 +949,11 @@ exam => exam.status === 'Draft'
 
 )
 
-const totalStudents = computed(() => {
-
-    let total = 0
-
-    exams.value.forEach(exam => {
-
-        const value = parseInt(
-
-            String(exam.students)
-
-            .split('/')[1] || '0'
-
-        )
-
-        total += value
-
-    })
-
-    return total
-
-})
-
-
+const totalFinished = computed(() =>
+  exams.value.filter(
+    exam => exam.status === 'Finished'
+  ).length
+)
 
 function goToCreateExam() {
 
@@ -1003,16 +961,11 @@ function goToCreateExam() {
 
 }
 
-
-
-
-
 function editExam(id:number){
 
     router.push(`/faculty/edit-exam/${id}`)
 
 }
-
 
 function previewExam(exam:any){
 
@@ -1024,15 +977,11 @@ function previewExam(exam:any){
 
 }
 
-
-
 function closePreview(){
 
     showPreview.value = false
 
 }
-
-
 
 function nextQuestion() {
 
@@ -1056,8 +1005,6 @@ function previousQuestion(){
     }
 
 }
-
-
 
 async function publishExam(exam:any) {
 
@@ -1087,15 +1034,11 @@ async function publishExam(exam:any) {
 
 }
 
-
-
 function startExam(exam:any){
 
     router.push(`/faculty/lobby/${exam.id}`)
 
 }
-
-
 
 function confirmStartExam(){
 
@@ -1111,8 +1054,6 @@ function confirmStartExam(){
 
 }
 
-
-
 function cancelStartExam(){
 
     showStartDialog.value = false
@@ -1120,8 +1061,6 @@ function cancelStartExam(){
     selectedStartExam.value = null
 
 }
-
-
 
 async function deleteExam(id:number) {
   const confirmed = confirm('Delete this examination?')
@@ -1136,32 +1075,6 @@ async function deleteExam(id:number) {
     alert('Failed to delete exam.')
   }
 }
-
-
-
-function duplicateExam(exam:any){
-
-    const copy = {
-
-        ...exam,
-
-        id: Date.now(),
-
-        title: exam.title + ' (Copy)',
-
-        status: 'Draft',
-
-        students: '0 / 0',
-
-        created: new Date().toLocaleDateString()
-
-    }
-
-    exams.value.unshift(copy)
-
-}
-
-
 
 </script>
 

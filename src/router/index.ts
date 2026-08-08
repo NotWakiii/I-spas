@@ -13,6 +13,8 @@ import Lobby from '../views/Lobby.vue'
 import Monitoring from '../views/Monitoring.vue'
 import Results from '../views/Results.vue'
 import StudentHistory from '../views/StudentHistory.vue'
+import ExamResults from '../views/ExamResults.vue'
+import StudentScores from '../views/StudentScores.vue'
 
 import ItemAnalysisHub from '../views/ItemAnalysisHub.vue'
 import ItemAnalysis from '../views/ItemAnalysis.vue'
@@ -114,6 +116,16 @@ const router = createRouter({
           path: 'student-history',
           name: 'StudentHistory',
           component: StudentHistory,
+        },
+        {
+          path: 'exam-results',
+          name: 'ExamResults',
+          component: ExamResults,
+        },
+        {
+          path: '/faculty/exam-results/:examId',
+          name: 'StudentScores',
+          component: StudentScores,
         },
       ],
     },

@@ -2,7 +2,7 @@ import axios from 'axios'
 
 //api depends on the backend url, so if you change the backend url, you need to change it here too
 const api = axios.create({
- baseURL: ' http://192.168.1.154:8000/api',
+ baseURL: ' http://192.168.100.59:8000/api',
   headers: {
     Accept: 'application/json',
     'Content-Type': 'application/json',

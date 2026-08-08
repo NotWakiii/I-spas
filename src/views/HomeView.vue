@@ -1,11 +1,9 @@
 <template>
   <div class="page">
-
     <div class="container">
 
       <!-- LEFT PANEL -->
       <div class="left">
-
         <div class="content">
 
           <h1>CHOOSE TO CONTINUE</h1>
@@ -34,19 +32,17 @@
           </p>
 
         </div>
-
       </div>
 
       <!-- RIGHT PANEL -->
       <div class="right">
-
         <div class="right-content">
 
           <div class="logo-container">
             <img
               src="@/assets/logo.png"
               class="logo"
-              alt="Logo"
+              alt="I-SPAS Logo"
             />
           </div>
 
@@ -68,105 +64,207 @@
           </div>
 
         </div>
-
       </div>
 
     </div>
-
   </div>
 
+  <!-- FACULTY LOGIN MODAL -->
   <div
     v-if="showFacultyLogin"
     class="login-overlay"
+    @click.self="closeLogin"
   >
     <div class="login-modal">
 
+      <div class="login-icon">
+        🎓
+      </div>
+
       <h2>Faculty Login</h2>
 
-      <p>
+      <p class="login-description">
         Enter your assigned username and password.
       </p>
 
-      <input
-        v-model="username"
-        type="text"
-        placeholder="Username"
-      >
+      <form @submit.prevent="facultyLogin">
 
-      <input
-        v-model="password"
-        type="password"
-        placeholder="Password"
-      >
+        <!-- USERNAME -->
+        <div class="input-group">
+          <label for="username">
+            Username
+          </label>
 
-      <div
-        v-if="loginError"
-        class="error"
-      >
-        {{ loginError }}
-      </div>
+          <input
+            id="username"
+            v-model="username"
+            type="text"
+            placeholder="Enter your username"
+            autocomplete="username"
+          />
+        </div>
 
-      <div class="login-actions">
+        <!-- PASSWORD -->
+        <div class="input-group">
+          <label for="password">
+            Password
+          </label>
 
-        <button
-          class="cancel-btn"
-          @click="closeLogin"
+          <div class="password-wrapper">
+
+            <input
+              id="password"
+              v-model="password"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="Enter your password"
+              autocomplete="current-password"
+            />
+
+            <button
+              type="button"
+              class="eye-btn"
+              :aria-label="showPassword ? 'Hide password' : 'Show password'"
+              @click="showPassword = !showPassword"
+            >
+
+              <!-- EYE OPEN -->
+              <svg
+                v-if="!showPassword"
+                xmlns="http://www.w3.org/2000/svg"
+                width="21"
+                height="21"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12" />
+                <circle cx="12" cy="12" r="3" />
+              </svg>
+
+              <!-- EYE CLOSED -->
+              <svg
+                v-else
+                xmlns="http://www.w3.org/2000/svg"
+                width="21"
+                height="21"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="m3 3 18 18" />
+                <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8" />
+                <path d="M9.9 4.24A9.5 9.5 0 0 1 12 4c6.5 0 10 8 10 8a16 16 0 0 1-2.1 3.19" />
+                <path d="M6.61 6.61C3.8 8.55 2 12 2 12s3.5 8 10 8a9.8 9.8 0 0 0 5.39-1.61" />
+              </svg>
+
+            </button>
+          </div>
+        </div>
+
+        <!-- LOGIN ERROR -->
+        <div
+          v-if="loginError"
+          class="error"
         >
-          Cancel
-        </button>
+          {{ loginError }}
+        </div>
 
-        <button
-          class="login-btn"
-          @click="facultyLogin"
-        >
-          Login
-        </button>
+        <!-- BUTTONS -->
+        <div class="login-actions">
 
-      </div>
+          <button
+            type="button"
+            class="cancel-btn"
+            @click="closeLogin"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="submit"
+            class="login-btn"
+          >
+            Login
+          </button>
+
+        </div>
+
+      </form>
 
     </div>
   </div>
 </template>
 
+
 <script setup lang="ts">
-import { ref } from 'vue'
-import { onMounted } from 'vue'
+
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import axios from 'axios'
 
 const router = useRouter()
 
+const showFacultyLogin = ref(false)
+
+const username = ref('')
+const password = ref('')
+
+const showPassword = ref(false)
+
+const loginError = ref('')
+
+
 onMounted(() => {
+
   const token = localStorage.getItem('token')
 
   if (!token) {
     router.push('/')
   }
+
 })
 
-const showFacultyLogin = ref(false)
-const username = ref('')
-const password = ref('')
-const loginError = ref('')
 
 function closeLogin() {
+
   showFacultyLogin.value = false
+
   username.value = ''
   password.value = ''
+
+  showPassword.value = false
+
   loginError.value = ''
+
 }
 
+
 async function facultyLogin() {
+
   loginError.value = ''
 
   if (!username.value || !password.value) {
-    loginError.value = 'Please enter username and password.'
+
+    loginError.value =
+      'Please enter username and password.'
+
     return
+
   }
-//change the backend url here if you change the backend url
+
+  // Change backend URL here
+  // if the Laravel server IP changes
+
   try {
+
     const response = await axios.post(
-      'http://127.0.0.1:8000/api/login',
+      'http://192.168.100.59:8000/api/login',
       {
         name: username.value,
         password: password.value
@@ -184,477 +282,901 @@ async function facultyLogin() {
     )
 
     router.push('/faculty/dashboard')
+
   } catch (error) {
-    loginError.value = 'Invalid username or password.'
+
+    loginError.value =
+      'Invalid username or password.'
+
   }
+
 }
+
 </script>
 
+
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-  font-family:'Poppins',sans-serif;
+@import url(
+  'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap'
+);
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
 }
 
-.page{
-  position:relative;
-  width:100%;
-  min-height:100vh;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  padding:24px;
-  overflow:hidden;
-}
-
-.page::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  background-image:url("@/assets/backgroundssj.jpg");
-  background-size:cover;
-  background-position:center;
-  background-repeat:no-repeat;
-  filter:blur(12px);
-  transform:scale(1.08);
-  z-index:-2;
-}
-
-.page::after{
-  content:"";
-  position:absolute;
-  inset:0;
-  background:rgba(0,0,0,.18);
-  z-index:-1;
-}
-
-.container{
-  position:relative;
-  z-index:1;
-  width:min(100%, 980px);
-  min-height:560px;
-  max-height:88vh;
-  display:flex;
-  border-radius:24px;
-  overflow:hidden;
-  border:1px solid rgba(255,255,255,.22);
-  box-shadow:
-    0 22px 55px rgba(0,0,0,.35),
-    inset 0 1px 0 rgba(255,255,255,.18);
-  animation:fadeIn .8s ease;
-}
-
-.left{
-  width:50%;
-  background:rgba(255,255,255,.95);
-  backdrop-filter:blur(8px);
-  -webkit-backdrop-filter:blur(8px);
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  padding:40px;
-}
-
-.content{
-  width:100%;
-  max-width:390px;
-  text-align:center;
-}
-
-.content h1{
-  font-size:clamp(34px, 4vw, 46px);
-  font-weight:800;
-  color:#111;
-  margin-bottom:14px;
-}
-
-.welcome{
-  color:#07b34d;
-  font-size:16px;
-  margin-bottom:42px;
-}
-
-.role-btn{
-  width:100%;
-  height:58px;
-  border:2px solid #00c853;
-  background:#f2fff5;
-  border-radius:50px;
-  margin-bottom:16px;
-  cursor:pointer;
-  font-size:20px;
-  font-weight:700;
-  transition:.25s;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  gap:12px;
-}
-
-.role-btn:hover{
-  background:#00c853;
-  color:white;
-  transform:translateY(-3px);
-  box-shadow:0 10px 25px rgba(0,200,83,.35);
-}
-
-.icon{
-  font-size:20px;
-}
-
-.help{
-  margin-top:28px;
-  color:#666;
-  font-size:13px;
-}
-
-.help span{
-  color:#06b34d;
-  font-weight:700;
-}
 
 /* ==========================================
-   GLASS RIGHT PANEL
+   PAGE
 ========================================== */
 
-.right{
-  position:relative;
-  isolation:isolate;
-  width:50%;
-  color:white;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  padding:42px 48px;
-  overflow:hidden;
+.page {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: 24px;
+  overflow: hidden;
+}
+
+
+.page::before {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  background-image: url("@/assets/backgroundssj.jpg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  filter: blur(12px);
+  transform: scale(1.08);
+
+  z-index: -2;
+}
+
+
+.page::after {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  background: rgba(0, 0, 0, .18);
+
+  z-index: -1;
+}
+
+
+/* ==========================================
+   MAIN CONTAINER
+========================================== */
+
+.container {
+  position: relative;
+  z-index: 1;
+
+  width: min(100%, 980px);
+
+  min-height: 560px;
+  max-height: 88vh;
+
+  display: flex;
+
+  border-radius: 24px;
+  overflow: hidden;
+
+  border: 1px solid rgba(255, 255, 255, .22);
+
+  box-shadow:
+    0 22px 55px rgba(0, 0, 0, .35),
+    inset 0 1px 0 rgba(255, 255, 255, .18);
+
+  animation: fadeIn .8s ease;
+}
+
+
+/* ==========================================
+   LEFT PANEL
+========================================== */
+
+.left {
+  width: 50%;
+
+  background: rgba(255, 255, 255, .95);
+
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  padding: 40px;
+}
+
+
+.content {
+  width: 100%;
+  max-width: 390px;
+  text-align: center;
+}
+
+
+.content h1 {
+  font-size: clamp(34px, 4vw, 46px);
+
+  font-weight: 800;
+
+  color: #111;
+
+  margin-bottom: 14px;
+}
+
+
+.welcome {
+  color: #07b34d;
+
+  font-size: 16px;
+
+  margin-bottom: 42px;
+}
+
+
+/* ROLE BUTTONS */
+
+.role-btn {
+  width: 100%;
+  height: 58px;
+
+  border: 2px solid #00c853;
+
+  background: #f2fff5;
+
+  border-radius: 50px;
+
+  margin-bottom: 16px;
+
+  cursor: pointer;
+
+  font-size: 20px;
+  font-weight: 700;
+
+  transition: .25s;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  gap: 12px;
+}
+
+
+.role-btn:hover {
+  background: #00c853;
+
+  color: white;
+
+  transform: translateY(-3px);
+
+  box-shadow:
+    0 10px 25px rgba(0, 200, 83, .35);
+}
+
+
+.icon {
+  font-size: 20px;
+}
+
+
+.help {
+  margin-top: 28px;
+
+  color: #666;
+
+  font-size: 13px;
+}
+
+
+.help span {
+  color: #06b34d;
+
+  font-weight: 700;
+}
+
+
+/* ==========================================
+   RIGHT PANEL
+========================================== */
+
+.right {
+  position: relative;
+
+  isolation: isolate;
+
+  width: 50%;
+
+  color: white;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  padding: 42px 48px;
+
+  overflow: hidden;
 
   background:
     linear-gradient(
       145deg,
-      rgba(0,128,69,.58),
-      rgba(0,200,83,.30)
+      rgba(0, 128, 69, .58),
+      rgba(0, 200, 83, .30)
     );
 
-  backdrop-filter:blur(22px);
-  -webkit-backdrop-filter:blur(22px);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
 
-  border-left:1px solid rgba(255,255,255,.28);
+  border-left:
+    1px solid rgba(255, 255, 255, .28);
 
   box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.22),
-    inset 0 0 45px rgba(255,255,255,.04);
+    inset 0 1px 0 rgba(255, 255, 255, .22),
+    inset 0 0 45px rgba(255, 255, 255, .04);
 }
 
-/* Large transparent logo in the background */
-.right::before{
-  content:"";
-  position:absolute;
-  width:430px;
-  height:430px;
-  left:50%;
-  top:50%;
-  transform:translate(-50%, -50%);
 
-  background-image:url("@/assets/logo.png");
-  background-size:contain;
-  background-position:center;
-  background-repeat:no-repeat;
+/* LARGE BACKGROUND LOGO */
 
-  opacity:.13;
+.right::before {
+  content: "";
+
+  position: absolute;
+
+  width: 430px;
+  height: 430px;
+
+  left: 50%;
+  top: 50%;
+
+  transform: translate(-50%, -50%);
+
+  background-image: url("@/assets/logo.png");
+
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  opacity: .13;
+
   filter:
     saturate(.85)
     contrast(1.05)
-    drop-shadow(0 15px 30px rgba(0,0,0,.18));
+    drop-shadow(0 15px 30px rgba(0, 0, 0, .18));
 
-  z-index:-2;
-  pointer-events:none;
+  z-index: -2;
+
+  pointer-events: none;
 }
 
-/* Transparent dark layer for readable text */
-.right::after{
-  content:"";
-  position:absolute;
-  inset:0;
+
+.right::after {
+  content: "";
+
+  position: absolute;
+  inset: 0;
 
   background:
     radial-gradient(
       circle at top,
-      rgba(255,255,255,.18),
+      rgba(255, 255, 255, .18),
       transparent 42%
     ),
     linear-gradient(
       to bottom,
-      rgba(0,70,40,.12),
-      rgba(0,55,34,.32)
+      rgba(0, 70, 40, .12),
+      rgba(0, 55, 34, .32)
     );
 
-  z-index:-1;
-  pointer-events:none;
+  z-index: -1;
+
+  pointer-events: none;
 }
 
-.right-content{
-  position:relative;
-  z-index:1;
-  width:100%;
+
+.right-content {
+  position: relative;
+
+  z-index: 1;
+
+  width: 100%;
 }
 
-.logo-container{
-  display:flex;
-  justify-content:center;
-  margin-bottom:18px;
+
+.logo-container {
+  display: flex;
+  justify-content: center;
+
+  margin-bottom: 18px;
 }
 
-.logo{
-  width:105px;
-  height:105px;
-  object-fit:contain;
+
+.logo {
+  width: 105px;
+  height: 105px;
+
+  object-fit: contain;
 
   filter:
-    drop-shadow(0 10px 18px rgba(0,0,0,.28));
+    drop-shadow(0 10px 18px rgba(0, 0, 0, .28));
 
-  transition:.3s ease;
+  transition: .3s ease;
 }
 
-.logo:hover{
-  transform:scale(1.04);
+
+.logo:hover {
+  transform: scale(1.04);
 }
 
-.right h2{
-  font-size:clamp(42px, 5vw, 56px);
-  font-weight:800;
-  text-align:center;
-  margin-bottom:18px;
-  letter-spacing:1px;
 
-  color:#ffffff;
+.right h2 {
+  font-size: clamp(42px, 5vw, 56px);
+
+  font-weight: 800;
+
+  text-align: center;
+
+  margin-bottom: 18px;
+
+  letter-spacing: 1px;
+
+  color: #ffffff;
 
   text-shadow:
-    0 3px 12px rgba(0,0,0,.32);
+    0 3px 12px rgba(0, 0, 0, .32);
 }
 
-.subtitle{
-  font-size:18px;
-  line-height:1.5;
-  margin-bottom:24px;
-  color:rgba(255,255,255,.97);
+
+.subtitle {
+  font-size: 18px;
+
+  line-height: 1.5;
+
+  margin-bottom: 24px;
+
+  color: rgba(255, 255, 255, .97);
 
   text-shadow:
-    0 2px 8px rgba(0,0,0,.28);
+    0 2px 8px rgba(0, 0, 0, .28);
 }
 
-.description{
-  position:relative;
+
+.description {
+  position: relative;
 
   background:
     linear-gradient(
       135deg,
-      rgba(255,255,255,.20),
-      rgba(255,255,255,.09)
+      rgba(255, 255, 255, .20),
+      rgba(255, 255, 255, .09)
     );
 
-  backdrop-filter:blur(18px);
-  -webkit-backdrop-filter:blur(18px);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 
-  border:1px solid rgba(255,255,255,.32);
-  border-radius:16px;
+  border:
+    1px solid rgba(255, 255, 255, .32);
 
-  padding:24px;
+  border-radius: 16px;
 
-  line-height:1.8;
-  font-size:13px;
-  color:rgba(255,255,255,.98);
+  padding: 24px;
 
-  white-space:normal;
+  line-height: 1.8;
+
+  font-size: 13px;
+
+  color: rgba(255, 255, 255, .98);
+
+  white-space: normal;
 
   box-shadow:
-    0 12px 32px rgba(0,0,0,.14),
-    inset 0 1px 0 rgba(255,255,255,.18);
+    0 12px 32px rgba(0, 0, 0, .14),
+    inset 0 1px 0 rgba(255, 255, 255, .18);
 
   text-shadow:
-    0 1px 5px rgba(0,0,0,.18);
+    0 1px 5px rgba(0, 0, 0, .18);
 }
+
 
 /* ==========================================
    LOGIN MODAL
 ========================================== */
 
-.login-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.55);
-  backdrop-filter:blur(5px);
-  -webkit-backdrop-filter:blur(5px);
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  z-index:9999;
+.login-overlay {
+  position: fixed;
+
+  inset: 0;
+
+  background: rgba(0, 0, 0, .55);
+
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+
+  display: flex;
+
+  justify-content: center;
+  align-items: center;
+
+  z-index: 9999;
+
+  animation: overlayFade .25s ease;
 }
 
-.login-modal{
-  width:420px;
-  max-width:92%;
-  background:white;
-  border-radius:20px;
-  padding:35px;
-  text-align:center;
-  box-shadow:0 20px 45px rgba(0,0,0,.25);
+
+.login-modal {
+  width: 420px;
+
+  max-width: 92%;
+
+  background: white;
+
+  border-radius: 22px;
+
+  padding: 35px;
+
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, .30);
+
+  animation: modalShow .3s ease;
 }
 
-.login-modal h2{
-  color:#112244;
-  margin-bottom:10px;
+
+.login-icon {
+  width: 60px;
+  height: 60px;
+
+  margin:
+    0 auto 12px auto;
+
+  border-radius: 50%;
+
+  background: #ecfdf3;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 28px;
 }
 
-.login-modal p{
-  color:#666;
-  margin-bottom:25px;
+
+.login-modal h2 {
+  color: #112244;
+
+  text-align: center;
+
+  margin-bottom: 7px;
+
+  font-size: 26px;
 }
 
-.login-modal input{
-  width:100%;
-  padding:14px;
-  margin-bottom:15px;
-  border:1px solid #ddd;
-  border-radius:10px;
-  outline:none;
+
+.login-description {
+  color: #6b7280;
+
+  text-align: center;
+
+  font-size: 14px;
+
+  margin-bottom: 26px;
 }
 
-.login-modal input:focus{
-  border-color:#00c853;
+
+/* ==========================================
+   INPUTS
+========================================== */
+
+.input-group {
+  width: 100%;
+
+  margin-bottom: 18px;
 }
 
-.error{
-  color:#dc2626;
-  font-size:14px;
-  margin-bottom:15px;
+
+.input-group label {
+  display: block;
+
+  text-align: left;
+
+  color: #374151;
+
+  font-size: 14px;
+
+  font-weight: 600;
+
+  margin-bottom: 7px;
 }
 
-.login-actions{
-  display:flex;
-  gap:15px;
+
+.input-group input {
+  width: 100%;
+
+  height: 50px;
+
+  padding:
+    0 14px;
+
+  border:
+    1px solid #d1d5db;
+
+  border-radius: 10px;
+
+  outline: none;
+
+  font-size: 14px;
+
+  color: #111827;
+
+  background: #ffffff;
+
+  transition:
+    border-color .2s ease,
+    box-shadow .2s ease;
 }
+
+
+.input-group input::placeholder {
+  color: #9ca3af;
+}
+
+
+.input-group input:focus {
+  border-color: #00c853;
+
+  box-shadow:
+    0 0 0 3px rgba(0, 200, 83, .12);
+}
+
+
+/* ==========================================
+   PASSWORD
+========================================== */
+
+.password-wrapper {
+  position: relative;
+
+  width: 100%;
+}
+
+
+.password-wrapper input {
+  padding-right: 48px;
+}
+
+
+.eye-btn {
+  position: absolute;
+
+  right: 13px;
+  top: 50%;
+
+  transform: translateY(-50%);
+
+  width: 32px;
+  height: 32px;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  border: none;
+
+  background: transparent;
+
+  color: #6b7280;
+
+  cursor: pointer;
+
+  border-radius: 6px;
+
+  transition:
+    color .2s ease,
+    background .2s ease;
+}
+
+
+.eye-btn:hover {
+  color: #00a844;
+
+  background:
+    rgba(0, 200, 83, .08);
+}
+
+
+.eye-btn:focus {
+  outline: none;
+}
+
+
+/* ==========================================
+   ERROR MESSAGE
+========================================== */
+
+.error {
+  background: #fef2f2;
+
+  color: #dc2626;
+
+  border:
+    1px solid #fecaca;
+
+  border-radius: 8px;
+
+  padding: 10px 12px;
+
+  font-size: 13px;
+
+  margin-bottom: 18px;
+
+  text-align: left;
+}
+
+
+/* ==========================================
+   LOGIN BUTTONS
+========================================== */
+
+.login-actions {
+  display: flex;
+
+  gap: 15px;
+
+  margin-top: 8px;
+}
+
 
 .cancel-btn,
-.login-btn{
-  flex:1;
-  border:none;
-  padding:14px;
-  border-radius:10px;
-  cursor:pointer;
-  font-weight:600;
+.login-btn {
+  flex: 1;
+
+  border: none;
+
+  padding: 14px;
+
+  border-radius: 10px;
+
+  cursor: pointer;
+
+  font-size: 14px;
+
+  font-weight: 600;
+
+  transition:
+    transform .2s ease,
+    box-shadow .2s ease,
+    background .2s ease;
 }
 
-.cancel-btn{
-  background:#e5e7eb;
+
+.cancel-btn {
+  background: #e5e7eb;
+
+  color: #374151;
 }
 
-.login-btn{
-  background:#00c853;
-  color:white;
+
+.cancel-btn:hover {
+  background: #d1d5db;
+
+  transform: translateY(-1px);
 }
+
+
+.login-btn {
+  background: #00c853;
+
+  color: white;
+
+  box-shadow:
+    0 6px 15px rgba(0, 200, 83, .24);
+}
+
+
+.login-btn:hover {
+  background: #00b548;
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 8px 18px rgba(0, 200, 83, .30);
+}
+
 
 /* ==========================================
    RESPONSIVE
 ========================================== */
 
-@media(max-width:960px){
-  .page{
-    padding:18px;
-    align-items:flex-start;
+@media(max-width: 960px) {
+
+  .page {
+    padding: 18px;
+
+    align-items: flex-start;
   }
 
-  .container{
-    flex-direction:column;
-    width:min(100%, 760px);
-    min-height:auto;
-    max-height:none;
+
+  .container {
+    flex-direction: column;
+
+    width: min(100%, 760px);
+
+    min-height: auto;
+
+    max-height: none;
   }
+
 
   .left,
-  .right{
-    width:100%;
+  .right {
+    width: 100%;
   }
 
-  .left{
-    padding:42px 28px;
+
+  .left {
+    padding: 42px 28px;
   }
 
-  .right{
-    padding:38px 32px;
-    border-left:none;
-    border-top:1px solid rgba(255,255,255,.28);
+
+  .right {
+    padding: 38px 32px;
+
+    border-left: none;
+
+    border-top:
+      1px solid rgba(255, 255, 255, .28);
   }
 
-  .content{
-    max-width:430px;
+
+  .content {
+    max-width: 430px;
   }
 
-  .logo{
-    width:88px;
-    height:88px;
+
+  .logo {
+    width: 88px;
+    height: 88px;
   }
 
-  .right::before{
-    width:390px;
-    height:390px;
+
+  .right::before {
+    width: 390px;
+    height: 390px;
   }
 
-  .subtitle{
-    text-align:center;
+
+  .subtitle {
+    text-align: center;
   }
+
 }
 
-@media(max-width:600px){
-  .page{
-    padding:12px;
+
+@media(max-width: 600px) {
+
+  .page {
+    padding: 12px;
   }
 
-  .container{
-    border-radius:18px;
+
+  .container {
+    border-radius: 18px;
   }
 
-  .left{
-    padding:36px 22px;
+
+  .left {
+    padding: 36px 22px;
   }
 
-  .right{
-    padding:34px 24px;
+
+  .right {
+    padding: 34px 24px;
   }
 
-  .right::before{
-    width:310px;
-    height:310px;
-    opacity:.12;
+
+  .right::before {
+    width: 310px;
+    height: 310px;
+
+    opacity: .12;
   }
 
-  .role-btn{
-    height:54px;
-    font-size:18px;
+
+  .role-btn {
+    height: 54px;
+
+    font-size: 18px;
   }
 
-  .description{
-    padding:20px;
-    font-size:12px;
+
+  .description {
+    padding: 20px;
+
+    font-size: 12px;
   }
 
-  .login-actions{
-    flex-direction:column;
+
+  .login-modal {
+    padding: 28px 22px;
   }
+
+
+  .login-actions {
+    flex-direction: column;
+  }
+
 }
 
-@keyframes fadeIn{
-  from{
-    opacity:0;
-    transform:translateY(20px);
+
+/* ==========================================
+   ANIMATIONS
+========================================== */
+
+@keyframes fadeIn {
+
+  from {
+    opacity: 0;
+
+    transform:
+      translateY(20px);
   }
 
-  to{
-    opacity:1;
-    transform:translateY(0);
+  to {
+    opacity: 1;
+
+    transform:
+      translateY(0);
   }
+
 }
+
+
+@keyframes overlayFade {
+
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+
+}
+
+
+@keyframes modalShow {
+
+  from {
+    opacity: 0;
+
+    transform:
+      translateY(15px) scale(.97);
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      translateY(0) scale(1);
+  }
+
+}
+
 </style>

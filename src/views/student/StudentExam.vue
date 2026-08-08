@@ -478,6 +478,7 @@
 </template>
 
 <script setup lang="ts">
+
 import {
   computed,
   onMounted,
@@ -488,10 +489,16 @@ import {
 import { useRouter } from 'vue-router'
 import api from '../../services/api'
 
+
+/* =====================================================
+   TYPES
+===================================================== */
+
 interface ExamOption {
   id: number
   option_text: string
 }
+
 
 interface ExamQuestion {
   id: number
@@ -503,12 +510,14 @@ interface ExamQuestion {
   options: ExamOption[]
 }
 
+
 interface StoredSession {
   id: number
   exam_id: number
   student_name: string
   status: string
 }
+
 
 interface StoredExam {
   id: number
@@ -517,6 +526,7 @@ interface StoredExam {
   duration?: number
   passing?: number
 }
+
 
 interface ViolationCounts {
   tab_switch: number
@@ -528,1143 +538,2816 @@ interface ViolationCounts {
   idle: number
 }
 
+
 type BlockedActivity =
   | 'copy_attempt'
   | 'paste_attempt'
   | 'cut_attempt'
   | 'right_click'
 
+
+/* =====================================================
+   ROUTER
+===================================================== */
+
 const router = useRouter()
 
+
+/* =====================================================
+   STATES
+===================================================== */
+
 const loading = ref(true)
+
 const errorMessage = ref('')
+
 const savingAnswer = ref(false)
+
 const submitting = ref(false)
+
 const autoSubmitting = ref(false)
-const automaticSubmitTitle = ref('Time Is Up')
+
+
+const automaticSubmitTitle =
+  ref('Time Is Up')
+
+
 const automaticSubmitMessage = ref(
   'Your examination is being submitted automatically.'
 )
-const showSubmitDialog = ref(false)
-const showFullscreenPrompt = ref(false)
-const securityWarning = ref('')
-const lastSavedMessage = ref('')
-const isConnected = ref(navigator.onLine)
-
-const exam = ref({
-  id: 0,
-  title: '',
-  course: '',
-  duration: 0,
-  passing: 75,
-})
-
-const session = ref<StoredSession | null>(null)
-const studentName = ref('')
-const studentSection = ref('')
-const questions = ref<ExamQuestion[]>([])
-const currentQuestionIndex = ref(0)
-const answers = ref<Record<number, string>>({})
-const remainingSeconds = ref(0)
-const idleSeconds = ref(0)
-
-const violationCounts = ref<ViolationCounts>({
-  tab_switch: 0,
-  copy_attempt: 0,
-  paste_attempt: 0,
-  cut_attempt: 0,
-  right_click: 0,
-  fullscreen_exit: 0,
-  idle: 0,
-})
 
 
+const showSubmitDialog =
+  ref(false)
 
 
-let examTimerInterval:
-  ReturnType<typeof setInterval> | null = null
-
-let idleInterval:
-  ReturnType<typeof setInterval> | null = null
-
-let heartbeatInterval:
-  ReturnType<typeof setInterval> | null = null
-
-let warningTimeout:
-  ReturnType<typeof setTimeout> | null = null
-
-let lastActivityTime = Date.now()
-let examSubmitted = false
-let fullscreenActivated = false
-let statusUpdating = false
-let examStatusChecking = false
-
-let examStatusInterval:
-  ReturnType<typeof setInterval> | null = null
-
-const submittingExam = ref(false)
+const showFullscreenPrompt =
+  ref(false)
 
 
+const securityWarning =
+  ref('')
 
 
-const currentQuestion = computed(() => {
-  return questions.value[currentQuestionIndex.value] || null
-})
+const lastSavedMessage =
+  ref('')
 
-const formattedTime = computed(() => {
-  const minutes = Math.floor(remainingSeconds.value / 60)
-  const seconds = remainingSeconds.value % 60
 
-  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-})
+const isConnected =
+  ref(navigator.onLine)
 
-const answeredCount = computed(() =>
-  questions.value.filter((question) =>
-    String(answers.value[question.id] ?? '').trim() !== ''
-  ).length
-)
 
-const unansweredCount = computed(() =>
-  Math.max(questions.value.length - answeredCount.value, 0)
-)
+/* =====================================================
+   WARNING AUDIO
+===================================================== */
 
-const progressPercentage = computed(() => {
-  if (!questions.value.length) return 0
+let warningAudio: HTMLAudioElement | null = null
 
-  return Math.round(
-    (answeredCount.value / questions.value.length) * 100
-  )
-})
 
-const studentInitials = computed(() => {
-  const parts = studentName.value
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
+/**
+ * Prepare the warning sound.
+ *
+ * Sound file:
+ * public/sounds/warning.mp3
+ */
+function initializeWarningAudio() {
 
-  if (!parts.length) return 'ST'
-
-  return parts
-    .map((part) => part.charAt(0))
-    .join('')
-    .slice(0, 2)
-    .toUpperCase()
-})
-
-function readStoredData(): boolean {
-  const storedSession =
-    localStorage.getItem('student_session')
-
-  const storedExam =
-    localStorage.getItem('student_exam')
-
-  if (!storedSession || !storedExam) {
-    router.replace('/student')
-    return false
+  if (warningAudio) {
+    return
   }
 
+
+  warningAudio =
+    new Audio('/sounds/warning.mp3')
+
+
+  warningAudio.volume = 1
+
+  warningAudio.preload = 'auto'
+
+
+  warningAudio.load()
+
+}
+
+
+/**
+ * Try to unlock audio after a student interaction.
+ *
+ * Mobile browsers may block audio until the user
+ * presses something on the page. Enter Fullscreen
+ * is a good opportunity because it is a user click.
+ */
+async function unlockWarningAudio() {
+
+  initializeWarningAudio()
+
+
+  if (!warningAudio) {
+    return
+  }
+
+
   try {
+
+    warningAudio.muted = true
+
+
+    await warningAudio.play()
+
+
+    warningAudio.pause()
+
+    warningAudio.currentTime = 0
+
+    warningAudio.muted = false
+
+  }
+
+  catch (error) {
+
+    console.warn(
+      'Warning audio could not be unlocked:',
+      error
+    )
+
+
+    warningAudio.muted = false
+
+  }
+
+}
+
+
+/**
+ * Play the anti-cheating warning sound.
+ */
+function playWarningSound() {
+
+  initializeWarningAudio()
+
+
+  if (!warningAudio) {
+    return
+  }
+
+
+  try {
+
+    warningAudio.pause()
+
+    warningAudio.currentTime = 0
+
+
+    const playPromise =
+      warningAudio.play()
+
+
+    if (playPromise) {
+
+      playPromise.catch(
+        (error) => {
+
+          console.warn(
+            'Warning sound could not play:',
+            error
+          )
+
+        }
+      )
+
+    }
+
+  }
+
+  catch (error) {
+
+    console.warn(
+      'Warning sound error:',
+      error
+    )
+
+  }
+
+}
+
+
+/* =====================================================
+   EXAM
+===================================================== */
+
+const exam = ref({
+
+  id: 0,
+
+  title: '',
+
+  course: '',
+
+  duration: 0,
+
+  passing: 75,
+
+})
+
+
+const session =
+  ref<StoredSession | null>(null)
+
+
+const studentName =
+  ref('')
+
+
+const studentSection =
+  ref('')
+
+
+const questions =
+  ref<ExamQuestion[]>([])
+
+
+const currentQuestionIndex =
+  ref(0)
+
+
+const answers =
+  ref<Record<number, string>>({})
+
+
+const remainingSeconds =
+  ref(0)
+
+
+const idleSeconds =
+  ref(0)
+
+
+/* =====================================================
+   VIOLATION COUNTERS
+===================================================== */
+
+const violationCounts =
+  ref<ViolationCounts>({
+
+    tab_switch: 0,
+
+    copy_attempt: 0,
+
+    paste_attempt: 0,
+
+    cut_attempt: 0,
+
+    right_click: 0,
+
+    fullscreen_exit: 0,
+
+    idle: 0,
+
+  })
+
+
+/* =====================================================
+   INTERVALS
+===================================================== */
+
+let examTimerInterval:
+  ReturnType<typeof setInterval> | null =
+  null
+
+
+let idleInterval:
+  ReturnType<typeof setInterval> | null =
+  null
+
+
+let heartbeatInterval:
+  ReturnType<typeof setInterval> | null =
+  null
+
+
+let examStatusInterval:
+  ReturnType<typeof setInterval> | null =
+  null
+
+
+let warningTimeout:
+  ReturnType<typeof setTimeout> | null =
+  null
+
+
+/* =====================================================
+   INTERNAL FLAGS
+===================================================== */
+
+let lastActivityTime =
+  Date.now()
+
+
+let examSubmitted =
+  false
+
+
+let fullscreenActivated =
+  false
+
+
+let statusUpdating =
+  false
+
+
+let examStatusChecking =
+  false
+
+
+/* =====================================================
+   COMPUTED
+===================================================== */
+
+const currentQuestion =
+  computed(() => {
+
+    return (
+      questions.value[
+        currentQuestionIndex.value
+      ] || null
+    )
+
+  })
+
+
+const formattedTime =
+  computed(() => {
+
+    const minutes =
+      Math.floor(
+        remainingSeconds.value / 60
+      )
+
+
+    const seconds =
+      remainingSeconds.value % 60
+
+
+    return (
+      `${String(minutes).padStart(2, '0')}:` +
+      `${String(seconds).padStart(2, '0')}`
+    )
+
+  })
+
+
+const answeredCount =
+  computed(() =>
+
+    questions.value.filter(
+      (question) =>
+
+        String(
+          answers.value[
+            question.id
+          ] ?? ''
+        ).trim() !== ''
+
+    ).length
+
+  )
+
+
+const unansweredCount =
+  computed(() =>
+
+    Math.max(
+      questions.value.length -
+      answeredCount.value,
+      0
+    )
+
+  )
+
+
+const progressPercentage =
+  computed(() => {
+
+    if (!questions.value.length) {
+      return 0
+    }
+
+
+    return Math.round(
+
+      (
+        answeredCount.value /
+        questions.value.length
+      ) * 100
+
+    )
+
+  })
+
+
+const studentInitials =
+  computed(() => {
+
+    const parts =
+      studentName.value
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+
+
+    if (!parts.length) {
+      return 'ST'
+    }
+
+
+    return parts
+      .map(
+        (part) =>
+          part.charAt(0)
+      )
+      .join('')
+      .slice(0, 2)
+      .toUpperCase()
+
+  })
+
+
+/* =====================================================
+   LOCAL STORAGE
+===================================================== */
+
+function readStoredData(): boolean {
+
+  const storedSession =
+    localStorage.getItem(
+      'student_session'
+    )
+
+
+  const storedExam =
+    localStorage.getItem(
+      'student_exam'
+    )
+
+
+  if (
+    !storedSession ||
+    !storedExam
+  ) {
+
+    router.replace('/student')
+
+    return false
+
+  }
+
+
+  try {
+
     session.value =
-      JSON.parse(storedSession) as StoredSession
+      JSON.parse(
+        storedSession
+      ) as StoredSession
+
 
     const examData =
-      JSON.parse(storedExam) as StoredExam
+      JSON.parse(
+        storedExam
+      ) as StoredExam
+
 
     exam.value = {
+
       id:
         Number(examData.id) ||
-        Number(session.value.exam_id),
+        Number(
+          session.value.exam_id
+        ),
+
+
       title:
         examData.title ||
         'Untitled Examination',
+
+
       course:
         examData.course ||
         'No Course',
+
+
       duration:
-        Number(examData.duration || 0),
+        Number(
+          examData.duration || 0
+        ),
+
+
       passing:
-        Number(examData.passing || 75),
+        Number(
+          examData.passing || 75
+        ),
+
     }
+
 
     studentName.value =
-      localStorage.getItem('student_name') ||
-      session.value.student_name ||
+
+      localStorage.getItem(
+        'student_name'
+      )
+
+      ||
+
+      session.value.student_name
+
+      ||
+
       'Student'
 
+
     studentSection.value =
-      localStorage.getItem('student_section') ||
+
+      localStorage.getItem(
+        'student_section'
+      )
+
+      ||
+
+
       ''
 
+
     return true
-  } catch (error) {
-    console.error('Invalid student data:', error)
-    clearStudentStorage()
-    router.replace('/student')
-    return false
-  }
-}
 
-function clearStudentStorage() {
-  localStorage.removeItem('student_session')
-  localStorage.removeItem('student_exam')
-  localStorage.removeItem('student_name')
-  localStorage.removeItem('student_section')
-  localStorage.removeItem('student_access_code')
-  localStorage.removeItem('student_answers')
-  localStorage.removeItem('exam_remaining_seconds')
-}
-
-function loadSavedAnswers() {
-  const saved =
-    localStorage.getItem('student_answers')
-
-  if (!saved) return
-
-  try {
-    answers.value =
-      JSON.parse(saved) as Record<number, string>
-  } catch (error) {
-    console.error('Unable to restore answers:', error)
-  }
-}
-
-function saveAnswersLocally() {
-  localStorage.setItem(
-    'student_answers',
-    JSON.stringify(answers.value)
-  )
-}
-
-function restoreRemainingTime() {
-  const savedTime =
-    Number(
-      localStorage.getItem('exam_remaining_seconds')
-    )
-
-  if (savedTime > 0) {
-    remainingSeconds.value = savedTime
-    return
   }
 
-  remainingSeconds.value =
-    exam.value.duration * 60
-}
+  catch (error) {
 
-async function loadExam() {
-  loading.value = true
-  errorMessage.value = ''
-
-  if (!readStoredData()) {
-    loading.value = false
-    return
-  }
-
-  try {
-    const response = await api.get(
-      `/exam-questions/${exam.value.id}`
-    )
-
-    const questionData =
-      Array.isArray(response.data?.data)
-        ? response.data.data
-        : []
-
-    questions.value = questionData.map(
-      (question: ExamQuestion) => ({
-        ...question,
-        points: Number(question.points || 1),
-        options: Array.isArray(question.options)
-          ? question.options
-          : [],
-      })
-    )
-
-    const returnedExam = response.data?.exam
-
-    if (returnedExam) {
-      exam.value = {
-        id: Number(returnedExam.id),
-        title:
-          returnedExam.title ||
-          exam.value.title,
-        course:
-          returnedExam.course ||
-          exam.value.course,
-        duration:
-          Number(
-            returnedExam.duration ||
-            exam.value.duration
-          ),
-        passing:
-          Number(
-            returnedExam.passing ||
-            exam.value.passing
-          ),
-      }
-    }
-
-    if (!questions.value.length) {
-      errorMessage.value =
-        'No examination questions were found.'
-      return
-    }
-
-    loadSavedAnswers()
-    restoreRemainingTime()
-    startExamTimer()
-    startIdleMonitor()
-
-    showFullscreenPrompt.value =
-      !isFullscreenActive()
-
-    await sendLiveStatus()
-  } catch (error: unknown) {
-    console.error('LOAD EXAM ERROR:', error)
-
-    const apiError = error as {
-      response?: {
-        data?: {
-          message?: string
-        }
-      }
-    }
-
-    errorMessage.value =
-      apiError.response?.data?.message ||
-      'Unable to load the examination.'
-  } finally {
-    loading.value = false
-  }
-}
-
-function displayQuestionType(type?: string): string {
-  const value = String(type || '').toLowerCase()
-
-  if (value === 'multiple_choice') return 'Multiple Choice'
-  if (value === 'true_false') return 'True or False'
-  if (value === 'identification') return 'Identification'
-  if (value === 'essay') return 'Essay'
-
-  return 'Question'
-}
-
-function optionLetter(index: number): string {
-  return String.fromCharCode(65 + index)
-}
-
-function isQuestionAnswered(index: number): boolean {
-  const question = questions.value[index]
-
-  if (!question) return false
-
-  return String(
-    answers.value[question.id] ?? ''
-  ).trim() !== ''
-}
-
-function goToQuestion(index: number) {
-  if (
-    index < 0 ||
-    index >= questions.value.length
-  ) {
-    return
-  }
-
-  currentQuestionIndex.value = index
-  resetActivityTimer()
-  sendLiveStatus()
-
-  window.scrollTo({
-    top: 0,
-    behavior: 'smooth',
-  })
-}
-
-function previousQuestion() {
-  if (currentQuestionIndex.value > 0) {
-    goToQuestion(currentQuestionIndex.value - 1)
-  }
-}
-
-function nextQuestion() {
-  if (
-    currentQuestionIndex.value <
-    questions.value.length - 1
-  ) {
-    goToQuestion(currentQuestionIndex.value + 1)
-  }
-}
-
-async function saveCurrentAnswer() {
-  const question = currentQuestion.value
-
-  if (!question || !session.value) return
-
-  const answer =
-    String(answers.value[question.id] ?? '').trim()
-
-  saveAnswersLocally()
-  resetActivityTimer()
-
-  if (!answer) return
-
-  savingAnswer.value = true
-  lastSavedMessage.value = ''
-
-  try {
-    await api.post('/save-answer', {
-      exam_session_id: session.value.id,
-      question_id: question.id,
-      answer,
-    })
-
-    lastSavedMessage.value = 'Answer saved'
-    await sendLiveStatus()
-
-    setTimeout(() => {
-      lastSavedMessage.value = ''
-    }, 2000)
-  } catch (error) {
-    console.error('SAVE ANSWER ERROR:', error)
-
-    lastSavedMessage.value =
-      'Saved locally. Waiting for connection.'
-  } finally {
-    savingAnswer.value = false
-  }
-}
-
-function startExamTimer() {
-  if (examTimerInterval) {
-    clearInterval(examTimerInterval)
-  }
-
-  examTimerInterval = setInterval(() => {
-    if (
-      remainingSeconds.value > 0 &&
-      !examSubmitted
-    ) {
-      remainingSeconds.value -= 1
-
-      localStorage.setItem(
-        'exam_remaining_seconds',
-        String(remainingSeconds.value)
-      )
-
-      if (remainingSeconds.value % 5 === 0) {
-        sendLiveStatus()
-      }
-
-      return
-    }
-
-    if (
-      remainingSeconds.value <= 0 &&
-      !examSubmitted
-    ) {
-      autoSubmitExam()
-    }
-  }, 1000)
-}
-
-function openSubmitDialog() {
-  showSubmitDialog.value = true
-}
-
-function closeSubmitDialog() {
-  if (!submitting.value) {
-    showSubmitDialog.value = false
-  }
-}
-
-async function saveAllAnsweredQuestions() {
-  if (!session.value) return
-
-  const requests = questions.value
-    .filter((question) =>
-      String(
-        answers.value[question.id] ?? ''
-      ).trim() !== ''
-    )
-    .map((question) =>
-      api.post('/save-answer', {
-        exam_session_id: session.value?.id,
-        question_id: question.id,
-        answer: String(
-          answers.value[question.id]
-        ).trim(),
-      })
-    )
-
-  if (requests.length) {
-    await Promise.allSettled(requests)
-  }
-}
-
-async function confirmSubmitExam() {
-  if (!session.value || submitting.value) return
-
-  submitting.value = true
-
-  try {
-    await saveAllAnsweredQuestions()
-
-    const response = await api.post(
-      `/submit-exam/${session.value.id}`
-    )
-
-    examSubmitted = true
-
-    localStorage.setItem(
-      'student_result',
-      JSON.stringify(
-        response.data?.data ||
-        response.data
-      )
-    )
-
-    cleanupIntervals()
-    localStorage.removeItem('student_answers')
-    localStorage.removeItem('exam_remaining_seconds')
-
-    router.replace('/student/results')
-  } catch (error: unknown) {
-    console.error('SUBMIT EXAM ERROR:', error)
-
-    const apiError = error as {
-      response?: {
-        data?: {
-          message?: string
-        }
-      }
-    }
-
-    showSecurityWarning(
-      apiError.response?.data?.message ||
-      'Unable to submit the examination.'
-    )
-  } finally {
-    submitting.value = false
-    showSubmitDialog.value = false
-  }
-}
-
-async function autoSubmitExam() {
-  if (
-    examSubmitted ||
-    autoSubmitting.value ||
-    !session.value
-  ) {
-    return
-  }
-
-  autoSubmitting.value = true
-  automaticSubmitTitle.value = 'Time Is Up'
-  automaticSubmitMessage.value =
-    'Your examination is being submitted automatically.'
-
-  try {
-    await saveAllAnsweredQuestions()
-
-    const response = await api.post(
-      `/submit-exam/${session.value.id}`
-    )
-
-    examSubmitted = true
-
-    localStorage.setItem(
-      'student_result',
-      JSON.stringify(
-        response.data?.data ||
-        response.data
-      )
-    )
-
-    cleanupIntervals()
-    localStorage.removeItem('student_answers')
-    localStorage.removeItem('exam_remaining_seconds')
-
-    router.replace('/student/results')
-  } catch (error) {
-    console.error('AUTO SUBMIT ERROR:', error)
-    autoSubmitting.value = false
-
-    showSecurityWarning(
-      'Automatic submission failed. Please submit manually.'
-    )
-  }
-}
-
-
-async function checkExamStatus() {
-  if (
-    !session.value ||
-    !exam.value.id ||
-    examSubmitted ||
-    autoSubmitting.value ||
-    examStatusChecking
-  ) {
-    return
-  }
-
-  examStatusChecking = true
-
-  try {
-    const response = await api.get(
-      `/student/exams/${exam.value.id}/status`,
-      {
-        params: {
-          session_id: session.value.id,
-          timestamp: Date.now(),
-        },
-
-        headers: {
-          'Cache-Control': 'no-cache',
-          Pragma: 'no-cache',
-        },
-      }
-    )
-
-    const examStatus = String(
-      response.data?.data?.status || ''
-    ).toLowerCase()
-
-    const sessionStatus = String(
-      response.data?.data?.session_status || ''
-    ).toLowerCase()
-
-    if (
-      examStatus === 'finished' ||
-      sessionStatus === 'submitted'
-    ) {
-      await handleFacultyEndedExam()
-    }
-  } catch (error) {
     console.error(
-      'EXAM STATUS CHECK ERROR:',
+      'Invalid student data:',
       error
     )
-  } finally {
-    examStatusChecking = false
+
+
+    clearStudentStorage()
+
+
+    router.replace('/student')
+
+
+    return false
+
   }
+
 }
 
-async function handleFacultyEndedExam() {
-  if (
-    examSubmitted ||
-    autoSubmitting.value
-  ) {
-    return
-  }
 
-  autoSubmitting.value = true
-  automaticSubmitTitle.value =
-    'Examination Ended'
-  automaticSubmitMessage.value =
-    'The professor ended the examination. Opening your result now.'
+function clearStudentStorage() {
 
-  examSubmitted = true
-  cleanupIntervals()
+  localStorage.removeItem(
+    'student_session'
+  )
 
-  localStorage.removeItem('student_answers')
+
+  localStorage.removeItem(
+    'student_exam'
+  )
+
+
+  localStorage.removeItem(
+    'student_name'
+  )
+
+
+  localStorage.removeItem(
+    'student_section'
+  )
+
+
+  localStorage.removeItem(
+    'student_access_code'
+  )
+
+
+  localStorage.removeItem(
+    'student_answers'
+  )
+
+
   localStorage.removeItem(
     'exam_remaining_seconds'
   )
 
-  await new Promise((resolve) => {
-    setTimeout(resolve, 900)
+}
+
+
+function loadSavedAnswers() {
+
+  const saved =
+    localStorage.getItem(
+      'student_answers'
+    )
+
+
+  if (!saved) {
+    return
+  }
+
+
+  try {
+
+    answers.value =
+      JSON.parse(
+        saved
+      ) as Record<number, string>
+
+  }
+
+  catch (error) {
+
+    console.error(
+      'Unable to restore answers:',
+      error
+    )
+
+  }
+
+}
+
+
+function saveAnswersLocally() {
+
+  localStorage.setItem(
+
+    'student_answers',
+
+    JSON.stringify(
+      answers.value
+    )
+
+  )
+
+}
+
+
+function restoreRemainingTime() {
+
+  const savedTime =
+    Number(
+
+      localStorage.getItem(
+        'exam_remaining_seconds'
+      )
+
+    )
+
+
+  if (savedTime > 0) {
+
+    remainingSeconds.value =
+      savedTime
+
+
+    return
+
+  }
+
+
+  remainingSeconds.value =
+    exam.value.duration * 60
+
+}
+
+
+/* =====================================================
+   LOAD EXAM
+===================================================== */
+
+async function loadExam() {
+
+  loading.value = true
+
+  errorMessage.value = ''
+
+
+  if (!readStoredData()) {
+
+    loading.value = false
+
+    return
+
+  }
+
+
+  try {
+
+    const response =
+      await api.get(
+
+        `/exam-questions/${exam.value.id}`
+
+      )
+
+
+    const questionData =
+
+      Array.isArray(
+        response.data?.data
+      )
+
+        ? response.data.data
+
+        : []
+
+
+    questions.value =
+      questionData.map(
+
+        (
+          question:
+          ExamQuestion
+        ) => ({
+
+          ...question,
+
+
+          points:
+            Number(
+              question.points || 1
+            ),
+
+
+          options:
+            Array.isArray(
+              question.options
+            )
+
+              ? question.options
+
+              : [],
+
+        })
+
+      )
+
+
+    const returnedExam =
+      response.data?.exam
+
+
+    if (returnedExam) {
+
+      exam.value = {
+
+        id:
+          Number(
+            returnedExam.id
+          ),
+
+
+        title:
+          returnedExam.title ||
+          exam.value.title,
+
+
+        course:
+          returnedExam.course ||
+          exam.value.course,
+
+
+        duration:
+          Number(
+
+            returnedExam.duration ||
+
+            exam.value.duration
+
+          ),
+
+
+        passing:
+          Number(
+
+            returnedExam.passing ||
+
+            exam.value.passing
+
+          ),
+
+      }
+
+    }
+
+
+    if (
+      !questions.value.length
+    ) {
+
+      errorMessage.value =
+        'No examination questions were found.'
+
+
+      return
+
+    }
+
+
+    loadSavedAnswers()
+
+    restoreRemainingTime()
+
+    startExamTimer()
+
+    startIdleMonitor()
+
+
+    showFullscreenPrompt.value =
+      !isFullscreenActive()
+
+
+    await sendLiveStatus()
+
+  }
+
+  catch (error: unknown) {
+
+    console.error(
+      'LOAD EXAM ERROR:',
+      error
+    )
+
+
+    const apiError =
+      error as {
+
+        response?: {
+
+          data?: {
+
+            message?: string
+
+          }
+
+        }
+
+      }
+
+
+    errorMessage.value =
+
+      apiError
+        .response
+        ?.data
+        ?.message
+
+      ||
+
+      'Unable to load the examination.'
+
+  }
+
+  finally {
+
+    loading.value = false
+
+  }
+
+}
+
+
+/* =====================================================
+   QUESTION HELPERS
+===================================================== */
+
+function displayQuestionType(
+  type?: string
+): string {
+
+  const value =
+    String(
+      type || ''
+    ).toLowerCase()
+
+
+  if (
+    value === 'multiple_choice'
+  ) {
+    return 'Multiple Choice'
+  }
+
+
+  if (
+    value === 'true_false'
+  ) {
+    return 'True or False'
+  }
+
+
+  if (
+    value === 'identification'
+  ) {
+    return 'Identification'
+  }
+
+
+  if (
+    value === 'essay'
+  ) {
+    return 'Essay'
+  }
+
+
+  return 'Question'
+
+}
+
+
+function optionLetter(
+  index: number
+): string {
+
+  return String.fromCharCode(
+    65 + index
+  )
+
+}
+
+
+function isQuestionAnswered(
+  index: number
+): boolean {
+
+  const question =
+    questions.value[index]
+
+
+  if (!question) {
+    return false
+  }
+
+
+  return String(
+
+    answers.value[
+      question.id
+    ] ?? ''
+
+  ).trim() !== ''
+
+}
+
+
+/* =====================================================
+   QUESTION NAVIGATION
+===================================================== */
+
+function goToQuestion(
+  index: number
+) {
+
+  if (
+
+    index < 0
+
+    ||
+
+    index >=
+      questions.value.length
+
+  ) {
+
+    return
+
+  }
+
+
+  currentQuestionIndex.value =
+    index
+
+
+  resetActivityTimer()
+
+
+  sendLiveStatus()
+
+
+  window.scrollTo({
+
+    top: 0,
+
+    behavior: 'smooth',
+
   })
 
-  router.replace('/student/results')
 }
+
+
+function previousQuestion() {
+
+  if (
+    currentQuestionIndex.value > 0
+  ) {
+
+    goToQuestion(
+
+      currentQuestionIndex.value - 1
+
+    )
+
+  }
+
+}
+
+
+function nextQuestion() {
+
+  if (
+
+    currentQuestionIndex.value <
+
+    questions.value.length - 1
+
+  ) {
+
+    goToQuestion(
+
+      currentQuestionIndex.value + 1
+
+    )
+
+  }
+
+}
+
+
+/* =====================================================
+   SAVE ANSWER
+===================================================== */
+
+async function saveCurrentAnswer() {
+
+  const question =
+    currentQuestion.value
+
+
+  if (
+    !question ||
+    !session.value
+  ) {
+
+    return
+
+  }
+
+
+  const answer =
+    String(
+
+      answers.value[
+        question.id
+      ] ?? ''
+
+    ).trim()
+
+
+  saveAnswersLocally()
+
+  resetActivityTimer()
+
+
+  if (!answer) {
+    return
+  }
+
+
+  savingAnswer.value = true
+
+  lastSavedMessage.value = ''
+
+
+  try {
+
+    await api.post(
+      '/save-answer',
+      {
+
+        exam_session_id:
+          session.value.id,
+
+
+        question_id:
+          question.id,
+
+
+        answer,
+
+      }
+    )
+
+
+    lastSavedMessage.value =
+      'Answer saved'
+
+
+    await sendLiveStatus()
+
+
+    setTimeout(() => {
+
+      lastSavedMessage.value = ''
+
+    }, 2000)
+
+  }
+
+  catch (error) {
+
+    console.error(
+      'SAVE ANSWER ERROR:',
+      error
+    )
+
+
+    lastSavedMessage.value =
+      'Saved locally. Waiting for connection.'
+
+  }
+
+  finally {
+
+    savingAnswer.value = false
+
+  }
+
+}
+
+
+/* =====================================================
+   EXAM TIMER
+===================================================== */
+
+function startExamTimer() {
+
+  if (examTimerInterval) {
+
+    clearInterval(
+      examTimerInterval
+    )
+
+  }
+
+
+  examTimerInterval =
+    setInterval(() => {
+
+      if (
+
+        remainingSeconds.value > 0
+
+        &&
+
+        !examSubmitted
+
+      ) {
+
+        remainingSeconds.value -= 1
+
+
+        localStorage.setItem(
+
+          'exam_remaining_seconds',
+
+          String(
+            remainingSeconds.value
+          )
+
+        )
+
+
+        if (
+          remainingSeconds.value %
+            5 ===
+          0
+        ) {
+
+          sendLiveStatus()
+
+        }
+
+
+        return
+
+      }
+
+
+      if (
+
+        remainingSeconds.value <= 0
+
+        &&
+
+        !examSubmitted
+
+      ) {
+
+        autoSubmitExam()
+
+      }
+
+    }, 1000)
+
+}
+
+
+/* =====================================================
+   SUBMIT DIALOG
+===================================================== */
+
+function openSubmitDialog() {
+
+  showSubmitDialog.value = true
+
+}
+
+
+function closeSubmitDialog() {
+
+  if (!submitting.value) {
+
+    showSubmitDialog.value = false
+
+  }
+
+}
+
+
+/* =====================================================
+   SAVE ALL ANSWERS
+===================================================== */
+
+async function saveAllAnsweredQuestions() {
+
+  if (!session.value) {
+    return
+  }
+
+
+  const requests =
+    questions.value
+
+      .filter(
+        (question) =>
+
+          String(
+
+            answers.value[
+              question.id
+            ] ?? ''
+
+          ).trim() !== ''
+
+      )
+
+      .map(
+        (question) =>
+
+          api.post(
+            '/save-answer',
+            {
+
+              exam_session_id:
+                session.value?.id,
+
+
+              question_id:
+                question.id,
+
+
+              answer:
+                String(
+
+                  answers.value[
+                    question.id
+                  ]
+
+                ).trim(),
+
+            }
+          )
+
+      )
+
+
+  if (requests.length) {
+
+    await Promise.allSettled(
+      requests
+    )
+
+  }
+
+}
+
+
+/* =====================================================
+   MANUAL SUBMIT
+===================================================== */
+
+async function confirmSubmitExam() {
+
+  if (
+    !session.value ||
+    submitting.value
+  ) {
+
+    return
+
+  }
+
+
+  submitting.value = true
+
+
+  try {
+
+    await saveAllAnsweredQuestions()
+
+
+    const response =
+      await api.post(
+
+        `/submit-exam/${session.value.id}`
+
+      )
+
+
+    examSubmitted = true
+
+
+    localStorage.setItem(
+
+      'student_result',
+
+      JSON.stringify(
+
+        response.data?.data
+
+        ||
+
+        response.data
+
+      )
+
+    )
+
+
+    cleanupIntervals()
+
+
+    localStorage.removeItem(
+      'student_answers'
+    )
+
+
+    localStorage.removeItem(
+      'exam_remaining_seconds'
+    )
+
+
+    router.replace(
+      '/student/results'
+    )
+
+  }
+
+  catch (error: unknown) {
+
+    console.error(
+      'SUBMIT EXAM ERROR:',
+      error
+    )
+
+
+    const apiError =
+      error as {
+
+        response?: {
+
+          data?: {
+
+            message?: string
+
+          }
+
+        }
+
+      }
+
+
+    showSecurityWarning(
+
+      apiError
+        .response
+        ?.data
+        ?.message
+
+      ||
+
+      'Unable to submit the examination.'
+
+    )
+
+  }
+
+  finally {
+
+    submitting.value = false
+
+    showSubmitDialog.value = false
+
+  }
+
+}
+
+
+/* =====================================================
+   AUTO SUBMIT
+===================================================== */
+
+async function autoSubmitExam() {
+
+  if (
+
+    examSubmitted
+
+    ||
+
+    autoSubmitting.value
+
+    ||
+
+    !session.value
+
+  ) {
+
+    return
+
+  }
+
+
+  autoSubmitting.value = true
+
+
+  automaticSubmitTitle.value =
+    'Time Is Up'
+
+
+  automaticSubmitMessage.value =
+    'Your examination is being submitted automatically.'
+
+
+  try {
+
+    await saveAllAnsweredQuestions()
+
+
+    const response =
+      await api.post(
+
+        `/submit-exam/${session.value.id}`
+
+      )
+
+
+    examSubmitted = true
+
+
+    localStorage.setItem(
+
+      'student_result',
+
+      JSON.stringify(
+
+        response.data?.data
+
+        ||
+
+        response.data
+
+      )
+
+    )
+
+
+    cleanupIntervals()
+
+
+    localStorage.removeItem(
+      'student_answers'
+    )
+
+
+    localStorage.removeItem(
+      'exam_remaining_seconds'
+    )
+
+
+    router.replace(
+      '/student/results'
+    )
+
+  }
+
+  catch (error) {
+
+    console.error(
+      'AUTO SUBMIT ERROR:',
+      error
+    )
+
+
+    autoSubmitting.value = false
+
+
+    showSecurityWarning(
+      'Automatic submission failed. Please submit manually.'
+    )
+
+  }
+
+}
+
+
+/* =====================================================
+   EXAM STATUS
+===================================================== */
+
+async function checkExamStatus() {
+
+  if (
+
+    !session.value
+
+    ||
+
+    !exam.value.id
+
+    ||
+
+    examSubmitted
+
+    ||
+
+    autoSubmitting.value
+
+    ||
+
+    examStatusChecking
+
+  ) {
+
+    return
+
+  }
+
+
+  examStatusChecking = true
+
+
+  try {
+
+    const response =
+      await api.get(
+
+        `/student/exams/${exam.value.id}/status`,
+
+        {
+
+          params: {
+
+            session_id:
+              session.value.id,
+
+
+            timestamp:
+              Date.now(),
+
+          },
+
+
+          headers: {
+
+            'Cache-Control':
+              'no-cache',
+
+
+            Pragma:
+              'no-cache',
+
+          },
+
+        }
+
+      )
+
+
+    const examStatus =
+      String(
+
+        response.data
+          ?.data
+          ?.status
+
+        || ''
+
+      ).toLowerCase()
+
+
+    const sessionStatus =
+      String(
+
+        response.data
+          ?.data
+          ?.session_status
+
+        || ''
+
+      ).toLowerCase()
+
+
+    if (
+
+      examStatus ===
+        'finished'
+
+      ||
+
+      sessionStatus ===
+        'submitted'
+
+    ) {
+
+      await handleFacultyEndedExam()
+
+    }
+
+  }
+
+  catch (error) {
+
+    console.error(
+
+      'EXAM STATUS CHECK ERROR:',
+
+      error
+
+    )
+
+  }
+
+  finally {
+
+    examStatusChecking = false
+
+  }
+
+}
+
+
+/* =====================================================
+   FACULTY ENDED EXAM
+===================================================== */
+
+async function handleFacultyEndedExam() {
+
+  if (
+
+    examSubmitted
+
+    ||
+
+    autoSubmitting.value
+
+  ) {
+
+    return
+
+  }
+
+
+  autoSubmitting.value = true
+
+
+  automaticSubmitTitle.value =
+    'Examination Ended'
+
+
+  automaticSubmitMessage.value =
+    'The professor ended the examination. Opening your result now.'
+
+
+  examSubmitted = true
+
+
+  cleanupIntervals()
+
+
+  localStorage.removeItem(
+    'student_answers'
+  )
+
+
+  localStorage.removeItem(
+    'exam_remaining_seconds'
+  )
+
+
+  await new Promise(
+    (resolve) => {
+
+      setTimeout(
+        resolve,
+        900
+      )
+
+    }
+  )
+
+
+  router.replace(
+    '/student/results'
+  )
+
+}
+
+
+/* =====================================================
+   COPY / PASTE / CUT / RIGHT CLICK
+===================================================== */
 
 function handleBlockedAction(
   activity: BlockedActivity
 ) {
-  violationCounts.value[activity] += 1
 
-  const messages: Record<BlockedActivity, string> = {
-    copy_attempt:
-      'Copying is disabled during the examination.',
-    paste_attempt:
-      'Pasting is disabled during the examination.',
-    cut_attempt:
-      'Cutting text is disabled during the examination.',
-    right_click:
-      'Right-click is disabled during the examination.',
-  }
-
-  const message = messages[activity]
-
-  showSecurityWarning(message)
-  sendMonitoringLog(activity, message)
-  resetActivityTimer()
-}
-
-async function sendLiveStatus() {
   if (
-    !session.value ||
-    examSubmitted ||
-    statusUpdating
-  ) {
-    return
-  }
-
-  statusUpdating = true
-
-  try {
-    const response = await api.post(
-      '/student-session-status',
-      {
-        exam_session_id: session.value.id,
-
-        current_question:
-          currentQuestionIndex.value + 1,
-
-        progress:
-          progressPercentage.value,
-
-        idle_seconds:
-          idleSeconds.value,
-
-        time_remaining:
-          remainingSeconds.value,
-      }
-    )
-
-    console.log(
-      'LIVE STATUS SAVED:',
-      response.data
-    )
-  } catch (error: unknown) {
-    console.error(
-      'LIVE STATUS UPDATE ERROR:',
-      error
-    )
-  } finally {
-    statusUpdating = false
-  }
-}
-
-async function sendMonitoringLog(
-  activity: string,
-  details: string
-) {
-  if (!session.value) return
-
-  try {
-    await api.post('/monitor-log', {
-      exam_session_id: session.value.id,
-      activity,
-      details,
-      idle_seconds: idleSeconds.value,
-    })
-
-    await sendLiveStatus()
-  } catch (error) {
-    console.error(
-      'MONITOR LOG ERROR:',
-      error
-    )
-  }
-}
-
-function showSecurityWarning(message: string) {
-  securityWarning.value = message
-
-  if (warningTimeout) {
-    clearTimeout(warningTimeout)
-  }
-
-  warningTimeout = setTimeout(() => {
-    securityWarning.value = ''
-  }, 4000)
-}
-
-function handleVisibilityChange() {
-  if (
-    document.hidden &&
-    !examSubmitted &&
-    !loading.value
-  ) {
-    violationCounts.value.tab_switch += 1
-
-    const message =
-      'You switched tabs or minimized the browser. This activity was recorded.'
-
-    showSecurityWarning(message)
-    sendMonitoringLog('tab_switch', message)
-  }
-
-  resetActivityTimer()
-}
-
-function handleWindowBlur() {
-  if (
-    document.hidden ||
     examSubmitted ||
     loading.value
   ) {
     return
   }
 
-  violationCounts.value.tab_switch += 1
+
+  violationCounts.value[
+    activity
+  ] += 1
+
+
+  const messages:
+    Record<
+      BlockedActivity,
+      string
+    > = {
+
+      copy_attempt:
+        'Copying is disabled during the examination.',
+
+
+      paste_attempt:
+        'Pasting is disabled during the examination.',
+
+
+      cut_attempt:
+        'Cutting text is disabled during the examination.',
+
+
+      right_click:
+        'Right-click is disabled during the examination.',
+
+    }
+
 
   const message =
-    'The examination window lost focus. This activity was recorded.'
+    messages[activity]
 
-  showSecurityWarning(message)
-  sendMonitoringLog('tab_switch', message)
+
+  playWarningSound()
+
+
+  showSecurityWarning(
+    message
+  )
+
+
+  sendMonitoringLog(
+    activity,
+    message
+  )
+
+
+  resetActivityTimer()
+
 }
 
-function resetActivityTimer() {
-  lastActivityTime = Date.now()
-  idleSeconds.value = 0
-}
 
-function startIdleMonitor() {
-  if (idleInterval) {
-    clearInterval(idleInterval)
+/* =====================================================
+   LIVE STATUS
+===================================================== */
+
+async function sendLiveStatus() {
+
+  if (
+
+    !session.value
+
+    ||
+
+    examSubmitted
+
+    ||
+
+    statusUpdating
+
+  ) {
+
+    return
+
   }
 
-  lastActivityTime = Date.now()
 
-  idleInterval = setInterval(() => {
-    const elapsed = Math.floor(
-      (Date.now() - lastActivityTime) / 1000
-    )
+  statusUpdating = true
 
-    idleSeconds.value = elapsed
-
-    if (elapsed % 5 === 0) {
-      sendLiveStatus()
-    }
-
-    if (
-      elapsed === 30 &&
-      !examSubmitted
-    ) {
-      violationCounts.value.idle += 1
-
-      const message =
-        'You have been inactive for 30 seconds.'
-
-      showSecurityWarning(message)
-      sendMonitoringLog('idle', message)
-    }
-
-    if (
-      elapsed > 30 &&
-      elapsed % 30 === 0 &&
-      !examSubmitted
-    ) {
-      sendMonitoringLog(
-        'idle',
-        `Student has been idle for ${elapsed} seconds.`
-      )
-    }
-  }, 1000)
-}
-
-function isFullscreenActive(): boolean {
-  return Boolean(
-    document.fullscreenElement ||
-    (
-      document as Document & {
-        webkitFullscreenElement?: Element
-      }
-    ).webkitFullscreenElement
-  )
-}
-
-async function enterFullscreen() {
-  const documentElement =
-    document.documentElement as HTMLElement & {
-      webkitRequestFullscreen?: () => Promise<void>
-    }
 
   try {
-    if (documentElement.requestFullscreen) {
-      await documentElement.requestFullscreen()
-    } else if (
-      documentElement.webkitRequestFullscreen
+
+    await api.post(
+
+      '/student-session-status',
+
+      {
+
+        exam_session_id:
+          session.value.id,
+
+
+        current_question:
+          currentQuestionIndex.value +
+          1,
+
+
+        progress:
+          progressPercentage.value,
+
+
+        idle_seconds:
+          idleSeconds.value,
+
+
+        time_remaining:
+          remainingSeconds.value,
+
+      }
+
+    )
+
+  }
+
+  catch (error: unknown) {
+
+    console.error(
+
+      'LIVE STATUS UPDATE ERROR:',
+
+      error
+
+    )
+
+  }
+
+  finally {
+
+    statusUpdating = false
+
+  }
+
+}
+
+
+/* =====================================================
+   MONITOR LOG
+===================================================== */
+
+async function sendMonitoringLog(
+  activity: string,
+  details: string
+) {
+
+  if (!session.value) {
+    return
+  }
+
+
+  try {
+
+    await api.post(
+      '/monitor-log',
+      {
+
+        exam_session_id:
+          session.value.id,
+
+
+        activity,
+
+
+        details,
+
+
+        idle_seconds:
+          idleSeconds.value,
+
+      }
+    )
+
+
+    await sendLiveStatus()
+
+  }
+
+  catch (error) {
+
+    console.error(
+
+      'MONITOR LOG ERROR:',
+
+      error
+
+    )
+
+  }
+
+}
+
+
+/* =====================================================
+   SECURITY WARNING
+===================================================== */
+
+function showSecurityWarning(
+  message: string
+) {
+
+  securityWarning.value =
+    message
+
+
+  if (warningTimeout) {
+
+    clearTimeout(
+      warningTimeout
+    )
+
+  }
+
+
+  warningTimeout =
+    setTimeout(() => {
+
+      securityWarning.value = ''
+
+    }, 4000)
+
+}
+
+
+/* =====================================================
+   TAB SWITCH
+===================================================== */
+
+function handleVisibilityChange() {
+
+  if (
+
+    document.hidden
+
+    &&
+
+    !examSubmitted
+
+    &&
+
+    !loading.value
+
+  ) {
+
+    violationCounts.value
+      .tab_switch += 1
+
+
+    const message =
+      'You switched tabs or minimized the browser. This activity was recorded.'
+
+
+    playWarningSound()
+
+
+    showSecurityWarning(
+      message
+    )
+
+
+    sendMonitoringLog(
+      'tab_switch',
+      message
+    )
+
+  }
+
+
+  resetActivityTimer()
+
+}
+
+
+/* =====================================================
+   IDLE MONITOR
+===================================================== */
+
+function resetActivityTimer() {
+
+  lastActivityTime =
+    Date.now()
+
+
+  idleSeconds.value = 0
+
+}
+
+
+function startIdleMonitor() {
+
+  if (idleInterval) {
+
+    clearInterval(
+      idleInterval
+    )
+
+  }
+
+
+  lastActivityTime =
+    Date.now()
+
+
+  idleInterval =
+    setInterval(() => {
+
+      const elapsed =
+        Math.floor(
+
+          (
+            Date.now() -
+            lastActivityTime
+          ) / 1000
+
+        )
+
+
+      idleSeconds.value =
+        elapsed
+
+
+      if (
+        elapsed % 5 === 0
+      ) {
+
+        sendLiveStatus()
+
+      }
+
+
+      /*
+       * Initial idle warning
+       */
+      if (
+
+        elapsed === 30
+
+        &&
+
+        !examSubmitted
+
+      ) {
+
+        violationCounts.value
+          .idle += 1
+
+
+        const message =
+          'You have been inactive for 30 seconds.'
+
+
+        playWarningSound()
+
+
+        showSecurityWarning(
+          message
+        )
+
+
+        sendMonitoringLog(
+          'idle',
+          message
+        )
+
+      }
+
+
+      /*
+       * Log continued inactivity.
+       */
+      if (
+
+        elapsed > 30
+
+        &&
+
+        elapsed % 30 === 0
+
+        &&
+
+        !examSubmitted
+
+      ) {
+
+        sendMonitoringLog(
+
+          'idle',
+
+          `Student has been idle for ${elapsed} seconds.`
+
+        )
+
+      }
+
+    }, 1000)
+
+}
+
+
+/* =====================================================
+   FULLSCREEN
+===================================================== */
+
+function isFullscreenActive():
+  boolean {
+
+  return Boolean(
+
+    document.fullscreenElement
+
+    ||
+
+    (
+      document as
+        Document & {
+
+          webkitFullscreenElement?:
+            Element
+
+        }
+    ).webkitFullscreenElement
+
+  )
+
+}
+
+
+async function enterFullscreen() {
+
+  /*
+   * Unlock audio because this function runs
+   * directly from the student's button click.
+   */
+  await unlockWarningAudio()
+
+
+  const documentElement =
+    document.documentElement as
+
+      HTMLElement & {
+
+        webkitRequestFullscreen?:
+          () => Promise<void>
+
+      }
+
+
+  try {
+
+    if (
+      documentElement
+        .requestFullscreen
     ) {
-      await documentElement.webkitRequestFullscreen()
+
+      await documentElement
+        .requestFullscreen()
+
     }
 
-    fullscreenActivated = true
-    showFullscreenPrompt.value = false
-  } catch (error) {
-    console.error('FULLSCREEN ERROR:', error)
+    else if (
+      documentElement
+        .webkitRequestFullscreen
+    ) {
 
-    showFullscreenPrompt.value = false
+      await documentElement
+        .webkitRequestFullscreen()
+
+    }
+
+
+    fullscreenActivated =
+      true
+
+
+    showFullscreenPrompt.value =
+      false
+
+  }
+
+  catch (error) {
+
+    console.error(
+      'FULLSCREEN ERROR:',
+      error
+    )
+
+
+    showFullscreenPrompt.value =
+      false
+
 
     showSecurityWarning(
       'Fullscreen could not be started. Keep the examination page open.'
     )
+
   }
+
 }
 
+
 function handleFullscreenChange() {
-  const fullscreenNow = isFullscreenActive()
+
+  const fullscreenNow =
+    isFullscreenActive()
+
 
   if (fullscreenNow) {
-    fullscreenActivated = true
-    showFullscreenPrompt.value = false
+
+    fullscreenActivated =
+      true
+
+
+    showFullscreenPrompt.value =
+      false
+
+
     return
+
   }
 
+
   if (
-    fullscreenActivated &&
-    !examSubmitted &&
+
+    fullscreenActivated
+
+    &&
+
+    !examSubmitted
+
+    &&
+
     !loading.value
+
   ) {
-    violationCounts.value.fullscreen_exit += 1
+
+    violationCounts.value
+      .fullscreen_exit += 1
+
 
     const message =
       'You exited fullscreen mode. This activity was recorded.'
 
-    showSecurityWarning(message)
-    sendMonitoringLog('fullscreen_exit', message)
-    showFullscreenPrompt.value = true
+
+    playWarningSound()
+
+
+    showSecurityWarning(
+      message
+    )
+
+
+    sendMonitoringLog(
+
+      'fullscreen_exit',
+
+      message
+
+    )
+
+
+    showFullscreenPrompt.value =
+      true
+
   }
+
 }
+
+
+/* =====================================================
+   INTERNET STATUS
+===================================================== */
 
 function handleOnline() {
-  isConnected.value = true
-  showSecurityWarning('Connection restored.')
+
+  isConnected.value =
+    true
+
+
+  showSecurityWarning(
+    'Connection restored.'
+  )
+
 }
 
+
 function handleOffline() {
-  isConnected.value = false
+
+  isConnected.value =
+    false
+
 
   showSecurityWarning(
     'Connection lost. Answers will remain stored on this device.'
   )
+
 }
 
+
+/* =====================================================
+   BACK TO LOBBY
+===================================================== */
+
 function goBackToLobby() {
-  router.replace('/student/lobby')
+
+  router.replace(
+    '/student/lobby'
+  )
+
 }
+
+
+/* =====================================================
+   EVENT LISTENERS
+===================================================== */
 
 function registerEventListeners() {
 
   document.addEventListener(
+
     'visibilitychange',
+
     handleVisibilityChange
+
   )
 
+
   document.addEventListener(
+
     'fullscreenchange',
+
     handleFullscreenChange
+
   )
 
+
   document.addEventListener(
+
     'webkitfullscreenchange',
+
     handleFullscreenChange
+
   )
 
+
   document.addEventListener(
+
     'mousemove',
+
     resetActivityTimer
+
   )
 
+
   document.addEventListener(
+
     'mousedown',
+
     resetActivityTimer
+
   )
 
+
   document.addEventListener(
+
     'keydown',
+
     resetActivityTimer
+
   )
+
 
   document.addEventListener(
+
     'touchstart',
+
     resetActivityTimer
+
   )
 
+
   window.addEventListener(
+
     'online',
+
     handleOnline
+
   )
 
+
   window.addEventListener(
+
     'offline',
+
     handleOffline
+
   )
 
 }
+
 
 function removeEventListeners() {
 
   document.removeEventListener(
+
     'visibilitychange',
+
     handleVisibilityChange
+
   )
 
+
   document.removeEventListener(
+
     'fullscreenchange',
+
     handleFullscreenChange
+
   )
 
+
   document.removeEventListener(
+
     'webkitfullscreenchange',
+
     handleFullscreenChange
+
   )
 
+
   document.removeEventListener(
+
     'mousemove',
+
     resetActivityTimer
+
   )
 
+
   document.removeEventListener(
+
     'mousedown',
+
     resetActivityTimer
+
   )
 
+
   document.removeEventListener(
+
     'keydown',
+
     resetActivityTimer
+
   )
+
 
   document.removeEventListener(
+
     'touchstart',
+
     resetActivityTimer
+
   )
 
+
   window.removeEventListener(
+
     'online',
+
     handleOnline
+
   )
+
 
   window.removeEventListener(
-    'offline',
-    handleOffline
-  )
 
+    'offline',
+
+    handleOffline
+
+  )
 
 }
+
+
+/* =====================================================
+   CHECK STATUS AFTER RETURNING TO PAGE
+===================================================== */
 
 function checkStatusAfterResume() {
+
   if (
-    document.visibilityState === 'visible' &&
+
+    document.visibilityState ===
+      'visible'
+
+    &&
+
     !examSubmitted
+
   ) {
+
     checkExamStatus()
+
   }
+
 }
+
+
+/* =====================================================
+   CLEANUP
+===================================================== */
 
 function cleanupIntervals() {
+
   if (examTimerInterval) {
-    clearInterval(examTimerInterval)
+
+    clearInterval(
+      examTimerInterval
+    )
+
     examTimerInterval = null
+
   }
+
 
   if (idleInterval) {
-    clearInterval(idleInterval)
+
+    clearInterval(
+      idleInterval
+    )
+
     idleInterval = null
+
   }
+
 
   if (heartbeatInterval) {
-    clearInterval(heartbeatInterval)
+
+    clearInterval(
+      heartbeatInterval
+    )
+
     heartbeatInterval = null
+
   }
+
 
   if (examStatusInterval) {
-    clearInterval(examStatusInterval)
+
+    clearInterval(
+      examStatusInterval
+    )
+
     examStatusInterval = null
+
   }
 
+
   if (warningTimeout) {
-    clearTimeout(warningTimeout)
+
+    clearTimeout(
+      warningTimeout
+    )
+
+    warningTimeout = null
+
   }
+
 }
+
+
+/* =====================================================
+   BEFORE UNLOAD
+===================================================== */
 
 function handleBeforeUnload(
   event: BeforeUnloadEvent
 ) {
-  if (examSubmitted) return
+
+  if (examSubmitted) {
+    return
+  }
+
 
   event.preventDefault()
+
   event.returnValue = ''
+
 }
 
-onMounted(async () => {
-  registerEventListeners()
 
-  window.addEventListener(
-    'beforeunload',
-    handleBeforeUnload
-  )
+/* =====================================================
+   COMPONENT MOUNT
+===================================================== */
 
-  window.addEventListener(
-    'pageshow',
-    checkStatusAfterResume
-  )
+onMounted(
+  async () => {
 
-  window.addEventListener(
-    'focus',
-    checkStatusAfterResume
-  )
+    /*
+     * Prepare sound file.
+     */
+    initializeWarningAudio()
 
-  window.addEventListener(
-    'online',
-    checkStatusAfterResume
-  )
 
-  document.addEventListener(
-    'visibilitychange',
-    checkStatusAfterResume
-  )
+    registerEventListeners()
 
-  await loadExam()
-  await checkExamStatus()
 
-  heartbeatInterval = setInterval(() => {
-    sendLiveStatus()
-  }, 3000)
+    window.addEventListener(
 
-  examStatusInterval = setInterval(() => {
-    checkExamStatus()
-  }, 1500)
-})
+      'beforeunload',
+
+      handleBeforeUnload
+
+    )
+
+
+    window.addEventListener(
+
+      'pageshow',
+
+      checkStatusAfterResume
+
+    )
+
+
+    window.addEventListener(
+
+      'focus',
+
+      checkStatusAfterResume
+
+    )
+
+
+    window.addEventListener(
+
+      'online',
+
+      checkStatusAfterResume
+
+    )
+
+
+    document.addEventListener(
+
+      'visibilitychange',
+
+      checkStatusAfterResume
+
+    )
+
+
+    await loadExam()
+
+    await checkExamStatus()
+
+
+    heartbeatInterval =
+      setInterval(
+        () => {
+
+          sendLiveStatus()
+
+        },
+        3000
+      )
+
+
+    examStatusInterval =
+      setInterval(
+        () => {
+
+          checkExamStatus()
+
+        },
+        1500
+      )
+
+  }
+)
+
+
+/* =====================================================
+   COMPONENT UNMOUNT
+===================================================== */
 
 onUnmounted(() => {
+
   cleanupIntervals()
+
   removeEventListeners()
 
+
   window.removeEventListener(
+
     'beforeunload',
+
     handleBeforeUnload
+
   )
 
+
   window.removeEventListener(
+
     'pageshow',
+
     checkStatusAfterResume
+
   )
 
+
   window.removeEventListener(
+
     'focus',
+
     checkStatusAfterResume
+
   )
 
+
   window.removeEventListener(
+
     'online',
+
     checkStatusAfterResume
+
   )
+
 
   document.removeEventListener(
+
     'visibilitychange',
+
     checkStatusAfterResume
+
   )
+
+
+  /*
+   * Stop warning sound when leaving exam.
+   */
+  if (warningAudio) {
+
+    warningAudio.pause()
+
+    warningAudio.currentTime = 0
+
+    warningAudio = null
+
+  }
+
 })
-
-
-
-
-
-
 
 </script>
 

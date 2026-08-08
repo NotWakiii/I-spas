@@ -242,77 +242,6 @@
           </div>
 
 
-          <!-- RESULT STATISTICS -->
-
-          <div class="score-statistics">
-
-            <div class="score-stat-card time-stat">
-
-              <div class="score-stat-icon">
-                ◷
-              </div>
-
-              <strong>
-                {{ formattedMinutes }}
-              </strong>
-
-              <span>
-                Time
-              </span>
-
-            </div>
-
-            <div class="score-stat-card questions-stat">
-
-              <div class="score-stat-icon">
-                ▣
-              </div>
-
-              <strong>
-                {{ result.total_questions }}
-              </strong>
-
-              <span>
-                Total Questions
-              </span>
-
-            </div>
-
-            <div class="score-stat-card correct-stat">
-
-              <div class="score-stat-icon">
-                ✓
-              </div>
-
-              <strong>
-                {{ result.correct_answers }}
-              </strong>
-
-              <span>
-                Correct
-              </span>
-
-            </div>
-
-            <div class="score-stat-card wrong-stat">
-
-              <div class="score-stat-icon">
-                ✕
-              </div>
-
-              <strong>
-                {{ result.wrong_answers }}
-              </strong>
-
-              <span>
-                Wrong
-              </span>
-
-            </div>
-
-          </div>
-
-
           <!-- ACCURACY CARD -->
 
           <div class="accuracy-card">
@@ -857,32 +786,6 @@ const safePercentage = computed(() => {
   if (value > 100) return 100
 
   return value
-})
-
-const formattedMinutes = computed(() => {
-
-    const totalSeconds =
-        Math.max(
-            Number(result.value.time_spent || 0),
-            0
-        )
-
-    const minutes =
-        Math.floor(
-            totalSeconds / 60
-        )
-
-    const seconds =
-        totalSeconds % 60
-
-    if (minutes > 0) {
-
-        return `${minutes}m ${seconds}s`
-
-    }
-
-    return `${seconds}s`
-
 })
 
 const formattedTimeSpent = computed(() => {

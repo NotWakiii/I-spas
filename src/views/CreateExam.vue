@@ -36,20 +36,6 @@
 
         </div>
 
-        <div class="card" @click="$router.push('/faculty/dashboard')">
-
-            <div class="circle">
-                🏠
-            </div>
-
-            <h2>Back to Dashboard</h2>
-
-            <span>
-                Going back to main dashboard
-            </span>
-
-        </div>
-
     </div>
 
 </div>

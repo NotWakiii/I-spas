@@ -23,26 +23,30 @@
 
       <!-- Navigation -->
 
-      <nav class="menu">
+  <nav class="menu">
 
-        <RouterLink to="/faculty/dashboard">
-          🏠 Dashboard
-        </RouterLink>
+    <RouterLink to="/faculty/dashboard">
+      🏠 Dashboard
+    </RouterLink>
 
-       <RouterLink to="/faculty/create-exam">
-    📝 Create Exam
-</RouterLink>
+    <RouterLink to="/faculty/create-exam">
+      📝 Create Exam
+    </RouterLink>
 
-        <RouterLink to="/faculty/item-analysis">
-          📊 Item Analysis
-        </RouterLink>
+    <RouterLink to="/faculty/exam-results">
+      📋 Exam Results
+    </RouterLink>
 
+    <RouterLink to="/faculty/item-analysis">
+      📊 Item Analysis
+    </RouterLink>
 
-        <RouterLink to="/faculty/student-history">
-          👥 Students History
-        </RouterLink>
+    <RouterLink to="/faculty/student-history">
+      👥 Students History
+    </RouterLink>
 
-      </nav>
+  </nav>
+
 
       <!-- Logout -->
 
@@ -94,7 +98,7 @@
     <div class="dialog">
 
         <div class="dialog-icon">
-            
+
         </div>
 
         <h2>
@@ -116,7 +120,7 @@
                 Cancel
             </button>
 
-        
+
             <button
                 class="start-btn"
                 @click="confirmLogout"
@@ -137,6 +141,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../services/api'
+import Results from '@/views/Results.vue'
 
 const router = useRouter()
 
