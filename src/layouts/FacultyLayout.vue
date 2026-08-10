@@ -1,182 +1,115 @@
 <template>
   <div class="layout">
-
     <!-- ================= SIDEBAR ================= -->
-
     <aside class="sidebar">
-
       <!-- Logo -->
       <div class="logo-section">
-
         <img
           src="@/assets/logo.png"
           alt="Logo"
-          class="logo"
-        />
-
+          class="logo"/>
         <div class="logo-text">
           <h2>I-SPAS</h2>
           <p>Faculty Portal</p>
         </div>
-
       </div>
 
       <!-- Navigation -->
-
   <nav class="menu">
-
     <RouterLink to="/faculty/dashboard">
       🏠 Dashboard
     </RouterLink>
-
     <RouterLink to="/faculty/create-exam">
       📝 Create Exam
     </RouterLink>
-
     <RouterLink to="/faculty/exam-results">
       📋 Exam Results
     </RouterLink>
-
     <RouterLink to="/faculty/item-analysis">
       📊 Item Analysis
     </RouterLink>
-
     <RouterLink to="/faculty/student-history">
       👥 Students History
     </RouterLink>
-
   </nav>
-
-
       <!-- Logout -->
-
       <div class="bottom">
-
         <button
-    class="logout-btn"
-    @click="openLogoutDialog"
->
-    ↩ Logout
-</button>
-
+          class="logout-btn"
+          @click="openLogoutDialog">↩ Logout
+        </button>
       </div>
-
     </aside>
-
     <!-- ================= MAIN ================= -->
 
     <div class="main">
 
       <!-- Navbar -->
-
       <header class="navbar">
-
         <h1>I-SPAS</h1>
-
         <button class="about-btn">
           About Us
         </button>
-
       </header>
 
       <!-- Page Content -->
-
       <main class="content">
-
         <RouterView />
-
       </main>
-
     </div>
-
   </div>
-
   <div
     v-if="showLogoutDialog"
-    class="dialog-overlay"
->
+    class="dialog-overlay">
     <div class="dialog">
-
         <div class="dialog-icon">
-
         </div>
-
         <h2>
             Logout
         </h2>
-
-
-
         <p>
             Are you sure you want to logout from the Faculty Portal?
         </p>
-
         <div class="dialog-buttons">
-
             <button
                 class="cancel-btn"
-                @click="cancelLogout"
-            >
-                Cancel
+                @click="cancelLogout">Cancel
             </button>
-
-
             <button
                 class="start-btn"
-                @click="confirmLogout"
-            >
+                @click="confirmLogout">
                 Logout
             </button>
-
         </div>
-
     </div>
 </div>
 </template>
 
-
-
 <script setup lang="ts">
-
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../services/api'
-import Results from '@/views/Results.vue'
 
 const router = useRouter()
-
 const showLogoutDialog = ref(false)
-
 function openLogoutDialog() {
     showLogoutDialog.value = true
 }
-
 function cancelLogout() {
     showLogoutDialog.value = false
 }
-
 async function confirmLogout() {
-
     showLogoutDialog.value = false
-
     try {
-
         const token = localStorage.getItem('token')
-
         if (token) {
             await api.post('/logout')
         }
-
-    } catch (error) {
-
+    } catch {
         console.log('Logout API failed, continuing logout.')
-
     }
-
     localStorage.removeItem('token')
-
     router.push('/')
-
 }
 
 </script>
