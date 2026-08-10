@@ -212,7 +212,9 @@
             </div>
 
             <ul>
-
+                <li>
+                    Please turn up your device’s volume.
+                </li>
                 <li>
                     Do not switch tabs
                 </li>
@@ -223,6 +225,10 @@
 
                 <li>
                     Stay in fullscreen mode
+                </li>
+
+                <li>
+                    Everything you do will be recorded
                 </li>
 
             </ul>
