@@ -1,638 +1,2072 @@
 <template>
-  <div class="analysis-detail-page">
-
-
+  <div class="analysis-page">
+    <!-- ==========================================
+         PAGE HEADER
+    =========================================== -->
     <div class="page-header">
       <div>
-        <button class="back-btn" @click="$router.back()">
+        <button
+          class="back-btn"
+          type="button"
+          @click="$router.back()"
+        >
           ← Back
         </button>
-
-        <h1>Item Analysis</h1>
-        <p>{{ exam.title }} • {{ exam.course }}</p>
+        <h1>Competency Based Item Analysis</h1>
+        <p>
+          {{ exam.title }}
+          <span v-if="exam.course">
+            • {{ exam.course }}
+          </span>
+        </p>
       </div>
-
-      <button class="export-btn" @click="exportExcel">
+      <button
+        class="export-btn"
+        type="button"
+        @click="exportExcel"
+      >
         📥 Export Excel
       </button>
     </div>
-
-
-    <div class="summary-grid">
-      <div class="summary-card">
-        <small>Total Questions</small>
-        <h2>{{ totalQuestions }}</h2>
-      </div>
-
-      <div class="summary-card">
-        <small>Average Success</small>
-        <h2>{{ averageSuccess }}%</h2>
-      </div>
-
-      <div class="summary-card">
-        <small>Hard Items</small>
-        <h2>{{ hardItems }}</h2>
-      </div>
-
-      <div class="summary-card">
-        <small>Needs Review</small>
-        <h2>{{ needsReview }}</h2>
-      </div>
+    <!-- ==========================================
+         LOADING
+    =========================================== -->
+    <div
+      v-if="loading"
+      class="state-card"
+    >
+      <div class="loader"></div>
+      <h2>Loading Item Analysis</h2>
+      <p>
+        Calculating examination performance...
+      </p>
     </div>
-
-
-    <div class="filter-panel">
-      <div class="filter-buttons">
-        <button
-          v-for="filter in filters"
-          :key="filter"
-          :class="{ active: selectedFilter === filter }"
-          @click="selectedFilter = filter"
-        >
-          {{ filter }}
-        </button>
+    <!-- ==========================================
+         ERROR
+    =========================================== -->
+    <div
+      v-else-if="errorMessage"
+      class="state-card error-card"
+    >
+      <div class="state-icon">
+        ⚠
       </div>
-
-      <div class="filter-controls">
-        <input
-          v-model="search"
-          type="text"
-          placeholder="Search question..."
-        >
-
-        <select v-model="sortBy">
-          <option value="number">Question Number</option>
-          <option value="lowest">Lowest Success</option>
-          <option value="highest">Highest Success</option>
-          <option value="difficulty">Difficulty</option>
-        </select>
-      </div>
-    </div>
-
-        <!-- DIFFICULTY DISTRIBUTION -->
-    <div class="distribution-card">
-      <h2>Difficulty Distribution</h2>
-
-      <div
-        v-for="item in difficultyDistribution"
-        :key="item.label"
-        class="distribution-row"
+      <h2>Unable to Load Analysis</h2>
+      <p>
+        {{ errorMessage }}
+      </p>
+      <button
+        class="retry-btn"
+        type="button"
+        @click="fetchItemAnalysis"
       >
-        <div class="distribution-label">
-          <span>{{ item.label }}</span>
-          <strong>{{ item.count }}</strong>
-        </div>
-
-        <div class="distribution-bar">
-          <div
-            class="distribution-fill"
-            :class="item.className"
-            :style="{ width: item.percent + '%' }"
-          ></div>
-        </div>
-      </div>
+        Try Again
+      </button>
     </div>
-
-
-    <div class="questions-list">
-      <div
-        v-for="item in filteredItems"
-        :key="item.id"
-        class="question-card"
-      >
-        <div class="question-top">
-          <div>
-            <span class="question-number">Q{{ item.number }}</span>
-
-            <h2>{{ item.question }}</h2>
-
-            <p>{{ item.type }}</p>
+    <template v-else>
+      <!-- ==========================================
+           REPORT INFORMATION
+      =========================================== -->
+      <section class="report-information">
+        <div class="exam-information">
+          <div class="exam-details">
+            <div>
+              <small>Grade</small>
+              <strong>
+                {{ exam.grade || '—' }}
+              </strong>
+            </div>
+            <div>
+              <small>Section</small>
+              <strong>
+                {{ exam.section || '—' }}
+              </strong>
+            </div>
+            <div>
+              <small>Subject</small>
+              <strong>
+                {{ exam.course || '—' }}
+              </strong>
+            </div>
           </div>
-
-          <span
-            class="difficulty-badge"
-            :class="item.difficultyClass"
+          <div class="exam-statistics">
+            <div>
+              <span>Total Items</span>
+              <strong>{{ totalQuestions }}</strong>
+            </div>
+            <div>
+              <span>Total Examinees</span>
+              <strong>{{ totalExaminees }}</strong>
+            </div>
+            <div>
+              <span>Mean</span>
+              <strong>{{ meanScore }}</strong>
+            </div>
+            <div>
+              <span>MPS</span>
+              <strong>{{ mps }}%</strong>
+            </div>
+            <div>
+              <span>SD</span>
+              <strong>{{ standardDeviation }}</strong>
+            </div>
+            <div>
+              <span>PL</span>
+              <strong>{{ performanceLevel }}</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+      <!-- ==========================================
+           SUMMARY CARDS
+      =========================================== -->
+      <div class="summary-grid">
+        <div class="summary-card">
+          <small>Total Items</small>
+          <h2>{{ totalQuestions }}</h2>
+        </div>
+        <div class="summary-card">
+          <small>Mastered</small>
+          <h2>
+            {{ masteryCount('Mastered') }}
+          </h2>
+        </div>
+        <div class="summary-card">
+          <small>For Revision</small>
+          <h2>{{ reviseCount }}</h2>
+        </div>
+        <div class="summary-card">
+          <small>For Rejection</small>
+          <h2>{{ rejectCount }}</h2>
+        </div>
+      </div>
+      <!-- ==========================================
+           FILTERS
+      =========================================== -->
+      <section class="filter-panel">
+        <div class="filter-buttons">
+          <button
+            v-for="filter in filters"
+            :key="filter"
+            type="button"
+            :class="{
+              active: selectedFilter === filter
+            }"
+            @click="selectedFilter = filter"
           >
-            {{ item.difficulty }}
-          </span>
+            {{ filter }}
+          </button>
         </div>
-
-        <div class="analysis-grid">
+        <div class="filter-controls">
+          <input
+            v-model="search"
+            type="text"
+            placeholder="Search competency or question..."
+          >
+          <select v-model="sortBy">
+            <option value="number">
+              Item Number
+            </option>
+            <option value="lowest">
+              Lowest Percentage
+            </option>
+            <option value="highest">
+              Highest Percentage
+            </option>
+          </select>
+        </div>
+      </section>
+      <!-- ==========================================
+           MAIN ANALYSIS TABLE
+      =========================================== -->
+      <section class="table-card">
+        <div class="section-heading">
           <div>
-            <small>Success Rate</small>
-            <strong>{{ item.successRate }}%</strong>
+            <h2>
+              Item Analysis
+            </h2>
+            <p>
+              Performance of every examination item
+              according to competency.
+            </p>
           </div>
+        </div>
+        <div class="table-wrapper">
+          <table class="analysis-table">
+            <thead>
+              <tr>
+                <th class="competency-heading">
+                  Competencies
+                </th>
+                <th>
+                  Item No.
+                </th>
+                <th>
+                  No. of Correct Response
+                </th>
+                <th>
+                  Percentage
+                </th>
+                <th>
+                  Interpretation
+                </th>
+                <th>
+                  Remarks
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <template
+                v-for="group in groupedItems"
+                :key="group.competency"
+              >
+                <tr
+                  v-for="(item, index) in group.items"
+                  :key="item.id ?? `${group.competency}-${item.number}`"
+                >
+                  <!-- COMPETENCY -->
+                  <td
+                    v-if="index === 0"
+                    :rowspan="group.items.length"
+                    class="competency-cell"
+                  >
+                    {{ group.competency }}
+                  </td>
+                  <!-- ITEM NUMBER -->
+                  <td class="center-cell item-number">
+                    {{ item.number }}
+                  </td>
+                  <!-- CORRECT -->
+                  <td class="center-cell">
+                    {{ item.correct }}
+                  </td>
+                  <!-- PERCENTAGE -->
+                  <td class="center-cell">
+                    <strong>
+                      {{ item.percentage }}%
+                    </strong>
+                  </td>
+                  <!-- INTERPRETATION -->
+                  <td class="center-cell">
+                    <span
+                      class="mastery-badge"
+                      :class="item.masteryClass"
+                    >
+                      {{ item.masteryLevel }}
+                    </span>
+                  </td>
+                  <!-- REMARK -->
+                  <td class="center-cell">
+                    <span
+                      class="remarks-badge"
+                      :class="item.remarksClass"
+                    >
+                      {{ item.remarks }}
+                    </span>
+                  </td>
+                </tr>
+              </template>
+              <tr v-if="filteredItems.length === 0">
+                <td
+                  colspan="6"
+                  class="empty-table"
+                >
+                  No items found.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+      <!-- ==========================================
+           MASTERY SUMMARY
+      =========================================== -->
+      <section class="summary-table-card">
+
+        <div class="section-heading">
 
           <div>
-            <small>Students Correct</small>
-            <strong>{{ item.correct }} / {{ item.total }}</strong>
+            <h2>Summary</h2>
+
+            <p>
+              Test items grouped according to
+              mastery level.
+            </p>
           </div>
 
-          <div>
-            <small>Wrong Answers</small>
-            <strong>{{ item.wrong }}</strong>
-          </div>
-
-          <div>
-            <small>Discrimination</small>
-            <strong>{{ item.discrimination }}</strong>
-          </div>
         </div>
 
-        <div class="success-section">
-          <div class="success-label">
-            <span>Success Rate</span>
-            <strong>{{ item.successRate }}%</strong>
+
+        <div class="table-wrapper">
+
+          <table class="mastery-summary-table">
+
+            <thead>
+
+              <tr>
+
+                <th>
+                  Mastery Level
+                </th>
+
+                <th>
+                  Test Item
+                </th>
+
+                <th>
+                  Remarks
+                </th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody>
+
+              <tr
+                v-for="summary in masterySummary"
+                :key="summary.level"
+              >
+
+                <td class="mastery-name-cell">
+
+                  <span
+                    class="mastery-badge"
+                    :class="summary.className"
+                  >
+                    {{ summary.level }}
+                  </span>
+
+                </td>
+
+
+                <td class="summary-items">
+                  {{ summary.itemNumbers }}
+                </td>
+
+
+                <td class="summary-description">
+                  {{ summary.description }}
+                </td>
+
+              </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </section>
+
+
+      <!-- ==========================================
+           LEGEND
+      =========================================== -->
+      <section class="legend-card">
+
+        <h3>Legend</h3>
+
+        <div class="legend-grid">
+
+          <div class="legend-column">
+
+            <div class="legend-item">
+              <span class="legend-box mastered"></span>
+              Mastered
+            </div>
+
+            <div class="legend-item">
+              <span class="legend-box approximating"></span>
+              Approximating Mastery
+            </div>
+
+            <div class="legend-item">
+              <span class="legend-box moving"></span>
+              Moving Towards Mastery
+            </div>
+
+            <div class="legend-item">
+              <span class="legend-box average"></span>
+              Average Mastery
+            </div>
+
+            <div class="legend-item">
+              <span class="legend-box low"></span>
+              Low Mastery
+            </div>
+
           </div>
 
-          <div class="success-bar">
-            <div
-              class="success-fill"
-              :class="item.difficultyClass"
-              :style="{ width: item.successRate + '%' }"
-            ></div>
+
+          <div class="legend-column">
+
+            <div class="legend-item">
+              <span class="legend-box retain-revise"></span>
+              Retain or Revise
+            </div>
+
+            <div class="legend-item">
+              <span class="legend-box retain"></span>
+              Retain
+            </div>
+
+            <div class="legend-item">
+              <span class="legend-box revise"></span>
+              Revise
+            </div>
+
+            <div class="legend-item">
+              <span class="legend-box reject"></span>
+              Reject
+            </div>
+
           </div>
+
         </div>
 
-        <div class="wrong-answer">
-          <small>Most Common Wrong Answer</small>
-          <p>{{ item.commonWrongAnswer }}</p>
-        </div>
+      </section>
 
-        <div
-          class="recommendation"
-          :class="item.recommendationClass"
-        >
-          <strong>{{ item.recommendationTitle }}</strong>
-          <p>{{ item.recommendation }}</p>
-        </div>
-      </div>
-    </div>
+    </template>
 
   </div>
 </template>
 
+
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+
+import {
+  ref,
+  computed,
+  onMounted
+} from 'vue'
+
+import {
+  useRoute
+} from 'vue-router'
+
 import api from '../services/api'
+
 import * as XLSX from 'xlsx'
+
+
+/* =====================================================
+   TYPES
+===================================================== */
+
+interface ExamData {
+  id: number
+  title: string
+  course: string
+  grade: string
+  section: string
+  sd?: number | string | null
+  pl?: number | string | null
+}
+
+
+interface RawItem {
+  id?: number
+
+  number?: number
+
+  question?: string
+
+  type?: string
+
+  correct?: number
+
+  wrong?: number
+
+  total?: number
+
+  successRate?: number
+
+  percentage?: number
+
+  competency?: string
+
+  discrimination?: number | string
+
+  commonWrongAnswer?: string
+
+  [key: string]: any
+}
+
+
+interface AnalyzedItem extends RawItem {
+
+  number: number
+
+  correct: number
+
+  total: number
+
+  percentage: number
+
+  competency: string
+
+  masteryLevel: string
+
+  masteryClass: string
+
+  remarks: string
+
+  remarksClass: string
+}
+
+
+/* =====================================================
+   ROUTE
+===================================================== */
 
 const route = useRoute()
 
-const exam = ref({
-    id: 0,
-    title: '',
-    course: ''
-})
 
-const search = ref('')
-const selectedFilter = ref('All Questions')
-const sortBy = ref('number')
+/* =====================================================
+   STATE
+===================================================== */
+
+const loading =
+  ref(true)
+
+
+const errorMessage =
+  ref('')
+
+
+const search =
+  ref('')
+
+
+const selectedFilter =
+  ref('All Items')
+
+
+const sortBy =
+  ref('number')
+
+
+const exam =
+  ref<ExamData>({
+
+    id: 0,
+
+    title: '',
+
+    course: '',
+
+    grade: '',
+
+    section: '',
+
+    sd: null,
+
+    pl: null
+
+  })
+
+
+const items =
+  ref<RawItem[]>([])
+
+
+/* =====================================================
+   FILTERS
+===================================================== */
 
 const filters = [
-    'All Questions',
-    'Easy',
-    'Medium',
-    'Hard',
-    'Very Hard',
-    'Needs Review'
+
+  'All Items',
+
+  'Mastered',
+
+  'Approximating Mastery',
+
+  'Moving Towards Mastery',
+
+  'Average Mastery',
+
+  'Low Mastery'
+
 ]
 
-const items = ref<any[]>([])
+
+/* =====================================================
+   FETCH ITEM ANALYSIS
+===================================================== */
 
 async function fetchItemAnalysis() {
 
-    try {
+  loading.value = true
 
-        const examId = route.params.id
+  errorMessage.value = ''
 
-        const examResponse = await api.get(`/exams/${examId}`)
+  try {
 
-        exam.value = {
-            id: examResponse.data.data.id,
-            title: examResponse.data.data.title,
-            course: examResponse.data.data.course
-        }
+    const examId =
+      route.params.id
 
-        const response = await api.get(`/exams/${examId}/item-analysis`)
 
-        items.value = response.data.data
+    /*
+     * Load exam information.
+     */
+    const examResponse =
+      await api.get(
+        `/exams/${examId}`
+      )
 
-    } catch (error) {
 
-        console.error(error)
+    const examData =
+      examResponse.data?.data || {}
 
-        alert('Failed to load item analysis.')
+
+    exam.value = {
+
+      id:
+        Number(
+          examData.id || examId
+        ),
+
+      title:
+        examData.title ||
+        'Examination',
+
+      course:
+        examData.course ||
+        examData.subject ||
+        '',
+
+      grade:
+        examData.grade ||
+        examData.grade_level ||
+        '',
+
+      section:
+        examData.section ||
+        '',
+
+      sd:
+        examData.sd ??
+        examData.standard_deviation ??
+        null,
+
+      pl:
+        examData.pl ??
+        examData.performance_level ??
+        null
 
     }
 
+
+    /*
+     * Load item analysis.
+     */
+    const response =
+      await api.get(
+        `/exams/${examId}/item-analysis`
+      )
+
+
+    const responseData =
+      response.data?.data
+
+
+    /*
+     * Support:
+     *
+     * data: [...]
+     *
+     * OR
+     *
+     * data: {
+     *   items: [...],
+     *   summary: {...}
+     * }
+     */
+    if (Array.isArray(responseData)) {
+
+      items.value =
+        responseData
+
+    }
+
+    else {
+
+      items.value =
+        Array.isArray(
+          responseData?.items
+        )
+          ? responseData.items
+          : []
+
+
+      /*
+       * If backend already provides
+       * statistical values, use them.
+       */
+      if (responseData?.summary) {
+
+        exam.value.sd =
+          responseData.summary.sd ??
+          responseData.summary
+            .standard_deviation ??
+          exam.value.sd
+
+
+        exam.value.pl =
+          responseData.summary.pl ??
+          responseData.summary
+            .performance_level ??
+          exam.value.pl
+
+      }
+
+    }
+
+  }
+
+  catch (error) {
+
+    console.error(
+      'ITEM ANALYSIS ERROR:',
+      error
+    )
+
+    errorMessage.value =
+      'Failed to load the item analysis.'
+
+  }
+
+  finally {
+
+    loading.value = false
+
+  }
+
 }
 
-const analyzedItems = computed(() => {
 
-    return items.value.map(item => {
+/* =====================================================
+   ANALYZE ITEMS
+===================================================== */
 
-        let difficulty = ''
-        let difficultyClass = ''
+const analyzedItems =
+  computed<AnalyzedItem[]>(() => {
 
-        let recommendationTitle = ''
-        let recommendation = ''
-        let recommendationClass = ''
+    return items.value.map(
+      (
+        item,
+        index
+      ) => {
 
-        if (item.successRate >= 90) {
+        /*
+         * Total examinees.
+         */
+        const total =
+          Number(
+            item.total || 0
+          )
 
-            difficulty = 'Easy'
-            difficultyClass = 'easy'
 
-            recommendationTitle = 'Excellent Question'
-            recommendation =
-                'Students clearly understood this concept.'
+        /*
+         * Correct responses.
+         */
+        const correct =
+          Number(
+            item.correct || 0
+          )
 
-            recommendationClass = 'excellent'
+
+        /*
+         * Prefer backend percentage.
+         *
+         * Otherwise calculate:
+         *
+         * correct / total × 100
+         */
+        let percentage =
+          Number(
+            item.successRate ??
+            item.percentage ??
+            0
+          )
+
+
+        if (
+          (
+            item.successRate === undefined &&
+            item.percentage === undefined
+          )
+
+          &&
+
+          total > 0
+        ) {
+
+          percentage =
+            (
+              correct /
+              total
+            ) * 100
 
         }
 
-        else if (item.successRate >= 75) {
 
-            difficulty = 'Medium'
-            difficultyClass = 'medium'
+        /*
+         * Round percentage.
+         */
+        percentage =
+          Math.round(
+            percentage * 100
+          ) / 100
 
-            recommendationTitle = 'Good Question'
-            recommendation =
-                'Question performs well.'
 
-            recommendationClass = 'good'
+        let masteryLevel = ''
+
+        let masteryClass = ''
+
+        let remarks = ''
+
+        let remarksClass = ''
+
+
+        /*
+         * =====================================
+         * AGENCY MASTERY CLASSIFICATION
+         * =====================================
+         */
+
+
+        /*
+         * 96 - 100
+         */
+        if (
+          percentage >= 96
+        ) {
+
+          masteryLevel =
+            'Mastered'
+
+          masteryClass =
+            'mastered'
+
+          remarks =
+            'Retain or Revise'
+
+          remarksClass =
+            'retain-revise'
 
         }
 
-        else if (item.successRate >= 50) {
 
-            difficulty = 'Hard'
-            difficultyClass = 'hard'
+        /*
+         * 86 - 95
+         */
+        else if (
+          percentage >= 86
+        ) {
 
-            recommendationTitle = 'Needs Review'
-            recommendation =
-                'Review wording or lesson coverage.'
+          masteryLevel =
+            'Approximating Mastery'
 
-            recommendationClass = 'review'
+          masteryClass =
+            'approximating'
+
+          remarks =
+            'Retain'
+
+          remarksClass =
+            'retain'
 
         }
 
+
+        /*
+         * 66 - 85
+         */
+        else if (
+          percentage >= 66
+        ) {
+
+          masteryLevel =
+            'Moving Towards Mastery'
+
+          masteryClass =
+            'moving'
+
+          remarks =
+            'Retain'
+
+          remarksClass =
+            'retain'
+
+        }
+
+
+        /*
+         * 35 - 65
+         */
+        else if (
+          percentage >= 35
+        ) {
+
+          masteryLevel =
+            'Average Mastery'
+
+          masteryClass =
+            'average'
+
+          remarks =
+            'Revise'
+
+          remarksClass =
+            'revise'
+
+        }
+
+
+        /*
+         * 0 - 34
+         */
         else {
 
-            difficulty = 'Very Hard'
-            difficultyClass = 'very-hard'
+          masteryLevel =
+            'Low Mastery'
 
-            recommendationTitle = 'Replace Question'
-            recommendation =
-                'Question should be revised.'
+          masteryClass =
+            'low'
 
-            recommendationClass = 'replace'
+          remarks =
+            'Reject'
+
+          remarksClass =
+            'reject'
 
         }
+
 
         return {
 
-            ...item,
+          ...item,
 
-            difficulty,
+          number:
+            Number(
+              item.number
+            ) ||
+            index + 1,
 
-            difficultyClass,
+          correct,
 
-            recommendationTitle,
+          total,
 
-            recommendation,
+          percentage,
 
-            recommendationClass
+          competency:
+            String(
+              item.competency ||
+              item.competency_name ||
+              item.learning_competency ||
+              'Unassigned Competency'
+            ),
+
+          masteryLevel,
+
+          masteryClass,
+
+          remarks,
+
+          remarksClass
 
         }
 
-    })
+      }
 
-})
+    )
 
-const totalQuestions = computed(() => analyzedItems.value.length)
+  })
 
-const averageSuccess = computed(() => {
 
-    if (analyzedItems.value.length === 0) return 0
+/* =====================================================
+   TOTAL QUESTIONS
+===================================================== */
 
-    const total = analyzedItems.value.reduce(
-        (sum, item) => sum + item.successRate,
+const totalQuestions =
+  computed(
+    () =>
+      analyzedItems.value.length
+  )
+
+
+/* =====================================================
+   TOTAL EXAMINEES
+===================================================== */
+
+const totalExaminees =
+  computed(() => {
+
+    if (
+      analyzedItems.value.length === 0
+    ) {
+
+      return 0
+
+    }
+
+
+    return Math.max(
+
+      ...analyzedItems.value.map(
+        item =>
+          Number(
+            item.total || 0
+          )
+      ),
+
+      0
+
+    )
+
+  })
+
+
+/* =====================================================
+   MEAN SCORE
+===================================================== */
+
+const meanScore =
+  computed(() => {
+
+    const examinees =
+      totalExaminees.value
+
+
+    if (
+      examinees <= 0
+    ) {
+
+      return '0.00'
+
+    }
+
+
+    /*
+     * Total correct responses across
+     * every question.
+     */
+    const totalCorrect =
+      analyzedItems.value.reduce(
+
+        (
+          sum,
+          item
+        ) =>
+
+          sum +
+          Number(
+            item.correct || 0
+          ),
+
         0
-    )
 
-    return Math.round(total / analyzedItems.value.length)
+      )
 
-})
 
-const hardItems = computed(() =>
-    analyzedItems.value.filter(i =>
-        i.difficulty === 'Hard' ||
-        i.difficulty === 'Very Hard'
-    ).length
-)
+    /*
+     * Mean test score per student.
+     */
+    return (
+      totalCorrect /
+      examinees
+    ).toFixed(2)
 
-const needsReview = computed(() =>
-    analyzedItems.value.filter(i =>
-        i.recommendationTitle !== 'Excellent Question'
-    ).length
-)
+  })
 
-const difficultyDistribution = computed(() => {
 
-    const total = analyzedItems.value.length || 1
+/* =====================================================
+   MEAN PERCENTAGE SCORE
+===================================================== */
 
-    const easy = analyzedItems.value.filter(i => i.difficulty === 'Easy').length
-    const medium = analyzedItems.value.filter(i => i.difficulty === 'Medium').length
-    const hard = analyzedItems.value.filter(i => i.difficulty === 'Hard').length
-    const veryHard = analyzedItems.value.filter(i => i.difficulty === 'Very Hard').length
+const mps =
+  computed(() => {
 
-    return [
+    if (
+      totalQuestions.value <= 0
+    ) {
 
-        {
-            label:'Easy',
-            count:easy,
-            percent:(easy/total)*100,
-            className:'easy'
-        },
-
-        {
-            label:'Medium',
-            count:medium,
-            percent:(medium/total)*100,
-            className:'medium'
-        },
-
-        {
-            label:'Hard',
-            count:hard,
-            percent:(hard/total)*100,
-            className:'hard'
-        },
-
-        {
-            label:'Very Hard',
-            count:veryHard,
-            percent:(veryHard/total)*100,
-            className:'very-hard'
-        }
-
-    ]
-
-})
-
-const filteredItems = computed(() => {
-
-    let result = [...analyzedItems.value]
-
-    if (selectedFilter.value !== 'All Questions') {
-
-        if (selectedFilter.value === 'Needs Review') {
-
-            result = result.filter(
-                item => item.recommendationTitle !== 'Excellent Question'
-            )
-
-        } else {
-
-            result = result.filter(
-                item => item.difficulty === selectedFilter.value
-            )
-
-        }
-
-    }
-
-    if (search.value.trim()) {
-
-        result = result.filter(item =>
-            item.question
-                .toLowerCase()
-                .includes(search.value.toLowerCase())
-        )
-
-    }
-
-    return result
-
-})
-
-function exportExcel() {
-
-    if (analyzedItems.value.length === 0) {
-
-        alert('There is no item analysis to export.')
-
-        return
+      return '0.00'
 
     }
 
 
-    /*
-     * Convert all item analysis data
-     * into rows for Excel.
-     */
-    const excelData = analyzedItems.value.map(
-        (item, index) => {
+    const mean =
+      Number(
+        meanScore.value
+      )
 
-            return {
 
-                'No.':
-                    index + 1,
+    return (
 
-                'Question Number':
-                    item.number,
+      (
+        mean /
+        totalQuestions.value
+      )
 
-                'Question':
-                    item.question,
+      *
 
-                'Question Type':
-                    item.type,
+      100
 
-                'Success Rate':
-                    `${item.successRate}%`,
+    ).toFixed(2)
 
-                'Students Correct':
-                    item.correct,
+  })
 
-                'Total Students':
-                    item.total,
 
-                'Wrong Answers':
-                    item.wrong,
+/* =====================================================
+   SD
+===================================================== */
 
-                'Difficulty':
-                    item.difficulty,
+/*
+ * Standard deviation cannot be calculated
+ * correctly using only per-item totals.
+ *
+ * The backend should send the actual SD
+ * based on individual student scores.
+ */
+const standardDeviation =
+  computed(() => {
 
-                'Discrimination Index':
-                    item.discrimination,
+    if (
+      exam.value.sd === null ||
+      exam.value.sd === undefined ||
+      exam.value.sd === ''
+    ) {
 
-                'Most Common Wrong Answer':
-                    item.commonWrongAnswer || '-',
+      return '—'
 
-                'Recommendation':
-                    item.recommendationTitle,
+    }
 
-                'Recommendation Details':
-                    item.recommendation
 
-            }
+    const value =
+      Number(
+        exam.value.sd
+      )
 
-        }
+
+    if (
+      Number.isNaN(value)
+    ) {
+
+      return String(
+        exam.value.sd
+      )
+
+    }
+
+
+    return value.toFixed(2)
+
+  })
+
+
+/* =====================================================
+   PERFORMANCE LEVEL
+===================================================== */
+
+/*
+ * Use backend value because the exact
+ * institutional PL formula should come
+ * from the agency.
+ */
+const performanceLevel =
+  computed(() => {
+
+    if (
+      exam.value.pl === null ||
+      exam.value.pl === undefined ||
+      exam.value.pl === ''
+    ) {
+
+      return '—'
+
+    }
+
+
+    const value =
+      Number(
+        exam.value.pl
+      )
+
+
+    if (
+      Number.isNaN(value)
+    ) {
+
+      return String(
+        exam.value.pl
+      )
+
+    }
+
+
+    return value.toFixed(2)
+
+  })
+
+
+/* =====================================================
+   MASTERY COUNT
+===================================================== */
+
+function masteryCount(
+  mastery: string
+) {
+
+  return analyzedItems.value
+    .filter(
+      item =>
+        item.masteryLevel ===
+        mastery
     )
-
-
-    /*
-     * Create worksheet.
-     */
-    const worksheet =
-        XLSX.utils.json_to_sheet(excelData)
-
-
-    /*
-     * Adjust Excel column widths.
-     */
-    worksheet['!cols'] = [
-
-        { wch: 6 },     // No.
-
-        { wch: 16 },    // Question Number
-
-        { wch: 55 },    // Question
-
-        { wch: 18 },    // Question Type
-
-        { wch: 15 },    // Success Rate
-
-        { wch: 18 },    // Correct
-
-        { wch: 16 },    // Total
-
-        { wch: 16 },    // Wrong
-
-        { wch: 15 },    // Difficulty
-
-        { wch: 22 },    // Discrimination
-
-        { wch: 35 },    // Common Wrong
-
-        { wch: 25 },    // Recommendation
-
-        { wch: 50 }     // Recommendation Details
-
-    ]
-
-
-    /*
-     * Create workbook.
-     */
-    const workbook =
-        XLSX.utils.book_new()
-
-
-    /*
-     * Add the item analysis worksheet.
-     */
-    XLSX.utils.book_append_sheet(
-        workbook,
-        worksheet,
-        'Item Analysis'
-    )
-
-
-    /*
-     * Create a second worksheet
-     * for the exam summary.
-     */
-    const summaryData = [
-
-        {
-            'Exam Title':
-                exam.value.title,
-
-            'Course':
-                exam.value.course,
-
-            'Total Questions':
-                totalQuestions.value,
-
-            'Average Success':
-                `${averageSuccess.value}%`,
-
-            'Hard Items':
-                hardItems.value,
-
-            'Needs Review':
-                needsReview.value
-        }
-
-    ]
-
-
-    const summaryWorksheet =
-        XLSX.utils.json_to_sheet(
-            summaryData
-        )
-
-
-    summaryWorksheet['!cols'] = [
-
-        { wch: 35 },
-
-        { wch: 20 },
-
-        { wch: 18 },
-
-        { wch: 18 },
-
-        { wch: 15 },
-
-        { wch: 18 }
-
-    ]
-
-
-    /*
-     * Add summary as another Excel sheet.
-     */
-    XLSX.utils.book_append_sheet(
-        workbook,
-        summaryWorksheet,
-        'Summary'
-    )
-
-
-    /*
-     * Make the exam title safe
-     * for the filename.
-     */
-    const examTitle =
-        exam.value.title
-            ?.replace(
-                /[\\/:*?"<>|]/g,
-                '-'
-            )
-        || 'Exam'
-
-
-    /*
-     * Download Excel file.
-     */
-    XLSX.writeFile(
-        workbook,
-        `${examTitle}-Item-Analysis.xlsx`
-    )
+    .length
 
 }
 
+
+/* =====================================================
+   REVISE COUNT
+===================================================== */
+
+const reviseCount =
+  computed(() => {
+
+    return analyzedItems.value
+      .filter(
+
+        item =>
+
+          item.remarks ===
+            'Revise'
+
+          ||
+
+          item.remarks ===
+            'Retain or Revise'
+
+      )
+      .length
+
+  })
+
+
+/* =====================================================
+   REJECT COUNT
+===================================================== */
+
+const rejectCount =
+  computed(() => {
+
+    return analyzedItems.value
+      .filter(
+        item =>
+          item.remarks ===
+          'Reject'
+      )
+      .length
+
+  })
+
+
+/* =====================================================
+   FILTERED ITEMS
+===================================================== */
+
+const filteredItems =
+  computed<AnalyzedItem[]>(() => {
+
+    let result =
+      [
+        ...analyzedItems.value
+      ]
+
+
+    /*
+     * Filter by mastery.
+     */
+    if (
+      selectedFilter.value !==
+      'All Items'
+    ) {
+
+      result =
+        result.filter(
+
+          item =>
+
+            item.masteryLevel ===
+            selectedFilter.value
+
+        )
+
+    }
+
+
+    /*
+     * Search.
+     */
+    if (
+      search.value.trim()
+    ) {
+
+      const keyword =
+        search.value
+          .trim()
+          .toLowerCase()
+
+
+      result =
+        result.filter(
+          item => {
+
+            const competency =
+              String(
+                item.competency ||
+                ''
+              )
+                .toLowerCase()
+
+
+            const question =
+              String(
+                item.question ||
+                ''
+              )
+                .toLowerCase()
+
+
+            return (
+
+              competency.includes(
+                keyword
+              )
+
+              ||
+
+              question.includes(
+                keyword
+              )
+
+              ||
+
+              String(
+                item.number
+              ).includes(
+                keyword
+              )
+
+            )
+
+          }
+        )
+
+    }
+
+
+    /*
+     * Sorting.
+     */
+    if (
+      sortBy.value ===
+      'lowest'
+    ) {
+
+      result.sort(
+        (
+          a,
+          b
+        ) =>
+          a.percentage -
+          b.percentage
+      )
+
+    }
+
+
+    else if (
+      sortBy.value ===
+      'highest'
+    ) {
+
+      result.sort(
+        (
+          a,
+          b
+        ) =>
+          b.percentage -
+          a.percentage
+      )
+
+    }
+
+
+    else {
+
+      result.sort(
+        (
+          a,
+          b
+        ) =>
+          a.number -
+          b.number
+      )
+
+    }
+
+
+    return result
+
+  })
+
+
+/* =====================================================
+   GROUP BY COMPETENCY
+===================================================== */
+
+const groupedItems =
+  computed(() => {
+
+    const groups =
+      new Map<
+        string,
+        AnalyzedItem[]
+      >()
+
+
+    filteredItems.value.forEach(
+      item => {
+
+        const competency =
+          item.competency ||
+          'Unassigned Competency'
+
+
+        if (
+          !groups.has(
+            competency
+          )
+        ) {
+
+          groups.set(
+            competency,
+            []
+          )
+
+        }
+
+
+        groups
+          .get(
+            competency
+          )
+          ?.push(
+            item
+          )
+
+      }
+
+    )
+
+
+    return Array.from(
+      groups.entries()
+    ).map(
+      (
+        [
+          competency,
+          grouped
+        ]
+      ) => ({
+
+        competency,
+
+        items:
+          grouped.sort(
+            (
+              a,
+              b
+            ) =>
+              a.number -
+              b.number
+          )
+
+      })
+
+    )
+
+  })
+
+
+/* =====================================================
+   MASTERY SUMMARY
+===================================================== */
+
+const masterySummary =
+  computed(() => {
+
+    const definitions = [
+
+      {
+
+        level:
+          'Mastered',
+
+        className:
+          'mastered',
+
+        description:
+          'Students have demonstrated a thorough understanding of the competency and can consistently apply the required knowledge and skills with little or no assistance.'
+
+      },
+
+
+      {
+
+        level:
+          'Approximating Mastery',
+
+        className:
+          'approximating',
+
+        description:
+          'Students have achieved a high level of understanding of the competency, with only minor misconceptions or errors that can be addressed through brief reinforcement.'
+
+      },
+
+
+      {
+
+        level:
+          'Moving Towards Mastery',
+
+        className:
+          'moving',
+
+        description:
+          'Students show a satisfactory understanding of the competency but still require additional practice and reinforcement to attain full mastery.'
+
+      },
+
+
+      {
+
+        level:
+          'Average Mastery',
+
+        className:
+          'average',
+
+        description:
+          'Students have only a partial understanding of the competency. Significant gaps in knowledge and skills are evident, requiring re-teaching and targeted interventions.'
+
+      },
+
+
+      {
+
+        level:
+          'Low Mastery',
+
+        className:
+          'low',
+
+        description:
+          'Students have not yet developed the essential knowledge and skills related to the competency. Intensive remediation and focused instructional support are needed before progressing to more advanced learning.'
+
+      }
+
+    ]
+
+
+    return definitions.map(
+      definition => {
+
+        const matches =
+          analyzedItems.value
+            .filter(
+
+              item =>
+
+                item.masteryLevel ===
+                definition.level
+
+            )
+            .sort(
+              (
+                a,
+                b
+              ) =>
+                a.number -
+                b.number
+            )
+
+
+        return {
+
+          ...definition,
+
+          count:
+            matches.length,
+
+          itemNumbers:
+            matches.length
+
+              ?
+
+              matches
+                .map(
+                  item =>
+                    item.number
+                )
+                .join(', ')
+
+              :
+
+              '—'
+
+        }
+
+      }
+
+    )
+
+  })
+
+
+/* =====================================================
+   EXPORT EXCEL
+===================================================== */
+
+function exportExcel() {
+
+  if (
+    analyzedItems.value.length === 0
+  ) {
+
+    alert(
+      'There is no item analysis to export.'
+    )
+
+    return
+
+  }
+
+
+  /*
+   * =========================================
+   * MAIN ANALYSIS SHEET
+   * =========================================
+   */
+
+  const analysisRows:
+    any[][] = []
+
+
+  /*
+   * Report heading.
+   */
+  analysisRows.push(
+    [
+      'COMPETENCY BASED ITEM ANALYSIS'
+    ]
+  )
+
+
+  analysisRows.push(
+    [
+      exam.value.title
+    ]
+  )
+
+
+  analysisRows.push(
+    []
+  )
+
+
+  analysisRows.push(
+    [
+      'GRADE:',
+      exam.value.grade || '—',
+
+      '',
+
+      'TOTAL ITEMS:',
+      totalQuestions.value
+    ]
+  )
+
+
+  analysisRows.push(
+    [
+      'SECTION:',
+      exam.value.section || '—',
+
+      '',
+
+      'MEAN:',
+      meanScore.value
+    ]
+  )
+
+
+  analysisRows.push(
+    [
+      'SUBJECT:',
+      exam.value.course || '—',
+
+      '',
+
+      'SD:',
+      standardDeviation.value
+    ]
+  )
+
+
+  analysisRows.push(
+    [
+      '',
+
+      '',
+
+      '',
+
+      'MPS:',
+      `${mps.value}%`
+    ]
+  )
+
+
+  analysisRows.push(
+    [
+      '',
+
+      '',
+
+      '',
+
+      'PL:',
+      performanceLevel.value
+    ]
+  )
+
+
+  analysisRows.push(
+    [
+      '',
+
+      '',
+
+      '',
+
+      'TOTAL ENROLLMENT:',
+      totalExaminees.value
+    ]
+  )
+
+
+  analysisRows.push(
+    []
+  )
+
+
+  /*
+   * Table headings.
+   */
+  analysisRows.push(
+    [
+      'COMPETENCIES',
+
+      'ITEM NO.',
+
+      'NO. OF CORRECT RESPONSE',
+
+      'PERCENTAGE',
+
+      'INTERPRETATION',
+
+      'REMARKS'
+    ]
+  )
+
+
+  /*
+   * Table rows.
+   */
+  analyzedItems.value
+    .sort(
+      (
+        a,
+        b
+      ) =>
+        a.number -
+        b.number
+    )
+    .forEach(
+      item => {
+
+        analysisRows.push(
+          [
+
+            item.competency,
+
+            item.number,
+
+            item.correct,
+
+            item.percentage,
+
+            item.masteryLevel,
+
+            item.remarks
+
+          ]
+        )
+
+      }
+
+    )
+
+
+  const analysisSheet =
+    XLSX.utils
+      .aoa_to_sheet(
+        analysisRows
+      )
+
+
+  analysisSheet['!cols'] = [
+
+    {
+      wch: 50
+    },
+
+    {
+      wch: 12
+    },
+
+    {
+      wch: 24
+    },
+
+    {
+      wch: 15
+    },
+
+    {
+      wch: 30
+    },
+
+    {
+      wch: 20
+    }
+
+  ]
+
+
+  /*
+   * Merge report headings.
+   */
+  analysisSheet['!merges'] = [
+
+    {
+      s: {
+        r: 0,
+        c: 0
+      },
+
+      e: {
+        r: 0,
+        c: 5
+      }
+    },
+
+    {
+      s: {
+        r: 1,
+        c: 0
+      },
+
+      e: {
+        r: 1,
+        c: 5
+      }
+    }
+
+  ]
+
+
+  /*
+   * =========================================
+   * SUMMARY SHEET
+   * =========================================
+   */
+
+  const summaryRows:
+    any[][] = []
+
+
+  summaryRows.push(
+    [
+      'SUMMARY'
+    ]
+  )
+
+
+  summaryRows.push(
+    []
+  )
+
+
+  summaryRows.push(
+    [
+      'MASTERY LEVEL',
+      'TEST ITEM',
+      'REMARKS'
+    ]
+  )
+
+
+  masterySummary.value.forEach(
+    summary => {
+
+      summaryRows.push(
+        [
+
+          summary.level,
+
+          summary.itemNumbers,
+
+          summary.description
+
+        ]
+      )
+
+    }
+  )
+
+
+  const summarySheet =
+    XLSX.utils
+      .aoa_to_sheet(
+        summaryRows
+      )
+
+
+  summarySheet['!cols'] = [
+
+    {
+      wch: 30
+    },
+
+    {
+      wch: 55
+    },
+
+    {
+      wch: 90
+    }
+
+  ]
+
+
+  summarySheet['!merges'] = [
+
+    {
+      s: {
+        r: 0,
+        c: 0
+      },
+
+      e: {
+        r: 0,
+        c: 2
+      }
+    }
+
+  ]
+
+
+  /*
+   * =========================================
+   * WORKBOOK
+   * =========================================
+   */
+
+  const workbook =
+    XLSX.utils.book_new()
+
+
+  XLSX.utils
+    .book_append_sheet(
+
+      workbook,
+
+      analysisSheet,
+
+      'Item Analysis'
+
+    )
+
+
+  XLSX.utils
+    .book_append_sheet(
+
+      workbook,
+
+      summarySheet,
+
+      'Summary'
+
+    )
+
+
+  /*
+   * Safe filename.
+   */
+  const filename =
+    (
+      exam.value.title ||
+      'Exam'
+    )
+      .replace(
+        /[\\/:*?"<>|]/g,
+        '-'
+      )
+
+
+  XLSX.writeFile(
+
+    workbook,
+
+    `${filename}-Competency-Based-Item-Analysis.xlsx`
+
+  )
+
+}
+
+
+/* =====================================================
+   MOUNT
+===================================================== */
+
 onMounted(() => {
 
-    fetchItemAnalysis()
+  fetchItemAnalysis()
 
 })
+
 </script>
+
 
 <style scoped>
 
@@ -640,803 +2074,1289 @@ onMounted(() => {
    GLOBAL
 ========================================== */
 
-*{
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-    margin:0;
 
-    padding:0;
+.analysis-page {
 
-    box-sizing:border-box;
+  min-height: 100vh;
+
+  padding: 30px;
+
+  background: #f3f6f4;
+
+  font-family:
+    'Poppins',
+    Arial,
+    sans-serif;
+
+  color: #172033;
 
 }
 
-.analysis-detail-page{
-
-    min-height:100vh;
-
-    background:#f5f7fb;
-
-    padding:30px;
-
-    font-family:'Poppins',sans-serif;
-
-}
-
-/* ==========================================
-   HEADER
-========================================== */
-
-.page-header{
-
-    display:flex;
-
-    justify-content:space-between;
-
-    align-items:flex-start;
-
-    gap:20px;
-
-    margin-bottom:30px;
-
-}
-
-.back-btn{
-
-    border:none;
-
-    background:#eef2ff;
-
-    color:#1e40af;
-
-    padding:10px 18px;
-
-    border-radius:10px;
-
-    cursor:pointer;
-
-    font-weight:600;
-
-    margin-bottom:18px;
-
-    transition:.25s;
-
-}
-
-.back-btn:hover{
-
-    background:#dbeafe;
-
-}
-
-.page-header h1{
-
-    color:#112244;
-
-    font-size:38px;
-
-    margin-bottom:8px;
-
-}
-
-.page-header p{
-
-    color:#666;
-
-}
-
-.export-btn{
-
-    border:none;
-
-    background:#16a34a;
-
-    color:white;
-
-    padding:14px 22px;
-
-    border-radius:12px;
-
-    cursor:pointer;
-
-    font-weight:600;
-
-    transition:.25s;
-
-}
-
-.export-btn:hover{
-
-    background:#15803d;
-
-}
 
 /* ==========================================
-   SUMMARY
+   PAGE HEADER
 ========================================== */
 
-.summary-grid{
+.page-header {
 
-    display:grid;
+  display: flex;
 
-    grid-template-columns:repeat(4,1fr);
+  justify-content: space-between;
 
-    gap:20px;
+  align-items: flex-start;
 
-    margin-bottom:30px;
+  gap: 20px;
 
-}
-
-.summary-card{
-
-    background:white;
-
-    border-radius:18px;
-
-    padding:24px;
-
-    box-shadow:0 8px 25px rgba(0,0,0,.06);
+  margin-bottom: 28px;
 
 }
 
-.summary-card small{
 
-    color:#666;
+.page-header h1 {
+
+  margin-bottom: 6px;
+
+  font-size: 34px;
+
+  color: #112244;
+
+}
+
+
+.page-header p {
+
+  color: #64748b;
+
+  font-size: 14px;
 
 }
 
-.summary-card h2{
 
-    margin-top:10px;
+.back-btn {
 
-    font-size:34px;
+  margin-bottom: 14px;
 
-    color:#112244;
+  padding: 9px 16px;
+
+  border: none;
+
+  border-radius: 9px;
+
+  background: #e8f3ec;
+
+  color: #166534;
+
+  cursor: pointer;
+
+  font-weight: 700;
 
 }
+
+
+.back-btn:hover {
+
+  background: #d5eadc;
+
+}
+
+
+.export-btn {
+
+  padding: 13px 20px;
+
+  border: none;
+
+  border-radius: 11px;
+
+  background: #16a34a;
+
+  color: white;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 8px 20px
+    rgba(22, 163, 74, .20);
+
+}
+
+
+.export-btn:hover {
+
+  background: #15803d;
+
+}
+
 
 /* ==========================================
-   FILTER PANEL
+   STATE
 ========================================== */
 
-.filter-panel{
+.state-card {
 
-    background:white;
+  width: min(
+    100%,
+    500px
+  );
 
-    border-radius:18px;
+  margin:
+    80px
+    auto;
 
-    padding:24px;
+  padding: 40px;
 
-    box-shadow:0 8px 25px rgba(0,0,0,.06);
+  text-align: center;
 
-    margin-bottom:30px;
+  background: white;
 
-}
+  border-radius: 18px;
 
-.filter-buttons{
-
-    display:flex;
-
-    flex-wrap:wrap;
-
-    gap:12px;
-
-    margin-bottom:20px;
-
-}
-
-.filter-buttons button{
-
-    border:none;
-
-    background:#eef2f7;
-
-    color:#555;
-
-    padding:12px 20px;
-
-    border-radius:999px;
-
-    cursor:pointer;
-
-    transition:.25s;
-
-    font-weight:600;
+  box-shadow:
+    0 10px 30px
+    rgba(0,0,0,.08);
 
 }
 
-.filter-buttons button:hover{
 
-    background:#dbeafe;
+.state-card h2 {
 
-}
+  margin-bottom: 8px;
 
-.filter-buttons button.active{
-
-    background:#16a34a;
-
-    color:white;
+  color: #112244;
 
 }
 
-.filter-controls{
 
-    display:flex;
+.state-card p {
 
-    gap:15px;
-
-}
-
-.filter-controls input{
-
-    flex:1;
-
-    padding:14px;
-
-    border:1px solid #ddd;
-
-    border-radius:10px;
-
-    outline:none;
+  color: #64748b;
 
 }
 
-.filter-controls select{
 
-    width:240px;
+.state-icon {
 
-    padding:14px;
+  margin-bottom: 12px;
 
-    border:1px solid #ddd;
-
-    border-radius:10px;
-
-    outline:none;
+  font-size: 40px;
 
 }
+
+
+.loader {
+
+  width: 46px;
+
+  height: 46px;
+
+  margin:
+    0 auto
+    18px;
+
+  border:
+    4px solid
+    #dcfce7;
+
+  border-top-color:
+    #16a34a;
+
+  border-radius:
+    50%;
+
+  animation:
+    spin .7s
+    linear
+    infinite;
+
+}
+
+
+@keyframes spin {
+
+  to {
+
+    transform:
+      rotate(
+        360deg
+      );
+
+  }
+
+}
+
+
+.retry-btn {
+
+  margin-top: 18px;
+
+  padding: 11px 20px;
+
+  border: none;
+
+  border-radius: 9px;
+
+  background: #16a34a;
+
+  color: white;
+
+  cursor: pointer;
+
+  font-weight: 700;
+
+}
+
 
 /* ==========================================
-   DIFFICULTY DISTRIBUTION
+   REPORT INFORMATION
 ========================================== */
 
-.distribution-card{
+.report-information {
 
-    background:white;
+  margin-bottom: 25px;
 
-    border-radius:18px;
+  padding: 28px;
 
-    padding:24px;
+  background: #ffffff;
 
-    box-shadow:0 8px 25px rgba(0,0,0,.06);
+  border:
+    1px solid
+    #d9e2dc;
 
-    margin-bottom:30px;
+  border-radius: 16px;
 
-}
-
-.distribution-card h2{
-
-    color:#112244;
-
-    margin-bottom:20px;
+  box-shadow:
+    0 8px 25px
+    rgba(0,0,0,.05);
 
 }
 
-.distribution-row{
 
-    margin-bottom:18px;
+.school-header {
 
-}
+  margin-bottom: 25px;
 
-.distribution-label{
-
-    display:flex;
-
-    justify-content:space-between;
-
-    margin-bottom:8px;
+  text-align: center;
 
 }
 
-.distribution-bar{
 
-    width:100%;
+.school-header h2 {
 
-    height:10px;
+  margin-bottom: 5px;
 
-    background:#edf2f7;
+  color: #10261a;
 
-    border-radius:999px;
-
-    overflow:hidden;
+  font-size: 24px;
 
 }
 
-.distribution-fill{
 
-    height:100%;
+.school-header strong {
 
-    border-radius:999px;
+  color: #475569;
 
-}
-
-.distribution-fill.easy{
-
-    background:#22c55e;
+  font-size: 13px;
 
 }
 
-.distribution-fill.medium{
 
-    background:#facc15;
+.exam-information {
+
+  display: grid;
+
+  grid-template-columns:
+    1fr
+    320px;
+
+  gap: 30px;
+
+}
+
+
+.exam-details {
+
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(0,1fr)
+    );
+
+  gap: 15px;
 
 }
 
-.distribution-fill.hard{
 
-    background:#fb923c;
+.exam-details div {
+
+  padding: 14px;
+
+  border-radius: 10px;
+
+  background: #f8fafc;
 
 }
 
-.distribution-fill.very-hard{
 
-    background:#ef4444;
+.exam-details small {
+
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #64748b;
 
 }
+
+
+.exam-details strong {
+
+  color: #172033;
+
+}
+
+
+.exam-statistics {
+
+  border-left:
+    2px solid
+    #e2e8f0;
+
+  padding-left: 25px;
+
+}
+
+
+.exam-statistics div {
+
+  display: flex;
+
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding:
+    4px
+    0;
+
+  font-size: 13px;
+
+}
+
+
+.exam-statistics span {
+
+  color: #475569;
+
+  font-weight: 600;
+
+}
+
+
+.exam-statistics strong {
+
+  color: #111827;
+
+}
+
 
 /* ==========================================
-   QUESTION LIST
+   SUMMARY CARDS
 ========================================== */
 
-.questions-list{
+.summary-grid {
 
-    display:flex;
+  display: grid;
 
-    flex-direction:column;
+  grid-template-columns:
+    repeat(
+      4,
+      1fr
+    );
 
-    gap:24px;
+  gap: 18px;
+
+  margin-bottom: 25px;
 
 }
+
+
+.summary-card {
+
+  padding: 21px;
+
+  background: white;
+
+  border-radius: 15px;
+
+  border:
+    1px solid
+    #e3e9e5;
+
+  box-shadow:
+    0 7px 20px
+    rgba(0,0,0,.04);
+
+}
+
+
+.summary-card small {
+
+  color: #64748b;
+
+}
+
+
+.summary-card h2 {
+
+  margin-top: 8px;
+
+  color: #112244;
+
+  font-size: 31px;
+
+}
+
 
 /* ==========================================
-   QUESTION CARD
+   FILTERS
 ========================================== */
 
-.question-card{
+.filter-panel {
 
-    background:white;
+  margin-bottom: 25px;
 
-    border-radius:20px;
+  padding: 20px;
 
-    padding:28px;
+  background: white;
 
-    box-shadow:0 8px 25px rgba(0,0,0,.06);
+  border-radius: 15px;
 
-    border:1px solid #eef2f7;
+  border:
+    1px solid
+    #e3e9e5;
 
-    transition:.25s;
+}
+
+
+.filter-buttons {
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 9px;
+
+  margin-bottom: 18px;
 
 }
 
-.question-card:hover{
 
-    transform:translateY(-3px);
+.filter-buttons button {
 
-    box-shadow:0 14px 35px rgba(0,0,0,.08);
+  padding:
+    9px
+    15px;
+
+  border: none;
+
+  border-radius:
+    999px;
+
+  background:
+    #edf2ef;
+
+  color:
+    #475569;
+
+  cursor: pointer;
+
+  font-size:
+    12px;
+
+  font-weight:
+    700;
 
 }
+
+
+.filter-buttons button.active {
+
+  background:
+    #166534;
+
+  color:
+    #ffffff;
+
+}
+
+
+.filter-controls {
+
+  display: flex;
+
+  gap: 12px;
+
+}
+
+
+.filter-controls input {
+
+  flex: 1;
+
+}
+
+
+.filter-controls input,
+.filter-controls select {
+
+  min-height: 44px;
+
+  padding:
+    0
+    13px;
+
+  border:
+    1px solid
+    #cbd5e1;
+
+  border-radius:
+    9px;
+
+  background:
+    #f8fafc;
+
+  outline:
+    none;
+
+}
+
+
+.filter-controls input:focus,
+.filter-controls select:focus {
+
+  border-color:
+    #16a34a;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(22,163,74,.10);
+
+}
+
 
 /* ==========================================
-   QUESTION HEADER
+   TABLE CARDS
 ========================================== */
 
-.question-top{
+.table-card,
+.summary-table-card,
+.legend-card {
 
-    display:flex;
+  margin-bottom:
+    25px;
 
-    justify-content:space-between;
+  padding:
+    24px;
 
-    gap:20px;
+  background:
+    #ffffff;
 
-    margin-bottom:24px;
+  border:
+    1px solid
+    #dfe6e1;
 
-}
+  border-radius:
+    16px;
 
-.question-number{
-
-    display:inline-block;
-
-    background:#eef2ff;
-
-    color:#1d4ed8;
-
-    padding:7px 14px;
-
-    border-radius:999px;
-
-    font-weight:700;
-
-    margin-bottom:12px;
+  box-shadow:
+    0 8px 25px
+    rgba(0,0,0,.05);
 
 }
 
-.question-top h2{
 
-    color:#112244;
+.section-heading {
 
-    font-size:22px;
-
-    margin-bottom:8px;
+  margin-bottom:
+    20px;
 
 }
 
-.question-top p{
 
-    color:#777;
+.section-heading h2 {
+
+  margin-bottom:
+    4px;
+
+  color:
+    #112244;
 
 }
+
+
+.section-heading p {
+
+  color:
+    #64748b;
+
+  font-size:
+    12px;
+
+}
+
 
 /* ==========================================
-   DIFFICULTY BADGES
+   TABLE
 ========================================== */
 
-.difficulty-badge{
+.table-wrapper {
 
-    height:max-content;
+  width:
+    100%;
 
-    padding:8px 16px;
-
-    border-radius:999px;
-
-    font-size:13px;
-
-    font-weight:700;
-
-    white-space:nowrap;
+  overflow-x:
+    auto;
 
 }
 
-.difficulty-badge.easy{
 
-    background:#dcfce7;
+.analysis-table,
+.mastery-summary-table {
 
-    color:#15803d;
+  width:
+    100%;
 
-}
-
-.difficulty-badge.medium{
-
-    background:#fef9c3;
-
-    color:#a16207;
+  border-collapse:
+    collapse;
 
 }
 
-.difficulty-badge.hard{
 
-    background:#ffedd5;
+.analysis-table th,
+.analysis-table td,
+.mastery-summary-table th,
+.mastery-summary-table td {
 
-    color:#c2410c;
+  border:
+    1px solid
+    #94a3a0;
+
+  padding:
+    10px 11px;
+
+  vertical-align:
+    middle;
+
+  font-size:
+    12px;
 
 }
 
-.difficulty-badge.very-hard{
 
-    background:#fee2e2;
+.analysis-table thead th,
+.mastery-summary-table thead th {
 
-    color:#dc2626;
+  background:
+    #6b8e23;
+
+  color:
+    #ffffff;
+
+  text-align:
+    center;
+
+  font-size:
+    11px;
+
+  font-weight:
+    800;
+
+  text-transform:
+    uppercase;
 
 }
+
+
+.competency-heading {
+
+  min-width:
+    260px;
+
+}
+
+
+.competency-cell {
+
+  min-width:
+    260px;
+
+  max-width:
+    360px;
+
+  background:
+    #fbfdfb;
+
+  text-align:
+    center;
+
+  line-height:
+    1.55;
+
+  font-weight:
+    600;
+
+}
+
+
+.center-cell {
+
+  text-align:
+    center;
+
+}
+
+
+.item-number {
+
+  font-weight:
+    700;
+
+}
+
+
+.empty-table {
+
+  padding:
+    35px !important;
+
+  text-align:
+    center;
+
+  color:
+    #64748b;
+
+}
+
 
 /* ==========================================
-   ANALYSIS GRID
+   MASTERY BADGES
 ========================================== */
 
-.analysis-grid{
+.mastery-badge {
 
-    display:grid;
+  display:
+    inline-block;
 
-    grid-template-columns:repeat(4,1fr);
+  padding:
+    5px
+    8px;
 
-    gap:16px;
+  border-radius:
+    5px;
 
-    margin-bottom:24px;
+  font-size:
+    10px;
 
-}
+  font-weight:
+    700;
 
-.analysis-grid div{
-
-    background:#f8fafc;
-
-    border-radius:14px;
-
-    padding:16px;
-
-}
-
-.analysis-grid small{
-
-    display:block;
-
-    color:#777;
-
-    margin-bottom:8px;
+  white-space:
+    nowrap;
 
 }
 
-.analysis-grid strong{
 
-    color:#112244;
+.mastery-badge.mastered {
+
+  background:
+    #23452b;
+
+  color:
+    #ffffff;
 
 }
+
+
+.mastery-badge.approximating {
+
+  background:
+    #30475f;
+
+  color:
+    #ffffff;
+
+}
+
+
+.mastery-badge.moving {
+
+  background:
+    #7c4a3a;
+
+  color:
+    #ffffff;
+
+}
+
+
+.mastery-badge.average {
+
+  background:
+    #8c4055;
+
+  color:
+    #ffffff;
+
+}
+
+
+.mastery-badge.low {
+
+  background:
+    #7a253a;
+
+  color:
+    #ffffff;
+
+}
+
 
 /* ==========================================
-   SUCCESS RATE
+   REMARK BADGES
 ========================================== */
 
-.success-section{
+.remarks-badge {
 
-    margin-bottom:24px;
+  display:
+    inline-block;
 
-}
+  min-width:
+    74px;
 
-.success-label{
+  padding:
+    5px
+    8px;
 
-    display:flex;
+  border-radius:
+    5px;
 
-    justify-content:space-between;
+  font-size:
+    10px;
 
-    margin-bottom:10px;
-
-}
-
-.success-label span{
-
-    color:#555;
-
-    font-weight:600;
-
-}
-
-.success-label strong{
-
-    color:#112244;
+  font-weight:
+    700;
 
 }
 
-.success-bar{
 
-    height:12px;
+.remarks-badge.retain-revise {
 
-    background:#edf2f7;
+  background:
+    #6b8e23;
 
-    border-radius:999px;
-
-    overflow:hidden;
-
-}
-
-.success-fill{
-
-    height:100%;
-
-    border-radius:999px;
-
-    transition:.4s;
+  color:
+    white;
 
 }
 
-.success-fill.easy{
 
-    background:#22c55e;
+.remarks-badge.retain {
 
-}
+  background:
+    #7a6042;
 
-.success-fill.medium{
-
-    background:#facc15;
-
-}
-
-.success-fill.hard{
-
-    background:#fb923c;
+  color:
+    white;
 
 }
 
-.success-fill.very-hard{
 
-    background:#ef4444;
+.remarks-badge.revise {
+
+  background:
+    #7a4939;
+
+  color:
+    white;
 
 }
+
+
+.remarks-badge.reject {
+
+  background:
+    #a53645;
+
+  color:
+    white;
+
+}
+
 
 /* ==========================================
-   WRONG ANSWER
+   SUMMARY TABLE
 ========================================== */
 
-.wrong-answer{
+.mastery-name-cell {
 
-    background:#f8fafc;
+  width:
+    220px;
 
-    border-radius:14px;
-
-    padding:18px;
-
-    margin-bottom:20px;
+  text-align:
+    center;
 
 }
 
-.wrong-answer small{
 
-    display:block;
+.summary-items {
 
-    color:#777;
+  width:
+    320px;
 
-    margin-bottom:8px;
+  text-align:
+    center;
+
+  line-height:
+    1.7;
+
+}
+
+
+.summary-description {
+
+  min-width:
+    450px;
+
+  line-height:
+    1.55;
+
+  color:
+    #334155;
 
 }
 
-.wrong-answer p{
-
-    color:#112244;
-
-    font-weight:600;
-
-}
 
 /* ==========================================
-   RECOMMENDATION
+   LEGEND
 ========================================== */
 
-.recommendation{
+.legend-card h3 {
 
-    border-radius:14px;
+  margin-bottom:
+    15px;
 
-    padding:18px;
-
-    border-left:6px solid;
-
-}
-
-.recommendation strong{
-
-    display:block;
-
-    margin-bottom:8px;
+  color:
+    #112244;
 
 }
 
-.recommendation p{
 
-    line-height:1.6;
+.legend-grid {
 
-}
+  display:
+    grid;
 
-.recommendation.excellent{
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(0,1fr)
+    );
 
-    background:#f0fdf4;
-
-    border-color:#22c55e;
-
-    color:#166534;
-
-}
-
-.recommendation.good{
-
-    background:#eff6ff;
-
-    border-color:#2563eb;
-
-    color:#1d4ed8;
+  gap:
+    25px;
 
 }
 
-.recommendation.review{
 
-    background:#fff7ed;
+.legend-column {
 
-    border-color:#fb923c;
+  display:
+    flex;
 
-    color:#c2410c;
+  flex-direction:
+    column;
+
+  gap:
+    8px;
+
+}
+
+
+.legend-item {
+
+  display:
+    flex;
+
+  align-items:
+    center;
+
+  gap:
+    9px;
+
+  font-size:
+    12px;
+
+  color:
+    #334155;
 
 }
 
-.recommendation.replace{
 
-    background:#fef2f2;
+.legend-box {
 
-    border-color:#ef4444;
+  width:
+    18px;
 
-    color:#b91c1c;
+  height:
+    18px;
+
+  border-radius:
+    3px;
 
 }
+
+
+.legend-box.mastered {
+
+  background:
+    #23452b;
+
+}
+
+
+.legend-box.approximating {
+
+  background:
+    #30475f;
+
+}
+
+
+.legend-box.moving {
+
+  background:
+    #7c4a3a;
+
+}
+
+
+.legend-box.average {
+
+  background:
+    #8c4055;
+
+}
+
+
+.legend-box.low {
+
+  background:
+    #7a253a;
+
+}
+
+
+.legend-box.retain-revise {
+
+  background:
+    #6b8e23;
+
+}
+
+
+.legend-box.retain {
+
+  background:
+    #7a6042;
+
+}
+
+
+.legend-box.revise {
+
+  background:
+    #7a4939;
+
+}
+
+
+.legend-box.reject {
+
+  background:
+    #a53645;
+
+}
+
+
+/* ==========================================
+   TABLE ROW HOVER
+========================================== */
+
+.analysis-table tbody tr:hover td {
+
+  background:
+    #f7faf8;
+
+}
+
+
+.analysis-table tbody tr:hover
+.competency-cell {
+
+  background:
+    #f3f7f4;
+
+}
+
 
 /* ==========================================
    RESPONSIVE
 ========================================== */
 
-@media(max-width:1100px){
+@media(
+  max-width: 1100px
+) {
 
-    .summary-grid{
+  .summary-grid {
 
-        grid-template-columns:repeat(2,1fr);
+    grid-template-columns:
+      repeat(
+        2,
+        1fr
+      );
 
-    }
+  }
 
-    .analysis-grid{
 
-        grid-template-columns:repeat(2,1fr);
+  .exam-information {
 
-    }
+    grid-template-columns:
+      1fr;
 
-}
+  }
 
-@media(max-width:768px){
 
-    .analysis-detail-page{
+  .exam-statistics {
 
-        padding:20px;
+    padding-left:
+      0;
 
-    }
+    padding-top:
+      15px;
 
-    .page-header{
+    border-left:
+      none;
 
-        flex-direction:column;
+    border-top:
+      2px solid
+      #e2e8f0;
 
-        align-items:flex-start;
-
-    }
-
-    .export-btn{
-
-        width:100%;
-
-    }
-
-    .filter-controls{
-
-        flex-direction:column;
-
-    }
-
-    .filter-controls select{
-
-        width:100%;
-
-    }
-
-    .question-top{
-
-        flex-direction:column;
-
-    }
+  }
 
 }
 
-@media(max-width:500px){
 
-    .summary-grid{
+@media(
+  max-width: 768px
+) {
 
-        grid-template-columns:1fr;
+  .analysis-page {
 
-    }
+    padding:
+      18px;
 
-    .analysis-grid{
+  }
 
-        grid-template-columns:1fr;
 
-    }
+  .page-header {
 
-    .page-header h1{
+    flex-direction:
+      column;
 
-        font-size:28px;
+  }
 
-    }
 
-    .question-top h2{
+  .export-btn {
 
-        font-size:18px;
+    width:
+      100%;
 
-    }
+  }
+
+
+  .exam-details {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .filter-controls {
+
+    flex-direction:
+      column;
+
+  }
+
+
+  .filter-controls select {
+
+    width:
+      100%;
+
+  }
+
+
+  .legend-grid {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+}
+
+
+@media(
+  max-width: 500px
+) {
+
+  .summary-grid {
+
+    grid-template-columns:
+      1fr;
+
+  }
+
+
+  .page-header h1 {
+
+    font-size:
+      27px;
+
+  }
+
+
+  .report-information,
+  .table-card,
+  .summary-table-card,
+  .legend-card {
+
+    padding:
+      17px;
+
+  }
 
 }
 

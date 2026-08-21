@@ -15,28 +15,100 @@
 
         <div class="form-group">
           <label>Exam Title</label>
-          <input v-model="examTitle" type="text" placeholder="e.g. Midterm Examination">
+
+          <input
+            v-model="examTitle"
+            type="text"
+            placeholder="e.g. Midterm Examination"
+          >
         </div>
 
         <div class="form-group">
           <label>Description</label>
-          <textarea v-model="description" placeholder="Brief description of the exam"></textarea>
+
+          <textarea
+            v-model="description"
+            placeholder="Brief description of the exam"
+          ></textarea>
         </div>
 
         <div class="two-column">
-          <div class="form-group">
-            <label>Duration (minutes)</label>
-            <input v-model="duration" type="number">
-          </div>
-          <div class="form-group">
-  <label>Passing Score (%)</label>
-  <input type="number" v-model="passing">
-</div>
 
           <div class="form-group">
-            <label>Course</label>
-            <input v-model="course" type="text" placeholder="Computer Science 101">
+            <label>Grade Level</label>
+
+            <select v-model="grade">
+              <option value="" disabled>
+                Select Grade Level
+              </option>
+
+              <option value="Grade 11">
+                Grade 11
+              </option>
+
+              <option value="Grade 12">
+                Grade 12
+              </option>
+            </select>
           </div>
+
+          <div class="form-group">
+            <label>Section</label>
+
+            <select v-model="section">
+              <option value="" disabled>
+                Select Section
+              </option>
+
+              <option value="Section A">
+                Section A
+              </option>
+
+              <option value="Section B">
+                Section B
+              </option>
+
+              <option value="Section C">
+                Section C
+              </option>
+            </select>
+          </div>
+
+        </div>
+
+        <div class="form-group">
+          <label>Subject</label>
+
+          <input
+            v-model="subject"
+            type="text"
+            placeholder="e.g. Basic Accounting"
+          >
+        </div>
+
+        <div class="two-column">
+
+          <div class="form-group">
+            <label>Duration (minutes)</label>
+
+            <input
+              v-model="duration"
+              type="number"
+              min="1"
+            >
+          </div>
+
+          <div class="form-group">
+            <label>Passing Score (%)</label>
+
+            <input
+              v-model="passing"
+              type="number"
+              min="1"
+              max="100"
+            >
+          </div>
+
         </div>
       </div>
 
@@ -74,7 +146,7 @@
           Paste Questions
         </button>
 
-        
+
       </div>
 
       <div v-if="activeMethod === 'paste'" class="method-content">
@@ -97,7 +169,7 @@
         </button>
       </div>
 
-      
+
 
     </div>
 
@@ -126,7 +198,14 @@
             Delete
           </button>
         </div>
-
+        <div class="form-group">
+          <label>Competency</label>
+          <input
+            v-model="question.competency"
+            type="text"
+            placeholder="Enter learning competency"
+          >
+        </div>
         <div class="form-group">
           <label>Question Type</label>
           <select v-model="question.type" @change="normalizeQuestion(question)">
@@ -254,7 +333,10 @@ const creatingExam = ref(false)
 const examTitle = ref('')
 const description = ref('')
 const duration = ref(60)
-const course = ref('')
+
+const grade = ref('')
+const section = ref('')
+const subject = ref('')
 
 const activeMethod = ref<'paste' | 'upload'>('paste')
 const rawText = ref('')
@@ -304,12 +386,27 @@ function parseQuestions(text: string) {
     .map(line => line.trim())
     .filter(Boolean)
 
-  const blocks: { type: string; lines: string[] }[] = []
+  const blocks: {
+  type: string
+  competency: string
+  lines: string[]
+  }[] = []
 
   let currentType = 'Multiple Choice'
   let currentBlock: string[] = []
+  let currentCompetency = ''
 
   lines.forEach(line => {
+    const competencyMatch = line.match(
+    /^competenc(?:y|ies)\s*[:\-]\s*(.+)$/i
+    )
+
+    if (competencyMatch) {
+      currentCompetency =
+        competencyMatch[1]!.trim()
+
+      return
+    }
     if (/^true\s*or\s*false$/i.test(line)) {
       currentType = 'True or False'
       currentBlock = []
@@ -333,6 +430,7 @@ function parseQuestions(text: string) {
     if (/^(answer|ans|correct answer|correct|key)\s*[:\-]\s*/i.test(line)) {
       blocks.push({
         type: currentType,
+        competency: currentCompetency,
         lines: [...currentBlock]
       })
 
@@ -343,6 +441,7 @@ function parseQuestions(text: string) {
   if (currentBlock.length > 0) {
     blocks.push({
       type: currentType,
+      competency: currentCompetency,
       lines: [...currentBlock]
     })
   }
@@ -410,7 +509,13 @@ function parseQuestions(text: string) {
       return {
         id: Date.now() + index,
         type: finalType,
-        question: questionLines.join(' ').trim(),
+        competency:
+          block.competency ||
+          'Unassigned Competency',
+        question:
+          questionLines
+            .join(' ')
+            .trim(),
         options,
         answer,
         points: 1,
@@ -488,8 +593,10 @@ function addBlankQuestion() {
   questions.value.push({
     id: Date.now(),
     type: 'Multiple Choice',
+    competency: '',
     question: '',
-    options: ['', '', '', ''],
+    options: ['','','',''
+    ],
     answer: '',
     points: 1,
     time: 30
@@ -505,17 +612,22 @@ function openCreatePopup() {
     alert('Please enter exam title.')
     return
   }
-
-  if (!course.value.trim()) {
-    alert('Please enter course.')
+  if (!grade.value) {
+    alert('Please select a grade level.')
     return
   }
-
+  if (!section.value) {
+    alert('Please select a section.')
+    return
+  }
+  if (!subject.value.trim()) {
+    alert('Please enter the subject.')
+    return
+  }
   if (questions.value.length === 0) {
     alert('Please generate or add at least one question.')
     return
   }
-
   showCreatePopup.value = true
 }
 
@@ -526,23 +638,28 @@ function stillEdit() {
 async function confirmCreateExam() {
   showCreatePopup.value = false
   creatingExam.value = true
-
   try {
     await api.post('/exams', {
       title: examTitle.value,
       description: description.value,
-      course: course.value,
-      duration: duration.value,
-      passing: passing.value,
+      grade: grade.value,
+      section: section.value,
+      subject: subject.value,
+      duration: Number(duration.value),
+      passing: Number(passing.value),
       questions: questions.value
     })
-
     alert('Generated exam created successfully!')
-
     router.push('/faculty/dashboard')
-  } catch (error) {
-    console.error(error)
-    alert('Failed to create generated exam.')
+  } catch (error: any) {
+    console.error(
+      'Create exam error:',
+      error.response?.data || error
+    )
+    alert(
+      error.response?.data?.message ||
+      'Failed to create generated exam.'
+    )
   } finally {
     creatingExam.value = false
   }

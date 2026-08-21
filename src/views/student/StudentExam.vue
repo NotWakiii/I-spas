@@ -789,24 +789,62 @@ const idleSeconds =
 
 const violationCounts =
   ref<ViolationCounts>({
-
     tab_switch: 0,
-
     copy_attempt: 0,
-
     paste_attempt: 0,
-
     cut_attempt: 0,
-
     right_click: 0,
-
     fullscreen_exit: 0,
-
     idle: 0,
-
   })
 
+const violationPenalties: Record<string, number> = {
+  tab_switch: 60,
+  copy_attempt: 30,
+  paste_attempt: 30,
+  cut_attempt: 30,
+  right_click: 20,
+  fullscreen_exit: 60,
+}
 
+function applyTimePenalty(
+  activity: string
+) {
+
+  if (
+    examSubmitted ||
+    autoSubmitting.value
+  ) {
+    return
+  }
+
+  const penalty =
+    violationPenalties[activity] || 0
+
+  if (penalty <= 0) {
+    return
+  }
+
+  remainingSeconds.value =
+    Math.max(
+      remainingSeconds.value - penalty,
+      0
+    )
+
+  localStorage.setItem(
+    'exam_remaining_seconds',
+    String(remainingSeconds.value)
+  )
+
+  sendLiveStatus()
+
+  if (
+    remainingSeconds.value <= 0 &&
+    !examSubmitted
+  ) {
+    autoSubmitExam()
+  }
+}
 /* =====================================================
    INTERVALS
 ===================================================== */
@@ -2301,6 +2339,7 @@ function handleBlockedAction(
     activity
   ] += 1
 
+  applyTimePenalty(activity)
 
   const messages:
     Record<
@@ -2525,44 +2564,29 @@ function showSecurityWarning(
 
 function handleVisibilityChange() {
 
-  if (
+if (
+  document.hidden &&
+  !examSubmitted &&
+  !loading.value
+) {
 
-    document.hidden
+  violationCounts.value
+    .tab_switch += 1
 
-    &&
+  applyTimePenalty('tab_switch')
 
-    !examSubmitted
+  const message =
+    'You switched tabs or minimized the browser. 60 seconds have been deducted.'
 
-    &&
+  playWarningSound()
 
-    !loading.value
+  showSecurityWarning(message)
 
-  ) {
-
-    violationCounts.value
-      .tab_switch += 1
-
-
-    const message =
-      'You switched tabs or minimized the browser. This activity was recorded.'
-
-
-    playWarningSound()
-
-
-    showSecurityWarning(
-      message
-    )
-
-
-    sendMonitoringLog(
-      'tab_switch',
-      message
-    )
-
-  }
-
-
+  sendMonitoringLog(
+    'tab_switch',
+    message
+  )
+}
   resetActivityTimer()
 
 }
@@ -2833,9 +2857,10 @@ function handleFullscreenChange() {
     violationCounts.value
       .fullscreen_exit += 1
 
+    applyTimePenalty('fullscreen_exit')
 
     const message =
-      'You exited fullscreen mode. This activity was recorded.'
+      'You exited fullscreen mode. 60 seconds have been deducted.'
 
 
     playWarningSound()
@@ -4182,32 +4207,49 @@ button:disabled{
    WARNING / MODAL
 ========================================== */
 
-.security-warning{
-    position:fixed;
-    right:18px;
-    bottom:
-        max(18px,env(safe-area-inset-bottom));
-    z-index:2000;
-    width:min(calc(100% - 36px),430px);
-    padding:14px;
-    display:flex;
-    align-items:flex-start;
-    gap:12px;
-    border:1px solid #fecaca;
-    border-radius:15px;
-    background:#ffffff;
-    box-shadow:0 16px 40px rgba(15,23,42,.2);
+.security-warning {
+    position: fixed;
+
+    /* Show at the TOP */
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    width: min(92%, 600px);
+
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    padding: 16px 18px;
+
+    background: #fff;
+    border: 2px solid #ef4444;
+    border-left: 6px solid #ef4444;
+    border-radius: 14px;
+
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.20);
+
+    z-index: 999999;
 }
 
-.warning-icon{
-    flex:0 0 38px;
-    width:38px;
-    height:38px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    border-radius:50%;
-    background:#fee2e2;
+.warning-icon {
+    flex-shrink: 0;
+
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: #fee2e2;
+    color: #dc2626;
+
+    font-size: 22px;
+    font-weight: 700;
 }
 
 .security-warning h3{
@@ -4215,11 +4257,31 @@ button:disabled{
     color:#b91c1c;
     font-size:12px;
 }
+.security-warning strong {
+    display: block;
+    margin-bottom: 3px;
 
-.security-warning p{
-    color:#64748b;
-    font-size:9px;
-    line-height:1.5;
+    color: #dc2626;
+    font-size: 15px;
+}
+.security-warning button {
+    margin-left: auto;
+
+    border: none;
+    background: transparent;
+
+    color: #64748b;
+    font-size: 18px;
+    font-weight: 700;
+
+    cursor: pointer;
+}
+.security-warning p {
+    margin: 0;
+
+    color: #334155;
+    font-size: 14px;
+    line-height: 1.4;
 }
 
 .modal-overlay{

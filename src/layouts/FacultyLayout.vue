@@ -1,115 +1,203 @@
 <template>
   <div class="layout">
+
+    <!-- ================= MOBILE OVERLAY ================= -->
+    <div
+      v-if="showMobileMenu"
+      class="mobile-overlay"
+      @click="closeMobileMenu"
+    ></div>
+
     <!-- ================= SIDEBAR ================= -->
-    <aside class="sidebar">
+
+    <aside class="sidebar" :class="{ 'sidebar-open': showMobileMenu }">
+
       <!-- Logo -->
       <div class="logo-section">
+
         <img
           src="@/assets/logo.png"
           alt="Logo"
-          class="logo"/>
+          class="logo"
+        />
+
         <div class="logo-text">
           <h2>I-SPAS</h2>
           <p>Faculty Portal</p>
         </div>
+
+        <button class="close-drawer-btn" @click="closeMobileMenu">
+          ✕
+        </button>
+
       </div>
 
       <!-- Navigation -->
+
   <nav class="menu">
-    <RouterLink to="/faculty/dashboard">
+
+    <RouterLink to="/faculty/dashboard" @click="closeMobileMenu">
       🏠 Dashboard
     </RouterLink>
-    <RouterLink to="/faculty/create-exam">
+
+    <RouterLink to="/faculty/create-exam" @click="closeMobileMenu">
       📝 Create Exam
     </RouterLink>
-    <RouterLink to="/faculty/exam-results">
+
+    <RouterLink to="/faculty/exam-results" @click="closeMobileMenu">
       📋 Exam Results
     </RouterLink>
-    <RouterLink to="/faculty/item-analysis">
+
+    <RouterLink to="/faculty/item-analysis" @click="closeMobileMenu">
       📊 Item Analysis
     </RouterLink>
-    <RouterLink to="/faculty/student-history">
+
+    <RouterLink to="/faculty/student-history" @click="closeMobileMenu">
       👥 Students History
     </RouterLink>
+
   </nav>
+
+
       <!-- Logout -->
+
       <div class="bottom">
+
         <button
-          class="logout-btn"
-          @click="openLogoutDialog">↩ Logout
-        </button>
+    class="logout-btn"
+    @click="openLogoutDialog"
+>
+    ↩ Logout
+</button>
+
       </div>
+
     </aside>
+
     <!-- ================= MAIN ================= -->
 
     <div class="main">
 
       <!-- Navbar -->
+
       <header class="navbar">
-        <h1>I-SPAS</h1>
+
+        <div class="navbar-left">
+          <button class="hamburger-btn" @click="showMobileMenu = true">
+            ☰
+          </button>
+          <h1>I-SPAS</h1>
+        </div>
+
         <button class="about-btn">
           About Us
         </button>
+
       </header>
 
       <!-- Page Content -->
+
       <main class="content">
+
         <RouterView />
+
       </main>
+
     </div>
+
   </div>
+
   <div
     v-if="showLogoutDialog"
-    class="dialog-overlay">
+    class="dialog-overlay"
+>
     <div class="dialog">
+
         <div class="dialog-icon">
+
         </div>
+
         <h2>
             Logout
         </h2>
+
+
+
         <p>
             Are you sure you want to logout from the Faculty Portal?
         </p>
+
         <div class="dialog-buttons">
+
             <button
                 class="cancel-btn"
-                @click="cancelLogout">Cancel
+                @click="cancelLogout"
+            >
+                Cancel
             </button>
+
+
             <button
                 class="start-btn"
-                @click="confirmLogout">
+                @click="confirmLogout"
+            >
                 Logout
             </button>
+
         </div>
+
     </div>
 </div>
 </template>
 
+
+
 <script setup lang="ts">
+
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../services/api'
+import Results from '@/views/Results.vue'
 
 const router = useRouter()
+
 const showLogoutDialog = ref(false)
+const showMobileMenu = ref(false)
+
 function openLogoutDialog() {
     showLogoutDialog.value = true
 }
+
 function cancelLogout() {
     showLogoutDialog.value = false
 }
+
+function closeMobileMenu() {
+    showMobileMenu.value = false
+}
+
 async function confirmLogout() {
+
     showLogoutDialog.value = false
+
     try {
+
         const token = localStorage.getItem('token')
+
         if (token) {
             await api.post('/logout')
         }
-    } catch {
+
+    } catch (error) {
+
         console.log('Logout API failed, continuing logout.')
+
     }
+
     localStorage.removeItem('token')
+
     router.push('/')
+
 }
 
 </script>
@@ -160,6 +248,7 @@ async function confirmLogout() {
     display:flex;
     align-items:center;
     gap:12px;
+    position:relative;
 
     padding:22px;
 
@@ -183,6 +272,23 @@ async function confirmLogout() {
     margin-top:2px;
 }
 
+.close-drawer-btn{
+    display:none;
+    position:absolute;
+    right:14px;
+    top:50%;
+    transform:translateY(-50%);
+
+    width:32px;
+    height:32px;
+    border:none;
+    border-radius:8px;
+    background:#f3f4f6;
+    color:#374151;
+    font-size:16px;
+    cursor:pointer;
+}
+
 /* Menu */
 
 .menu{
@@ -190,6 +296,7 @@ async function confirmLogout() {
     flex-direction:column;
     padding:14px;
     gap:20px;
+    overflow-y:auto;
 }
 
 .menu a{
@@ -276,6 +383,23 @@ async function confirmLogout() {
     flex-shrink:0;
 }
 
+.navbar-left{
+    display:flex;
+    align-items:center;
+    gap:14px;
+}
+
+.hamburger-btn{
+    display:none;
+    background:none;
+    border:none;
+    color:white;
+    font-size:26px;
+    cursor:pointer;
+    line-height:1;
+    padding:4px;
+}
+
 .navbar h1{
     font-size:34px;
 }
@@ -307,6 +431,12 @@ async function confirmLogout() {
     flex:1;
     padding:px;
     overflow:auto;
+}
+
+/* Mobile overlay backdrop */
+
+.mobile-overlay{
+    display:none;
 }
 
 /* ======================
@@ -391,6 +521,98 @@ async function confirmLogout() {
     }
 }
 
+/* ======================
+   MOBILE (768px and below)
+====================== */
+
+@media (max-width:768px){
+
+    .sidebar{
+        position:fixed;
+        top:0;
+        left:0;
+        height:100vh;
+        z-index:1001;
+
+        width:260px;
+        min-width:260px;
+        max-width:260px;
+        flex:0 0 260px;
+
+        transform:translateX(-100%);
+        transition:transform .28s ease;
+
+        box-shadow:2px 0 20px rgba(0,0,0,.2);
+    }
+
+    .sidebar.sidebar-open{
+        transform:translateX(0);
+    }
+
+    .close-drawer-btn{
+        display:block;
+    }
+
+    .mobile-overlay{
+        display:block;
+        position:fixed;
+        inset:0;
+        background:rgba(0,0,0,.5);
+        z-index:1000;
+    }
+
+    .hamburger-btn{
+        display:block;
+    }
+
+    .navbar{
+        padding:0 16px;
+        height:60px;
+    }
+
+    .navbar h1{
+        font-size:22px;
+    }
+
+    .about-btn{
+        padding:8px 12px;
+        font-size:13px;
+    }
+
+    .content{
+        padding:16px;
+    }
+
+    .logo-text h2{
+        font-size:16px;
+    }
+
+    .logo-text p{
+        font-size:12px;
+    }
+}
+
+@media (max-width:480px){
+
+    .navbar h1{
+        font-size:19px;
+    }
+
+    .about-btn{
+        padding:7px 10px;
+        font-size:12px;
+    }
+
+    .content{
+        padding:12px;
+    }
+
+    .dialog{
+        width:90%;
+        padding:22px;
+    }
+}
+
 .dialog-overlay{
     position:fixed;
     inset:0;
@@ -403,6 +625,7 @@ async function confirmLogout() {
 
 .dialog{
     width:420px;
+    max-width:90vw;
     background:#fff;
     border-radius:18px;
     padding:30px;

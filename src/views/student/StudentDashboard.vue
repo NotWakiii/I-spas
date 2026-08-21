@@ -2,7 +2,7 @@
   <div class="student-page">
     <div class="student-card">
 
-      
+
       <section
         v-if="currentStep === 1"
         class="intro-panel"
@@ -81,7 +81,7 @@
         class="form-panel"
       >
         <div class="form-top">
-       
+
 
           <img
             src="../../assets/logo.png"
@@ -140,17 +140,45 @@
           </div>
 
           <div class="form-group">
-            <label for="section">
-              Year and Section
+            <label for="grade">
+              Grade Level
             </label>
 
-            <input
+            <select
+              id="grade"
+              v-model="grade"
+            >
+              <option value="" disabled>
+                Select Grade Level
+              </option>
+
+              <option value="Grade 11">
+                Grade 11
+              </option>
+
+              <option value="Grade 12">
+                Grade 12
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="section">
+              Section
+            </label>
+
+            <select
               id="section"
               v-model="section"
-              type="text"
-              autocomplete="off"
-              placeholder="Example: BSIT 3A"
             >
+              <option value="" disabled>
+                Select Section
+              </option>
+
+              <option value="A">Section A</option>
+              <option value="B">Section B</option>
+              <option value="C">Section C</option>
+            </select>
           </div>
 
           <div
@@ -207,6 +235,7 @@ const currentStep = ref(1)
 
 const accessCode = ref('')
 const studentName = ref('')
+const grade = ref('')
 const section = ref('')
 
 const joining = ref(false)
@@ -241,8 +270,13 @@ function validateForm(): boolean {
     return false
   }
 
-  if (!section.value.trim()) {
-    errorMessage.value = 'Please enter your year and section.'
+  if (!grade.value) {
+    errorMessage.value = 'Please select your grade level.'
+    return false
+  }
+
+  if (!section.value) {
+    errorMessage.value = 'Please select your section.'
     return false
   }
 
@@ -259,7 +293,7 @@ async function joinExam() {
     const response = await api.post('/join-exam', {
       access_code: accessCode.value.trim().toUpperCase(),
       student_name: studentName.value.trim(),
-      section: section.value.trim(),
+      section: `${grade.value} - ${section.value}`,
     })
 
     localStorage.setItem(
@@ -279,7 +313,7 @@ async function joinExam() {
 
     localStorage.setItem(
       'student_section',
-      section.value.trim()
+      `${grade.value} - ${section.value}`
     )
 
     localStorage.setItem(
@@ -889,56 +923,36 @@ button{
 
 }
 
-.form-group input{
+.form-group input,
+.form-group select {
+    width: 100%;
+    min-height: 46px;
+    padding: 0 14px;
 
-    width:100%;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
 
-    min-height:46px;
+    outline: none;
 
-    padding:0 14px;
+    background: #f8fafc;
+    color: #0f172a;
 
-    border:
-
-        1px solid
-
-        #cbd5e1;
-
-    border-radius:10px;
-
-    outline:none;
-
-    background:#f8fafc;
-
-    color:#0f172a;
-
-    font-size:16px;
+    font-size: 16px;
 
     transition:
-
         border-color .22s ease,
-
         background .22s ease,
-
         box-shadow .22s ease;
-
-    -webkit-appearance:none;
-
-    appearance:none;
-
 }
 
-.form-group input:focus{
-
-    border-color:#16a34a;
-
-    background:#ffffff;
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #16a34a;
+    background: #ffffff;
 
     box-shadow:
-
         0 0 0 4px
-
         rgba(22,163,74,.12);
-
 }
 
 .form-group small{

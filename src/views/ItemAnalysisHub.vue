@@ -19,20 +19,6 @@
         type="text"
         placeholder="Search exam..."
       >
-
-      <select v-model="selectedCourse">
-        <option value="All Courses">
-          All Courses
-        </option>
-
-        <option
-          v-for="course in courses"
-          :key="course"
-          :value="course"
-        >
-          {{ course }}
-        </option>
-      </select>
     </div>
 
     <!-- LOADING -->
@@ -99,10 +85,6 @@
             <h2>
               {{ exam.title }}
             </h2>
-
-            <p>
-              {{ exam.course }}
-            </p>
           </div>
 
           <span class="badge">

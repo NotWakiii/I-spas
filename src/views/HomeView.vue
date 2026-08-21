@@ -77,10 +77,6 @@
   >
     <div class="login-modal">
 
-      <div class="login-icon">
-        🎓
-      </div>
-
       <h2>Faculty Login</h2>
 
       <p class="login-description">
@@ -186,12 +182,20 @@
             Cancel
           </button>
 
-          <button
-            type="submit"
-            class="login-btn"
-          >
-            Login
-          </button>
+            <button
+              type="submit"
+              class="login-btn"
+              :disabled="isLoggingIn"
+            >
+              <span v-if="isLoggingIn" class="login-loading">
+                <span class="spinner"></span>
+                Logging in...
+              </span>
+
+              <span v-else>
+                Login
+              </span>
+            </button>
 
         </div>
 
@@ -218,6 +222,7 @@ const password = ref('')
 const showPassword = ref(false)
 
 const loginError = ref('')
+const isLoggingIn = ref(false)
 
 
 onMounted(() => {
@@ -255,11 +260,12 @@ async function facultyLogin() {
       'Please enter username and password.'
 
     return
-
   }
 
-  // Change backend URL here
-  // if the Laravel server IP changes
+  // Prevent multiple login requests
+  if (isLoggingIn.value) return
+
+  isLoggingIn.value = true
 
   try {
 
@@ -288,9 +294,13 @@ async function facultyLogin() {
     loginError.value =
       'Invalid username or password.'
 
-  }
+  } finally {
 
+    isLoggingIn.value = false
+
+  }
 }
+
 
 </script>
 

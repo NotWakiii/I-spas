@@ -180,6 +180,8 @@ const route = useRoute()
 
 const alertMessage = ref('')
 const showEndPopup = ref(false)
+const isAutoEnding = ref(false)
+const hasExamStarted = ref(false)
 
 const exam = ref({
   id: 0,
@@ -347,11 +349,12 @@ async function fetchMonitoring() {
         tabSwitches,
         idleTime: Number(session.idle_seconds || 0),
         timeRemaining: Number(
-          session.time_remaining ||
+          session.time_remaining ??
           exam.value.duration * 60
         ),
       }
     })
+    await checkAutoEndExam()
   } catch (error) {
     console.error('MONITORING LOAD ERROR:', error)
   }
@@ -381,7 +384,69 @@ async function confirmEndExam() {
 function cancelEndExam() {
   showEndPopup.value = false
 }
+async function checkAutoEndExam() {
 
+  if (students.value.length === 0) {
+    return
+  }
+
+  if (isAutoEnding.value) {
+    return
+  }
+
+  // Once any student reports positive remaining time,
+  // we know the examination has actually started.
+  if (
+    students.value.some(
+      (student) => student.timeRemaining > 0
+    )
+  ) {
+    hasExamStarted.value = true
+  }
+
+  // Important:
+  // Don't auto-end newly created sessions with 0 time.
+  if (!hasExamStarted.value) {
+    return
+  }
+
+  const allTimeExpired =
+    students.value.every(
+      (student) =>
+        student.timeRemaining <= 0
+    )
+
+  if (!allTimeExpired) {
+    return
+  }
+
+  isAutoEnding.value = true
+
+  try {
+
+    if (monitoringInterval) {
+      clearInterval(monitoringInterval)
+      monitoringInterval = null
+    }
+
+    await api.post(
+      `/exams/${exam.value.id}/end`
+    )
+
+    router.push(
+      `/faculty/results/${exam.value.id}`
+    )
+
+  } catch (error) {
+
+    console.error(
+      'AUTO END EXAM ERROR:',
+      error
+    )
+
+    isAutoEnding.value = false
+  }
+}
 onMounted(async () => {
   await fetchMonitoring()
 
