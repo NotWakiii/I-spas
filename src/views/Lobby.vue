@@ -81,8 +81,20 @@
           </div>
 
           <div class="detail-box">
-            <small>Course</small>
-            <strong>{{ exam.course }}</strong>
+            <small>Subject</small>
+            <strong>{{ exam.subject }}</strong>
+          </div>
+
+          <div class="detail-box">
+            <small>Class</small>
+
+            <strong>
+              {{
+                exam.grade && exam.section
+                  ? `${exam.grade} - ${exam.section}`
+                  : 'No Class'
+              }}
+            </strong>
           </div>
 
           <div class="detail-box">
@@ -139,11 +151,15 @@
           </button>
 
           <button
-            class="confirm-btn"
+            class="start-btn"
             :disabled="startingExam"
-            @click="confirmStartExam"
+            @click="startExamNow"
           >
-            {{ startingExam ? 'Starting...' : 'Start Exam' }}
+            {{
+              startingExam
+                ? 'Starting...'
+                : 'Start Exam'
+            }}
           </button>
         </div>
       </div>
@@ -169,7 +185,9 @@ const showStartPopup = ref(false)
 const exam = ref({
   id: 0,
   title: '',
-  course: '',
+  subject: '',
+  grade: '',
+  section: '',
   duration: 0,
   items: 0,
   passing: 0,
@@ -194,7 +212,9 @@ async function fetchLobby() {
     exam.value = {
       id: data.id,
       title: data.title,
-      course: data.course || 'No Course',
+      subject: data.subject || 'No Subject',
+      grade: data.grade || '',
+      section: data.section || '',
       duration: data.duration,
       items: questions.length,
       passing: data.passing || 75,

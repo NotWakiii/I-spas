@@ -2,9 +2,44 @@
   <div class="results-page">
 
     <div class="page-header">
-      <div>
-        <h1>Exam Results</h1>
-        <p>{{ exam.title }}</p>
+      <div class="header-info">
+
+          <h1>Exam Results</h1>
+
+          <p class="exam-title">
+              {{ exam.title }}
+          </p>
+
+          <div class="exam-details">
+
+              <div class="exam-detail">
+                  <span>Class</span>
+                  <strong>{{ classLabel }}</strong>
+              </div>
+
+              <div class="exam-detail">
+                  <span>Subject</span>
+                  <strong>
+                      {{ exam.subject || 'Not specified' }}
+                  </strong>
+              </div>
+
+              <div class="exam-detail">
+                  <span>Passing Score</span>
+                  <strong>
+                      {{ exam.passingScore }}%
+                  </strong>
+              </div>
+
+              <div class="exam-detail">
+                  <span>Total Questions</span>
+                  <strong>
+                      {{ exam.totalQuestions }}
+                  </strong>
+              </div>
+
+          </div>
+
       </div>
 
       <div class="header-buttons">
@@ -121,11 +156,34 @@ const route = useRoute()
 const exam = ref({
     id: 0,
     title: '',
+    grade: '',
+    section: '',
+    subject: '',
     totalQuestions: 0,
     passingScore: 75
 })
 
 const students = ref<any[]>([])
+
+const classLabel = computed(() => {
+
+    const grade = exam.value.grade?.trim()
+    const section = exam.value.section?.trim()
+
+    if (grade && section) {
+        return `${grade} - ${section}`
+    }
+
+    if (grade) {
+        return grade
+    }
+
+    if (section) {
+        return section
+    }
+
+    return 'Not specified'
+})
 
 async function fetchResults() {
     try {
@@ -137,8 +195,11 @@ async function fetchResults() {
         exam.value = {
             id: response.data.exam.id,
             title: response.data.exam.title,
+            grade: response.data.exam.grade ?? '',
+            section: response.data.exam.section ?? '',
+            subject: response.data.exam.subject ?? '',
             totalQuestions: response.data.exam.questions_count ?? 0,
-            passingScore: response.data.exam.passing ?? 75
+            passingScore: Number(response.data.exam.passing ?? 75)
         }
 
         students.value = response.data.data.map((student:any) => {
@@ -346,6 +407,53 @@ onMounted(() => {
 
     font-size:15px;
 
+}
+.header-info {
+    flex:1;
+}
+
+.exam-title {
+    color:#64748b;
+    font-size:15px;
+    font-weight:500;
+}
+
+.exam-details {
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+
+    margin-top:16px;
+}
+
+.exam-detail {
+    min-width:130px;
+
+    padding:10px 14px;
+
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+
+    background:#ffffff;
+}
+
+.exam-detail span {
+    display:block;
+
+    margin-bottom:3px;
+
+    color:#94a3b8;
+
+    font-size:10px;
+    font-weight:600;
+    text-transform:uppercase;
+}
+
+.exam-detail strong {
+    color:#112244;
+
+    font-size:12px;
+    font-weight:700;
 }
 
 .header-buttons{
@@ -736,6 +844,14 @@ table{
 
 @media(max-width:768px){
 
+.exam-details {
+    width:100%;
+}
+
+.exam-detail {
+    flex:1 1 calc(50% - 10px);
+}
+
 .results-page{
 
     padding:20px;
@@ -792,6 +908,10 @@ table{
 
     padding:15px;
 
+}
+
+.exam-detail {
+    flex:1 1 100%;
 }
 
 thead th{

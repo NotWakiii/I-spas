@@ -1,7 +1,7 @@
 <template>
   <div class="history-page">
 
-    
+
     <div class="page-header">
       <div>
         <h1>Student History</h1>
@@ -9,35 +9,51 @@
       </div>
     </div>
 
-    
+
     <div class="filter-card">
 
+      <!-- SEARCH STUDENT -->
       <input
         v-model="search"
         type="text"
         placeholder="Search student name..."
       >
 
+      <!-- CLASS FILTER -->
+      <select v-model="selectedClass">
+
+        <option>
+          All Classes
+        </option>
+
+        <option
+          v-for="className in classes"
+          :key="className"
+        >
+          {{ className }}
+        </option>
+
+      </select>
+
+      <!-- SUBJECT FILTER -->
       <select v-model="selectedSubject">
-        <option>All Subjects</option>
+
+        <option>
+          All Subjects
+        </option>
+
         <option
           v-for="subject in subjects"
           :key="subject"
         >
           {{ subject }}
         </option>
-      </select>
 
-      <select v-model="selectedExamType">
-        <option>All Exam Types</option>
-        <option>Quiz</option>
-        <option>Midterm</option>
-        <option>Final</option>
       </select>
 
     </div>
 
-    
+
     <div
       v-if="search.trim() !== '' && filteredHistory.length"
       class="summary-card"
@@ -67,12 +83,13 @@
       </div>
     </div>
 
-    
+
     <div class="table-card">
       <table>
         <thead>
           <tr>
             <th>Student Name</th>
+            <th>Class</th>
             <th>Subject</th>
             <th>Examination</th>
             <th>Score</th>
@@ -83,18 +100,30 @@
         <tbody>
           <tr
             v-for="record in filteredHistory"
-            :key="record.id"
-          >
-            <td>{{ record.studentName }}</td>
-            <td>{{ record.subject }}</td>
-            <td>{{ record.exam }}</td>
+            :key="record.id">
+            <td>
+              {{ record.studentName }}
+            </td>
+            <td>
+              {{ record.className }}
+            </td>
+            <td>
+              {{ record.subject }}
+            </td>
+            <td>
+              {{ record.exam }}
+            </td>
             <td>
               <strong>
-                {{ record.score }} / {{ record.totalItems }}
+                {{ record.score }}
+                /
+                {{ record.totalItems }}
                 ({{ record.percentage }}%)
               </strong>
             </td>
-            <td>{{ record.dateTime }}</td>
+            <td>
+              {{ record.dateTime }}
+            </td>
           </tr>
         </tbody>
       </table>
@@ -116,10 +145,26 @@ import { ref, computed, onMounted } from 'vue'
 import api from '../services/api'
 
 const search = ref('')
-const selectedSubject = ref('All Subjects')
-const selectedExamType = ref('All Exam Types')
-
+const selectedClass =
+  ref('All Classes')
+const selectedSubject =
+  ref('All Subjects')
+const selectedExamType =
+  ref('All Exam Types')
 const history = ref<any[]>([])
+
+const classes = computed(() => {
+  return [
+    ...new Set(
+      history.value
+        .map(item => item.className)
+        .filter(
+          className =>
+            className !== 'No Class'
+        )
+    )
+  ].sort()
+})
 
 async function fetchHistory() {
   try {
@@ -130,20 +175,38 @@ async function fetchHistory() {
       .map((session:any) => {
         const exam = session.exam || {}
         const totalItems = exam.questions_count || session.answers?.length || 0
-
-        return {
-          id: session.id,
-          studentName: session.student_name,
-          subject: exam.course || 'No Subject',
-          exam: exam.title || 'Untitled Exam',
-          examType: detectExamType(exam.title || ''),
-          score: session.score || 0,
-          totalItems,
-          percentage: Number(session.percentage || 0),
-          dateTime: session.submitted_at
-            ? new Date(session.submitted_at).toLocaleString()
+      return {
+        id: session.id,
+        studentName:
+          session.student_name || 'Unknown Student',
+        grade:
+          exam.grade || '',
+        section:
+          exam.section || '',
+        className:
+          exam.grade && exam.section
+            ? `${exam.grade} - ${exam.section}`
+            : 'No Class',
+        subject:
+          exam.subject || 'No Subject',
+        exam:
+          exam.title || 'Untitled Exam',
+        examType:
+          detectExamType(exam.title || ''),
+        score:
+          Number(session.score || 0),
+        totalItems,
+        percentage:
+          Number(session.percentage || 0),
+        dateTime:
+          session.submitted_at
+            ? new Date(
+                session.submitted_at
+              ).toLocaleString(
+                'en-PH'
+              )
             : '-'
-        }
+      }
       })
   } catch (error) {
     console.error(error)

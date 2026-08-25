@@ -2668,11 +2668,6 @@ function startIdleMonitor() {
 
         const message =
           'You have been inactive for 30 seconds.'
-
-
-        playWarningSound()
-
-
         showSecurityWarning(
           message
         )

@@ -1,13 +1,18 @@
 <template>
   <div class="student-page">
+
     <div class="student-card">
 
-
+      <!-- ==========================================
+           STEP 1: INTRODUCTION
+      =========================================== -->
       <section
         v-if="currentStep === 1"
         class="intro-panel"
       >
+
         <div class="intro-content">
+
           <img
             src="../../assets/logo.png"
             alt="I-SPAS Logo"
@@ -24,16 +29,23 @@
 
           <p class="description">
             Enter the examination code provided by your professor,
-            then provide your name and section to join the waiting lobby.
+            then select your name from the class list to join the
+            waiting lobby.
           </p>
 
           <div class="feature-list">
+
             <div class="feature-item">
               <span>✓</span>
 
               <div>
-                <strong>Secure Intranet Assessment</strong>
-                <p>Works through your local school network.</p>
+                <strong>
+                  Secure Intranet Assessment
+                </strong>
+
+                <p>
+                  Works through your local school network.
+                </p>
               </div>
             </div>
 
@@ -41,8 +53,13 @@
               <span>✓</span>
 
               <div>
-                <strong>Live Examination Monitoring</strong>
-                <p>Exam activity is monitored after the test begins.</p>
+                <strong>
+                  Live Examination Monitoring
+                </strong>
+
+                <p>
+                  Exam activity is monitored after the test begins.
+                </p>
               </div>
             </div>
 
@@ -50,10 +67,16 @@
               <span>✓</span>
 
               <div>
-                <strong>Automatic Answer Saving</strong>
-                <p>Your answers will be saved while taking the exam.</p>
+                <strong>
+                  Automatic Answer Saving
+                </strong>
+
+                <p>
+                  Your answers will be saved while taking the exam.
+                </p>
               </div>
             </div>
+
           </div>
 
           <button
@@ -72,25 +95,33 @@
           >
             ← Back to Portal Selection
           </button>
+
         </div>
+
       </section>
 
-      <!-- STEP 2: FORM -->
+
+      <!-- ==========================================
+           STEP 2: JOIN FORM
+      =========================================== -->
       <section
         v-else
         class="form-panel"
       >
-        <div class="form-top">
 
+        <div class="form-top">
 
           <img
             src="../../assets/logo.png"
             alt="I-SPAS Logo"
             class="small-logo"
           >
+
         </div>
 
+
         <div class="form-header">
+
           <span class="step-label">
             STUDENT ACCESS
           </span>
@@ -100,12 +131,18 @@
           </h2>
 
           <p>
-            Use the access code shared by your professor.
+            Enter the access code first, then select your
+            name from the assigned class.
           </p>
+
         </div>
 
+
         <form @submit.prevent="joinExam">
+
+          <!-- ACCESS CODE -->
           <div class="form-group">
+
             <label for="access-code">
               Exam Access Code
             </label>
@@ -117,15 +154,85 @@
               maxlength="12"
               autocomplete="off"
               placeholder="Example: ABC123"
-              @input="formatAccessCode"
+              @input="handleAccessCodeInput"
             >
 
             <small>
               Codes are not case-sensitive.
             </small>
+
           </div>
 
-          <div class="form-group">
+
+          <!-- CHECK CODE -->
+          <button
+            v-if="!examLoaded"
+            class="check-code-btn"
+            type="button"
+            :disabled="
+              checkingCode ||
+              !accessCode.trim()
+            "
+            @click="loadExamStudents"
+          >
+
+            <span
+              v-if="checkingCode"
+              class="spinner"
+            ></span>
+
+            {{
+              checkingCode
+                ? 'Checking Exam...'
+                : 'Check Exam Code'
+            }}
+
+          </button>
+
+
+          <!-- ==========================================
+               EXAM INFORMATION
+          =========================================== -->
+          <div
+            v-if="examLoaded"
+            class="exam-info-box"
+          >
+
+            <div>
+              <span>Examination</span>
+
+              <strong>
+                {{ examInfo?.title }}
+              </strong>
+            </div>
+
+            <div>
+              <span>Subject</span>
+
+              <strong>
+                {{ examInfo?.subject || 'Not specified' }}
+              </strong>
+            </div>
+
+            <div>
+              <span>Class</span>
+
+              <strong>
+                {{ classLabel }}
+              </strong>
+            </div>
+
+          </div>
+
+
+          <!-- ==========================================
+               STUDENT NAME
+          =========================================== -->
+          <div
+            v-if="examLoaded"
+            class="form-group student-name-group"
+          >
+
             <label for="student-name">
               Full Name
             </label>
@@ -134,53 +241,86 @@
               id="student-name"
               v-model="studentName"
               type="text"
-              autocomplete="name"
-              placeholder="Enter your full name"
+              autocomplete="off"
+              placeholder="Start typing your name..."
+              @input="handleStudentInput"
+              @focus="showSuggestions = true"
             >
+
+
+            <!-- AUTOCOMPLETE -->
+            <div
+              v-if="
+                showSuggestions &&
+                filteredStudents.length > 0
+              "
+              class="student-suggestions"
+            >
+
+              <button
+                v-for="student in filteredStudents"
+                :key="student.id"
+                type="button"
+                class="student-suggestion"
+                @click="selectStudent(student)"
+              >
+
+                <span class="student-avatar">
+                  {{
+                    getInitials(
+                      student.student_name
+                    )
+                  }}
+                </span>
+
+                <span class="student-suggestion-info">
+
+                  <strong>
+                    {{ student.student_name }}
+                  </strong>
+
+                  <small>
+                    {{ classLabel }}
+                  </small>
+
+                </span>
+
+              </button>
+
+            </div>
+
+
+            <!-- NO MATCH -->
+            <div
+              v-if="
+                studentName.trim() &&
+                filteredStudents.length === 0 &&
+                !selectedStudent
+              "
+              class="no-student-message"
+            >
+              No matching student found in this class.
+            </div>
+
+
+            <!-- SELECTED -->
+            <div
+              v-if="selectedStudent"
+              class="selected-student"
+            >
+              ✓
+              {{ selectedStudent.student_name }}
+              selected
+            </div>
+
+            <small>
+              Select your name from the class list.
+            </small>
+
           </div>
 
-          <div class="form-group">
-            <label for="grade">
-              Grade Level
-            </label>
 
-            <select
-              id="grade"
-              v-model="grade"
-            >
-              <option value="" disabled>
-                Select Grade Level
-              </option>
-
-              <option value="Grade 11">
-                Grade 11
-              </option>
-
-              <option value="Grade 12">
-                Grade 12
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="section">
-              Section
-            </label>
-
-            <select
-              id="section"
-              v-model="section"
-            >
-              <option value="" disabled>
-                Select Section
-              </option>
-
-              <option value="A">Section A</option>
-              <option value="B">Section B</option>
-              <option value="C">Section C</option>
-            </select>
-          </div>
-
+          <!-- ERROR -->
           <div
             v-if="errorMessage"
             class="error-message"
@@ -188,28 +328,60 @@
             {{ errorMessage }}
           </div>
 
+
+          <!-- JOIN -->
           <button
+            v-if="examLoaded"
             class="join-btn"
             type="submit"
-            :disabled="joining"
+            :disabled="
+              joining ||
+              !selectedStudent
+            "
           >
+
             <span
               v-if="joining"
               class="spinner"
             ></span>
 
-            {{ joining ? 'Joining Lobby...' : 'Join Examination' }}
+            {{
+              joining
+                ? 'Joining Lobby...'
+                : 'Join Examination'
+            }}
+
           </button>
+
+
+          <!-- CHANGE EXAM -->
+          <button
+            v-if="examLoaded"
+            class="change-exam-btn"
+            type="button"
+            :disabled="joining"
+            @click="resetExam"
+          >
+            Use Different Exam Code
+          </button>
+
         </form>
 
+
         <div class="help-box">
-          <strong>Unable to join?</strong>
+
+          <strong>
+            Unable to join?
+          </strong>
 
           <p>
-            Confirm that the exam is published and the access code
-            matches the code displayed by your professor.
+            Confirm that the exam is published, the access
+            code is correct, and your name has been added
+            to the assigned class by your professor.
           </p>
+
         </div>
+
 
         <button
           class="home-btn"
@@ -218,142 +390,765 @@
         >
           ← Back to Portal Selection
         </button>
+
       </section>
 
     </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+
+import {
+  computed,
+  ref
+} from 'vue'
+
+import {
+  useRouter
+} from 'vue-router'
+
 import api from '../../services/api'
 
-const router = useRouter()
 
-const currentStep = ref(1)
+// ==========================================
+// TYPES
+// ==========================================
 
-const accessCode = ref('')
-const studentName = ref('')
-const grade = ref('')
-const section = ref('')
+interface Student {
+  id: number
+  student_name: string
+}
 
-const joining = ref(false)
-const errorMessage = ref('')
+
+interface ExamInfo {
+  id: number
+  title: string
+  subject: string | null
+}
+
+
+interface ClassInfo {
+  id: number
+  grade: string
+  section: string
+}
+
+
+// ==========================================
+// ROUTER
+// ==========================================
+
+const router =
+  useRouter()
+
+
+// ==========================================
+// PAGE STATE
+// ==========================================
+
+const currentStep =
+  ref(1)
+
+const accessCode =
+  ref('')
+
+const studentName =
+  ref('')
+
+
+// ==========================================
+// EXAM STATE
+// ==========================================
+
+const examLoaded =
+  ref(false)
+
+const checkingCode =
+  ref(false)
+
+const examInfo =
+  ref<ExamInfo | null>(null)
+
+const classInfo =
+  ref<ClassInfo | null>(null)
+
+const students =
+  ref<Student[]>([])
+
+
+// ==========================================
+// STUDENT SELECTION
+// ==========================================
+
+const selectedStudent =
+  ref<Student | null>(null)
+
+const showSuggestions =
+  ref(false)
+
+
+// ==========================================
+// JOIN STATE
+// ==========================================
+
+const joining =
+  ref(false)
+
+const errorMessage =
+  ref('')
+
+
+// ==========================================
+// CLASS LABEL
+// ==========================================
+
+const classLabel =
+  computed(() => {
+
+    if (!classInfo.value) {
+      return ''
+    }
+
+    return (
+      `${classInfo.value.grade} - ` +
+      `${classInfo.value.section}`
+    )
+
+  })
+
+
+// ==========================================
+// FILTER STUDENTS
+// ==========================================
+
+const filteredStudents =
+  computed(() => {
+
+    const search =
+      studentName.value
+        .trim()
+        .toLowerCase()
+
+
+    if (!search) {
+
+      return students.value
+        .slice(0, 8)
+
+    }
+
+
+    return students.value
+      .filter(
+        student =>
+          student.student_name
+            .toLowerCase()
+            .includes(search)
+      )
+      .slice(0, 8)
+
+  })
+
+
+// ==========================================
+// GO TO FORM
+// ==========================================
 
 function goToForm() {
-  currentStep.value = 2
-  errorMessage.value = ''
+
+  currentStep.value =
+    2
+
+  errorMessage.value =
+    ''
+
 }
+
+
+// ==========================================
+// ACCESS CODE FORMAT
+// ==========================================
 
 function formatAccessCode() {
-  accessCode.value = accessCode.value
-    .replace(/\s+/g, '')
-    .toUpperCase()
+
+  accessCode.value =
+    accessCode.value
+      .replace(
+        /\s+/g,
+        ''
+      )
+      .toUpperCase()
+
 }
 
-function validateForm(): boolean {
-  errorMessage.value = ''
+
+// ==========================================
+// ACCESS CODE INPUT
+// ==========================================
+
+function handleAccessCodeInput() {
+
+  formatAccessCode()
+
+
+  /*
+   * If student changes the access code after
+   * loading an exam, reset the previous exam.
+   */
+
+  if (examLoaded.value) {
+
+    examLoaded.value =
+      false
+
+    examInfo.value =
+      null
+
+    classInfo.value =
+      null
+
+    students.value =
+      []
+
+    studentName.value =
+      ''
+
+    selectedStudent.value =
+      null
+
+    showSuggestions.value =
+      false
+
+  }
+
+}
+
+
+// ==========================================
+// LOAD EXAM + STUDENTS
+// ==========================================
+
+async function loadExamStudents() {
+
+  errorMessage.value =
+    ''
+
 
   if (!accessCode.value.trim()) {
-    errorMessage.value = 'Please enter the examination access code.'
-    return false
+
+    errorMessage.value =
+      'Please enter the examination access code.'
+
+    return
   }
 
-  if (!studentName.value.trim()) {
-    errorMessage.value = 'Please enter your full name.'
-    return false
-  }
 
-  if (studentName.value.trim().length < 3) {
-    errorMessage.value = 'Please enter a valid full name.'
-    return false
-  }
+  checkingCode.value =
+    true
 
-  if (!grade.value) {
-    errorMessage.value = 'Please select your grade level.'
-    return false
-  }
-
-  if (!section.value) {
-    errorMessage.value = 'Please select your section.'
-    return false
-  }
-
-  return true
-}
-
-async function joinExam() {
-  if (!validateForm()) return
-
-  joining.value = true
-  errorMessage.value = ''
 
   try {
-    const response = await api.post('/join-exam', {
-      access_code: accessCode.value.trim().toUpperCase(),
-      student_name: studentName.value.trim(),
-      section: `${grade.value} - ${section.value}`,
-    })
+
+    const response =
+      await api.post(
+        '/exam-students',
+        {
+          access_code:
+            accessCode.value
+              .trim()
+              .toUpperCase()
+        }
+      )
+
+
+    examInfo.value =
+      response.data.exam
+
+
+    classInfo.value =
+      response.data.class
+
+
+    students.value =
+      Array.isArray(
+        response.data.students
+      )
+        ? response.data.students
+        : []
+
+
+    examLoaded.value =
+      true
+
+
+    studentName.value =
+      ''
+
+
+    selectedStudent.value =
+      null
+
+
+    showSuggestions.value =
+      false
+
+
+  } catch (error: unknown) {
+
+    console.error(
+      'CHECK EXAM ERROR:',
+      error
+    )
+
+
+    const apiError =
+      error as {
+        response?: {
+          data?: {
+            message?: string
+            errors?: Record<
+              string,
+              string[]
+            >
+          }
+        }
+      }
+
+
+    const validationErrors =
+      apiError.response
+        ?.data
+        ?.errors
+
+
+    if (validationErrors) {
+
+      const firstError =
+        Object.values(
+          validationErrors
+        )[0]?.[0]
+
+
+      errorMessage.value =
+        firstError ||
+        'Please check the examination code.'
+
+    } else {
+
+      errorMessage.value =
+        apiError.response
+          ?.data
+          ?.message
+        ||
+        'Unable to find this examination.'
+
+    }
+
+
+    examLoaded.value =
+      false
+
+  } finally {
+
+    checkingCode.value =
+      false
+
+  }
+
+}
+
+
+// ==========================================
+// STUDENT INPUT
+// ==========================================
+
+function handleStudentInput() {
+
+  showSuggestions.value =
+    true
+
+
+  /*
+   * If the student edits the text after selecting
+   * a name, invalidate the previous selection.
+   */
+
+  if (
+    selectedStudent.value &&
+    studentName.value !==
+      selectedStudent.value.student_name
+  ) {
+
+    selectedStudent.value =
+      null
+
+  }
+
+}
+
+
+// ==========================================
+// SELECT STUDENT
+// ==========================================
+
+function selectStudent(
+  student: Student
+) {
+
+  selectedStudent.value =
+    student
+
+
+  studentName.value =
+    student.student_name
+
+
+  showSuggestions.value =
+    false
+
+
+  errorMessage.value =
+    ''
+
+}
+
+
+// ==========================================
+// INITIALS
+// ==========================================
+
+function getInitials(
+  name: string
+) {
+
+  const words =
+    name
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+
+
+  if (words.length === 0) {
+    return '?'
+  }
+
+
+  if (words.length === 1) {
+
+    return words[0]!
+      .charAt(0)
+      .toUpperCase()
+
+  }
+
+
+  return (
+    words[0]!
+      .charAt(0)
+    +
+    words[
+      words.length - 1
+    ]!
+      .charAt(0)
+  ).toUpperCase()
+
+}
+
+
+// ==========================================
+// VALIDATE
+// ==========================================
+
+function validateForm():
+  boolean {
+
+  errorMessage.value =
+    ''
+
+
+  if (
+    !accessCode.value.trim()
+  ) {
+
+    errorMessage.value =
+      'Please enter the examination access code.'
+
+    return false
+  }
+
+
+  if (
+    !examLoaded.value
+  ) {
+
+    errorMessage.value =
+      'Please check the examination code first.'
+
+    return false
+  }
+
+
+  if (
+    !selectedStudent.value
+  ) {
+
+    errorMessage.value =
+      'Please select your name from the class list.'
+
+    return false
+  }
+
+
+  return true
+
+}
+
+
+// ==========================================
+// JOIN EXAM
+// ==========================================
+
+async function joinExam() {
+
+  if (!validateForm()) {
+    return
+  }
+
+
+  joining.value =
+    true
+
+  errorMessage.value =
+    ''
+
+
+  try {
+
+    const response =
+      await api.post(
+        '/join-exam',
+        {
+
+          access_code:
+            accessCode.value
+              .trim()
+              .toUpperCase(),
+
+          student_name:
+            selectedStudent.value!
+              .student_name
+
+        }
+      )
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SAVE SESSION
+    |--------------------------------------------------------------------------
+    */
 
     localStorage.setItem(
       'student_session',
-      JSON.stringify(response.data.session)
+      JSON.stringify(
+        response.data.session
+      )
     )
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SAVE EXAM
+    |--------------------------------------------------------------------------
+    */
 
     localStorage.setItem(
       'student_exam',
-      JSON.stringify(response.data.exam)
+      JSON.stringify(
+        response.data.exam
+      )
     )
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SAVE STUDENT
+    |--------------------------------------------------------------------------
+    */
 
     localStorage.setItem(
       'student_name',
-      studentName.value.trim()
+      response.data.student?.name
+      ||
+      selectedStudent.value!
+        .student_name
     )
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SAVE CLASS
+    |--------------------------------------------------------------------------
+    */
 
     localStorage.setItem(
       'student_section',
-      `${grade.value} - ${section.value}`
+      response.data.student
+        ? (
+            `${response.data.student.grade} - ` +
+            `${response.data.student.section}`
+          )
+        : classLabel.value
     )
+
+
+    localStorage.setItem(
+      'student_class_id',
+      String(
+        response.data.student
+          ?.class_id
+        ||
+        classInfo.value?.id
+        ||
+        ''
+      )
+    )
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | SAVE ACCESS CODE
+    |--------------------------------------------------------------------------
+    */
 
     localStorage.setItem(
       'student_access_code',
-      accessCode.value.trim().toUpperCase()
+      accessCode.value
+        .trim()
+        .toUpperCase()
     )
 
-    router.push('/student/lobby')
-  } catch (error: unknown) {
-    console.error(error)
 
-    const apiError = error as {
-      response?: {
-        data?: {
-          message?: string
-          errors?: Record<string, string[]>
+    /*
+    |--------------------------------------------------------------------------
+    | GO TO LOBBY
+    |--------------------------------------------------------------------------
+    */
+
+    router.push(
+      '/student/lobby'
+    )
+
+
+  } catch (error: unknown) {
+
+    console.error(
+      'JOIN EXAM ERROR:',
+      error
+    )
+
+
+    const apiError =
+      error as {
+        response?: {
+          data?: {
+            message?: string
+            errors?: Record<
+              string,
+              string[]
+            >
+          }
         }
       }
-    }
 
-    const validationErrors = apiError.response?.data?.errors
+
+    const validationErrors =
+      apiError.response
+        ?.data
+        ?.errors
+
 
     if (validationErrors) {
-      const firstError = Object.values(validationErrors)[0]?.[0]
+
+      const firstError =
+        Object.values(
+          validationErrors
+        )[0]?.[0]
+
 
       errorMessage.value =
-        firstError || 'Please check the information you entered.'
+        firstError ||
+        'Please check the information you entered.'
+
     } else {
+
       errorMessage.value =
-        apiError.response?.data?.message ||
+        apiError.response
+          ?.data
+          ?.message
+        ||
         'Unable to join the examination.'
+
     }
+
   } finally {
-    joining.value = false
+
+    joining.value =
+      false
+
   }
+
 }
+
+
+// ==========================================
+// RESET EXAM
+// ==========================================
+
+function resetExam() {
+
+  accessCode.value =
+    ''
+
+  studentName.value =
+    ''
+
+  selectedStudent.value =
+    null
+
+  examInfo.value =
+    null
+
+  classInfo.value =
+    null
+
+  students.value =
+    []
+
+  examLoaded.value =
+    false
+
+  showSuggestions.value =
+    false
+
+  errorMessage.value =
+    ''
+
+}
+
+
+// ==========================================
+// HOME
+// ==========================================
 
 function goHome() {
+
   router.push('/')
+
 }
+
 </script>
 
 <style scoped>
@@ -1485,5 +2280,242 @@ button{
     }
 
 }
+/* ==========================================
+   CHECK EXAM BUTTON
+========================================== */
 
+.check-code-btn {
+    width:100%;
+    min-height:46px;
+    margin-bottom:14px;
+    padding:10px 16px;
+
+    border:none;
+    border-radius:10px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:9px;
+
+    background:#0f766e;
+    color:#ffffff;
+
+    font-size:12px;
+    font-weight:800;
+
+    cursor:pointer;
+
+    transition:
+        background .22s ease,
+        transform .22s ease;
+}
+
+.check-code-btn:hover:not(:disabled) {
+    background:#115e59;
+    transform:translateY(-1px);
+}
+
+.check-code-btn:disabled {
+    opacity:.6;
+    cursor:not-allowed;
+}
+
+
+/* ==========================================
+   EXAM INFORMATION
+========================================== */
+
+.exam-info-box {
+    margin-bottom:16px;
+    padding:14px;
+
+    display:grid;
+    gap:10px;
+
+    border:1px solid #bbf7d0;
+    border-radius:12px;
+
+    background:#f0fdf4;
+}
+
+.exam-info-box > div {
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:15px;
+}
+
+.exam-info-box span {
+    color:#64748b;
+    font-size:9px;
+    font-weight:600;
+}
+
+.exam-info-box strong {
+    color:#166534;
+    font-size:10px;
+    font-weight:800;
+    text-align:right;
+}
+
+
+/* ==========================================
+   STUDENT AUTOCOMPLETE
+========================================== */
+
+.student-name-group {
+    position:relative;
+}
+
+.student-suggestions {
+    position:absolute;
+    top:73px;
+    left:0;
+    right:0;
+
+    z-index:50;
+
+    max-height:230px;
+    overflow-y:auto;
+
+    border:1px solid #d1d5db;
+    border-radius:10px;
+
+    background:#ffffff;
+
+    box-shadow:
+        0 12px 30px
+        rgba(0,0,0,.14);
+}
+
+.student-suggestion {
+    width:100%;
+    padding:10px 12px;
+
+    border:none;
+    border-bottom:1px solid #f1f5f9;
+
+    display:flex;
+    align-items:center;
+    gap:10px;
+
+    background:#ffffff;
+
+    text-align:left;
+    cursor:pointer;
+}
+
+.student-suggestion:last-child {
+    border-bottom:none;
+}
+
+.student-suggestion:hover {
+    background:#f0fdf4;
+}
+
+.student-avatar {
+    flex:0 0 34px;
+
+    width:34px;
+    height:34px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    border-radius:50%;
+
+    background:#dcfce7;
+    color:#15803d;
+
+    font-size:10px;
+    font-weight:800;
+}
+
+.student-suggestion-info {
+    min-width:0;
+}
+
+.student-suggestion-info strong {
+    display:block;
+
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+
+    color:#1e293b;
+
+    font-size:11px;
+}
+
+.student-suggestion-info small {
+    margin-top:2px;
+
+    color:#94a3b8;
+
+    font-size:8px;
+}
+
+
+/* ==========================================
+   SELECTED STUDENT
+========================================== */
+
+.selected-student {
+    margin-top:7px;
+    padding:8px 10px;
+
+    border-radius:8px;
+
+    background:#dcfce7;
+    color:#166534;
+
+    font-size:9px;
+    font-weight:700;
+}
+
+
+/* ==========================================
+   NO STUDENT
+========================================== */
+
+.no-student-message {
+    margin-top:7px;
+    padding:8px 10px;
+
+    border-radius:8px;
+
+    background:#fef2f2;
+    color:#b91c1c;
+
+    font-size:9px;
+    font-weight:600;
+}
+
+
+/* ==========================================
+   CHANGE EXAM
+========================================== */
+
+.change-exam-btn {
+    width:100%;
+
+    margin-top:9px;
+    padding:9px;
+
+    border:none;
+
+    background:transparent;
+    color:#64748b;
+
+    font-size:9px;
+    font-weight:700;
+
+    cursor:pointer;
+}
+
+.change-exam-btn:hover {
+    color:#15803d;
+}
 </style>

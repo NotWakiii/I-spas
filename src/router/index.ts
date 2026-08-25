@@ -16,6 +16,8 @@ import StudentHistory from '../views/StudentHistory.vue'
 import ExamResults from '../views/ExamResults.vue'
 import StudentScores from '../views/StudentScores.vue'
 
+import ClassManagement from '../views/ClassManagement.vue'
+
 import ItemAnalysisHub from '../views/ItemAnalysisHub.vue'
 import ItemAnalysis from '../views/ItemAnalysis.vue'
 
@@ -150,6 +152,11 @@ const router = createRouter({
           path: 'exam-results/:examId',
           name: 'StudentScores',
           component: StudentScores,
+        },
+        {
+          path: 'classes',
+          name: 'ClassManagement',
+          component: ClassManagement,
         },
       ],
     },

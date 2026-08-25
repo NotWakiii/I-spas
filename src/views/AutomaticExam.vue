@@ -1,15 +1,26 @@
 <template>
   <div class="automatic-page">
-    <button class="back-btn" @click="$router.push('/faculty/create-exam')">
+
+    <button
+      class="back-btn"
+      @click="$router.push('/faculty/create-exam')"
+    >
       ← Back to Selection
     </button>
 
     <div class="page-header">
       <h1>Automatic Exam Generation</h1>
-      <p>Generate draft questions by pasting questions with answers or uploading learning materials.</p>
+      <p>
+        Generate draft questions by pasting questions with answers.
+      </p>
     </div>
 
+    <!-- ==========================================
+         EXAM DETAILS + SUMMARY
+    =========================================== -->
     <div class="top-grid">
+
+      <!-- EXAM DETAILS -->
       <div class="card">
         <h2>Exam Details</h2>
 
@@ -32,50 +43,46 @@
           ></textarea>
         </div>
 
-        <div class="two-column">
+        <!-- CLASS -->
+        <div class="form-group">
+          <label>Class</label>
 
-          <div class="form-group">
-            <label>Grade Level</label>
+          <select
+            v-model="selectedClassId"
+            :disabled="loadingClasses"
+          >
+            <option
+              value=""
+              disabled
+            >
+              {{
+                loadingClasses
+                  ? 'Loading classes...'
+                  : 'Select Class'
+              }}
+            </option>
 
-            <select v-model="grade">
-              <option value="" disabled>
-                Select Grade Level
-              </option>
+            <option
+              v-for="schoolClass in classes"
+              :key="schoolClass.id"
+              :value="schoolClass.id"
+            >
+              {{ schoolClass.grade }} - {{ schoolClass.section }}
+            </option>
+          </select>
 
-              <option value="Grade 11">
-                Grade 11
-              </option>
-
-              <option value="Grade 12">
-                Grade 12
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label>Section</label>
-
-            <select v-model="section">
-              <option value="" disabled>
-                Select Section
-              </option>
-
-              <option value="Section A">
-                Section A
-              </option>
-
-              <option value="Section B">
-                Section B
-              </option>
-
-              <option value="Section C">
-                Section C
-              </option>
-            </select>
-          </div>
-
+          <p
+            v-if="
+              !loadingClasses &&
+              classes.length === 0
+            "
+            class="class-warning"
+          >
+            No classes found. Create a class in Class Management first.
+          </p>
         </div>
 
+        <!-- SUBJECT -->
         <div class="form-group">
           <label>Subject</label>
 
@@ -112,13 +119,20 @@
         </div>
       </div>
 
+      <!-- DRAFT SUMMARY -->
       <div class="card summary">
         <h2>Draft Summary</h2>
 
         <div class="summary-box">
+
           <div>
             <span>Questions Generated</span>
             <h1>{{ questions.length }}</h1>
+          </div>
+
+          <div>
+            <span>Total Points</span>
+            <h1>{{ totalPoints }}</h1>
           </div>
 
           <div>
@@ -128,33 +142,57 @@
 
           <div>
             <span>Missing Answers</span>
-            <h1 class="warning-text">{{ missingAnswers }}</h1>
+
+            <h1 class="warning-text">
+              {{ missingAnswers }}
+            </h1>
           </div>
+
         </div>
 
-        <button class="create-btn" @click="openCreatePopup">
-          Create Exam
+        <button
+          class="create-btn"
+          :disabled="creatingExam"
+          @click="openCreatePopup"
+        >
+          {{
+            creatingExam
+              ? 'Creating...'
+              : 'Create Exam'
+          }}
         </button>
       </div>
+
     </div>
 
+    <!-- ==========================================
+         GENERATION METHOD
+    =========================================== -->
     <div class="card method-card">
       <h2>Generation Method</h2>
 
       <div class="tabs">
-        <button :class="{ active: activeMethod === 'paste' }" @click="activeMethod = 'paste'">
+        <button class="active">
           Paste Questions
         </button>
-
-
       </div>
 
-      <div v-if="activeMethod === 'paste'" class="method-content">
+      <div class="method-content">
+
         <div class="format-box">
           <strong>Accepted Format:</strong>
+
           <p>
-            Multiple Choice questions can be pasted directly with A-D choices and Answer key.
-            You may also add section labels like <b>True or False</b> and <b>Identification</b>.
+            Multiple Choice questions can be pasted directly
+            with A-D choices and Answer key. You may also add
+            section labels like <b>True or False</b>,
+            <b>Identification</b>, and <b>Essay</b>.
+          </p>
+
+          <p>
+            You may also add a competency before a question
+            using:
+            <b>Competency: Your competency here</b>.
           </p>
         </div>
 
@@ -164,109 +202,203 @@
           placeholder="Paste questions with answers here..."
         ></textarea>
 
-        <button class="generate-btn" @click="generateFromText">
+        <button
+          class="generate-btn"
+          @click="generateFromText"
+        >
           Generate Draft Questions
         </button>
+
       </div>
-
-
-
     </div>
 
+    <!-- ==========================================
+         GENERATED QUESTIONS
+    =========================================== -->
     <div class="card">
-      <div class="question-header">
-        <h2>Generated Draft Questions</h2>
 
-        <button class="add-question-btn" @click="addBlankQuestion">
+      <div class="question-header">
+
+        <div>
+          <h2>Generated Draft Questions</h2>
+
+          <p
+            v-if="questions.length > 0"
+            class="question-summary-text"
+          >
+            {{ questions.length }}
+            question(s) •
+            {{ totalPoints }}
+            total point(s)
+          </p>
+        </div>
+
+        <button
+          class="add-question-btn"
+          @click="addBlankQuestion"
+        >
           + Add Question
         </button>
+
       </div>
 
-      <div v-if="questions.length === 0" class="empty">
+      <!-- EMPTY -->
+      <div
+        v-if="questions.length === 0"
+        class="empty"
+      >
         No generated questions yet.
       </div>
 
+      <!-- QUESTIONS -->
       <div
-        v-for="(question,index) in questions"
+        v-for="(question, index) in questions"
         :key="question.id"
         class="question-card"
       >
-        <div class="question-card-header">
-          <h3>Question {{ index + 1 }}</h3>
 
-          <button class="delete-btn" @click="deleteQuestion(index)">
+        <div class="question-card-header">
+
+          <h3>
+            Question {{ index + 1 }}
+          </h3>
+
+          <button
+            class="delete-btn"
+            @click="deleteQuestion(index)"
+          >
             Delete
           </button>
+
         </div>
+
+        <!-- COMPETENCY -->
         <div class="form-group">
           <label>Competency</label>
+
           <input
             v-model="question.competency"
             type="text"
             placeholder="Enter learning competency"
           >
         </div>
+
+        <!-- QUESTION TYPE -->
         <div class="form-group">
           <label>Question Type</label>
-          <select v-model="question.type" @change="normalizeQuestion(question)">
-            <option>Multiple Choice</option>
-            <option>True or False</option>
-            <option>Identification</option>
-            <option>Essay</option>
+
+          <select
+            v-model="question.type"
+            @change="normalizeQuestion(question)"
+          >
+            <option>
+              Multiple Choice
+            </option>
+
+            <option>
+              True or False
+            </option>
+
+            <option>
+              Identification
+            </option>
+
+            <option>
+              Essay
+            </option>
           </select>
         </div>
 
+        <!-- QUESTION -->
         <div class="form-group">
           <label>Question</label>
-          <textarea v-model="question.question"></textarea>
+
+          <textarea
+            v-model="question.question"
+          ></textarea>
         </div>
 
-        <div v-if="question.type === 'Multiple Choice'" class="two-column">
+        <!-- MULTIPLE CHOICE OPTIONS -->
+        <div
+          v-if="question.type === 'Multiple Choice'"
+          class="two-column"
+        >
+
           <div class="form-group">
             <label>Option A</label>
-            <input v-model="question.options[0]">
+
+            <input
+              v-model="question.options[0]"
+            >
           </div>
 
           <div class="form-group">
             <label>Option B</label>
-            <input v-model="question.options[1]">
+
+            <input
+              v-model="question.options[1]"
+            >
           </div>
 
           <div class="form-group">
             <label>Option C</label>
-            <input v-model="question.options[2]">
+
+            <input
+              v-model="question.options[2]"
+            >
           </div>
 
           <div class="form-group">
             <label>Option D</label>
-            <input v-model="question.options[3]">
+
+            <input
+              v-model="question.options[3]"
+            >
           </div>
+
         </div>
 
+        <!-- ANSWER / POINTS / TIME -->
         <div class="three-column">
+
           <div class="form-group">
             <label>Correct Answer</label>
 
+            <!-- MC -->
             <select
-              v-if="question.type === 'Multiple Choice'"
+              v-if="
+                question.type ===
+                'Multiple Choice'
+              "
               v-model="question.answer"
             >
-              <option value="">Select answer</option>
+              <option value="">
+                Select answer
+              </option>
+
               <option>A</option>
               <option>B</option>
               <option>C</option>
               <option>D</option>
             </select>
 
+            <!-- TRUE / FALSE -->
             <select
-              v-else-if="question.type === 'True or False'"
+              v-else-if="
+                question.type ===
+                'True or False'
+              "
               v-model="question.answer"
             >
-              <option value="">Select answer</option>
+              <option value="">
+                Select answer
+              </option>
+
               <option>True</option>
               <option>False</option>
             </select>
 
+            <!-- IDENTIFICATION / ESSAY -->
             <input
               v-else
               v-model="question.answer"
@@ -276,24 +408,50 @@
 
           <div class="form-group">
             <label>Points</label>
-            <input type="number" v-model="question.points">
+
+            <input
+              v-model.number="question.points"
+              type="number"
+              min="0"
+            >
           </div>
 
           <div class="form-group">
             <label>Time Limit (sec)</label>
-            <input type="number" v-model="question.time">
+
+            <input
+              v-model.number="question.time"
+              type="number"
+              min="1"
+            >
           </div>
+
         </div>
 
-        <div v-if="!question.answer" class="warning-box">
+        <div
+          v-if="!question.answer"
+          class="warning-box"
+        >
           ⚠ No answer detected for this question.
         </div>
+
       </div>
     </div>
 
-    <div v-if="showCreatePopup" class="popup-overlay">
+    <!-- ==========================================
+         CREATE EXAM POPUP
+    =========================================== -->
+    <div
+      v-if="showCreatePopup"
+      class="popup-overlay"
+      @click.self="stillEdit"
+    >
+
       <div class="popup-card">
-        <div class="popup-icon">✓</div>
+
+        <div class="popup-icon">
+          ✓
+        </div>
 
         <h2>Create Examination?</h2>
 
@@ -302,89 +460,344 @@
           You can still edit it later before publishing.
         </p>
 
+        <div class="confirmation-summary">
+
+          <div>
+            <span>Class</span>
+
+            <strong>
+              {{ selectedClassLabel }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Subject</span>
+
+            <strong>
+              {{ subject }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Questions</span>
+
+            <strong>
+              {{ questions.length }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Total Points</span>
+
+            <strong>
+              {{ totalPoints }}
+            </strong>
+          </div>
+
+        </div>
+
         <div class="popup-buttons">
-          <button class="cancel-btn" @click="stillEdit">
+
+          <button
+            class="cancel-btn"
+            :disabled="creatingExam"
+            @click="stillEdit"
+          >
             Still Edit
           </button>
 
           <button
-  class="confirm-btn"
-  :disabled="creatingExam"
-  @click="confirmCreateExam"
->
-  {{ creatingExam ? 'Creating...' : 'Create Exam' }}
-</button>
+            class="confirm-btn"
+            :disabled="creatingExam"
+            @click="confirmCreateExam"
+          >
+            {{
+              creatingExam
+                ? 'Creating...'
+                : 'Create Exam'
+            }}
+          </button>
+
         </div>
+
       </div>
     </div>
+
   </div>
 </template>
 
+
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+
+import {
+  computed,
+  onMounted,
+  ref
+} from 'vue'
+
+import {
+  useRouter
+} from 'vue-router'
+
 import api from '../services/api'
 
-const router = useRouter()
 
-const passing = ref(75)
-const creatingExam = ref(false)
+const router =
+  useRouter()
 
-const examTitle = ref('')
-const description = ref('')
-const duration = ref(60)
 
-const grade = ref('')
-const section = ref('')
-const subject = ref('')
+// ==========================================
+// TYPES
+// ==========================================
 
-const activeMethod = ref<'paste' | 'upload'>('paste')
-const rawText = ref('')
-const selectedFile = ref<File | null>(null)
-
-const showCreatePopup = ref(false)
-
-const questions = ref<any[]>([])
-
-const detectedAnswers = computed(() => {
-  return questions.value.filter(q => q.answer && String(q.answer).trim() !== '').length
-})
-
-const missingAnswers = computed(() => {
-  return questions.value.filter(q => !q.answer || String(q.answer).trim() === '').length
-})
-
-const totalPoints = computed(() => {
-  return questions.value.reduce(
-    (sum, item) => sum + Number(item.points || 0),
-    0
-  )
-})
-
-function generateFromText() {
-  if (!rawText.value.trim()) {
-    alert('Please paste questions first.')
-    return
-  }
-
-  const parsed = parseQuestions(rawText.value)
-
-  if (parsed.length === 0) {
-    alert('No valid questions detected.')
-    return
-  }
-
-  questions.value = parsed
-
-  alert(`${parsed.length} questions generated successfully.`)
+interface SchoolClass {
+  id: number
+  grade: string
+  section: string
 }
 
-function parseQuestions(text: string) {
-  const lines = text
-    .replace(/\r/g, '')
-    .split('\n')
-    .map(line => line.trim())
-    .filter(Boolean)
+
+interface ExamQuestion {
+  id: number
+  type: string
+  competency: string
+  question: string
+  options: string[]
+  answer: string
+  points: number
+  time: number
+}
+
+
+// ==========================================
+// EXAM DETAILS
+// ==========================================
+
+const passing =
+  ref(75)
+
+const creatingExam =
+  ref(false)
+
+const examTitle =
+  ref('')
+
+const description =
+  ref('')
+
+const duration =
+  ref(60)
+
+const subject =
+  ref('')
+
+
+// ==========================================
+// CLASSES
+// ==========================================
+
+const classes =
+  ref<SchoolClass[]>([])
+
+const selectedClassId =
+  ref<number | ''>('')
+
+const loadingClasses =
+  ref(false)
+
+
+// ==========================================
+// GENERATION
+// ==========================================
+
+const rawText =
+  ref('')
+
+const showCreatePopup =
+  ref(false)
+
+const questions =
+  ref<ExamQuestion[]>([])
+
+
+// ==========================================
+// SUMMARY
+// ==========================================
+
+const detectedAnswers =
+  computed(() => {
+
+    return questions.value.filter(
+      question =>
+        question.answer &&
+        String(
+          question.answer
+        ).trim() !== ''
+    ).length
+
+  })
+
+
+const missingAnswers =
+  computed(() => {
+
+    return questions.value.filter(
+      question =>
+        !question.answer ||
+        String(
+          question.answer
+        ).trim() === ''
+    ).length
+
+  })
+
+
+const totalPoints =
+  computed(() => {
+
+    return questions.value.reduce(
+      (sum, item) =>
+        sum +
+        Number(
+          item.points || 0
+        ),
+      0
+    )
+
+  })
+
+
+const selectedClassLabel =
+  computed(() => {
+
+    const schoolClass =
+      classes.value.find(
+        item =>
+          item.id ===
+          Number(
+            selectedClassId.value
+          )
+      )
+
+    if (!schoolClass) {
+      return 'Not selected'
+    }
+
+    return (
+      `${schoolClass.grade} - ` +
+      `${schoolClass.section}`
+    )
+
+  })
+
+
+// ==========================================
+// FETCH CLASSES
+// ==========================================
+
+async function fetchClasses() {
+
+  loadingClasses.value = true
+
+  try {
+
+    const response =
+      await api.get(
+        '/faculty/classes'
+      )
+
+    console.log(
+      'AUTOMATIC EXAM CLASSES:',
+      response.data
+    )
+
+    classes.value =
+      Array.isArray(
+        response.data?.data
+      )
+        ? response.data.data
+        : []
+
+  } catch (error: any) {
+
+    console.error(
+      'LOAD CLASSES ERROR:',
+      error.response?.data ||
+      error
+    )
+
+    classes.value = []
+
+  } finally {
+
+    loadingClasses.value = false
+
+  }
+
+}
+
+
+// ==========================================
+// GENERATE FROM TEXT
+// ==========================================
+
+function generateFromText() {
+
+  if (!rawText.value.trim()) {
+
+    alert(
+      'Please paste questions first.'
+    )
+
+    return
+  }
+
+
+  const parsed =
+    parseQuestions(
+      rawText.value
+    )
+
+
+  if (parsed.length === 0) {
+
+    alert(
+      'No valid questions detected.'
+    )
+
+    return
+  }
+
+
+  questions.value =
+    parsed
+
+
+  alert(
+    `${parsed.length} questions generated successfully.`
+  )
+
+}
+
+
+// ==========================================
+// PARSE QUESTIONS
+// ==========================================
+
+function parseQuestions(
+  text: string
+): ExamQuestion[] {
+
+  const lines =
+    text
+      .replace(/\r/g, '')
+      .split('\n')
+      .map(
+        line =>
+          line.trim()
+      )
+      .filter(Boolean)
+
 
   const blocks: {
     type: string
@@ -392,781 +805,1495 @@ function parseQuestions(text: string) {
     lines: string[]
   }[] = []
 
-  let currentType = 'Multiple Choice'
-  let currentBlock: string[] = []
-  let currentCompetency = ''
+
+  let currentType =
+    'Multiple Choice'
+
+  let currentBlock:
+    string[] = []
+
+  let currentCompetency =
+    ''
+
 
   for (const line of lines) {
 
-    // -------------------------
+    // ======================================
     // COMPETENCY
-    // -------------------------
-    const competencyMatch = line.match(
-      /^competenc(?:y|ies)\s*[:\-]\s*(.+)$/i
-    )
+    // ======================================
+
+    const competencyMatch =
+      line.match(
+        /^competenc(?:y|ies)\s*[:\-]\s*(.+)$/i
+      )
+
 
     if (competencyMatch) {
 
-      // Save any previous unfinished block first
-      if (currentBlock.length > 0) {
+      if (
+        currentBlock.length > 0
+      ) {
+
         blocks.push({
-          type: currentType,
-          competency: currentCompetency,
-          lines: [...currentBlock]
+          type:
+            currentType,
+
+          competency:
+            currentCompetency,
+
+          lines:
+            [...currentBlock]
         })
 
         currentBlock = []
       }
+
 
       currentCompetency =
-        competencyMatch[1]!.trim()
+        competencyMatch[1]!
+          .trim()
 
-      // VERY IMPORTANT:
-      // Do not add competency line
-      // into question text.
       continue
     }
 
 
-    // -------------------------
-    // QUESTION TYPE
-    // -------------------------
-    if (/^true\s*or\s*false$/i.test(line)) {
+    // ======================================
+    // TRUE OR FALSE
+    // ======================================
 
-      if (currentBlock.length > 0) {
+    if (
+      /^true\s*or\s*false$/i
+        .test(line)
+    ) {
+
+      if (
+        currentBlock.length > 0
+      ) {
+
         blocks.push({
-          type: currentType,
-          competency: currentCompetency,
-          lines: [...currentBlock]
+          type:
+            currentType,
+
+          competency:
+            currentCompetency,
+
+          lines:
+            [...currentBlock]
         })
 
         currentBlock = []
       }
 
-      currentType = 'True or False'
+
+      currentType =
+        'True or False'
+
       continue
     }
 
 
-    if (/^identification$/i.test(line)) {
+    // ======================================
+    // IDENTIFICATION
+    // ======================================
 
-      if (currentBlock.length > 0) {
+    if (
+      /^identification$/i
+        .test(line)
+    ) {
+
+      if (
+        currentBlock.length > 0
+      ) {
+
         blocks.push({
-          type: currentType,
-          competency: currentCompetency,
-          lines: [...currentBlock]
+          type:
+            currentType,
+
+          competency:
+            currentCompetency,
+
+          lines:
+            [...currentBlock]
         })
 
         currentBlock = []
       }
 
-      currentType = 'Identification'
+
+      currentType =
+        'Identification'
+
       continue
     }
 
 
-    if (/^essay$/i.test(line)) {
+    // ======================================
+    // ESSAY
+    // ======================================
 
-      if (currentBlock.length > 0) {
+    if (
+      /^essay$/i
+        .test(line)
+    ) {
+
+      if (
+        currentBlock.length > 0
+      ) {
+
         blocks.push({
-          type: currentType,
-          competency: currentCompetency,
-          lines: [...currentBlock]
+          type:
+            currentType,
+
+          competency:
+            currentCompetency,
+
+          lines:
+            [...currentBlock]
         })
 
         currentBlock = []
       }
 
-      currentType = 'Essay'
+
+      currentType =
+        'Essay'
+
       continue
     }
 
 
-    // -------------------------
-    // NORMAL QUESTION CONTENT
-    // -------------------------
+    // ======================================
+    // NORMAL CONTENT
+    // ======================================
+
     currentBlock.push(line)
 
 
-    // Once answer is detected,
-    // finish this question block.
     if (
-      /^(answer|ans|correct answer|correct|key)\s*[:\-]\s*/i.test(line)
+      /^(answer|ans|correct answer|correct|key)\s*[:\-]\s*/i
+        .test(line)
     ) {
+
       blocks.push({
-        type: currentType,
-        competency: currentCompetency,
-        lines: [...currentBlock]
+        type:
+          currentType,
+
+        competency:
+          currentCompetency,
+
+        lines:
+          [...currentBlock]
       })
 
       currentBlock = []
     }
+
   }
 
 
-  // Save last unfinished block
-  if (currentBlock.length > 0) {
+  // Save unfinished final question
+  if (
+    currentBlock.length > 0
+  ) {
+
     blocks.push({
-      type: currentType,
-      competency: currentCompetency,
-      lines: [...currentBlock]
+      type:
+        currentType,
+
+      competency:
+        currentCompetency,
+
+      lines:
+        [...currentBlock]
     })
+
   }
 
 
   return blocks
-    .map((block, index) => {
+    .map(
+      (
+        block,
+        index
+      ): ExamQuestion => {
 
-      const options = ['', '', '', '']
+        const options =
+          ['', '', '', '']
 
-      let answer = ''
+        let answer =
+          ''
 
-      const questionLines: string[] = []
+        const questionLines:
+          string[] = []
 
 
-      block.lines.forEach(line => {
+        block.lines.forEach(
+          line => {
 
-        // -------------------------
-        // OPTIONS A-D
-        // -------------------------
-        const optionMatch = line.match(
-          /^([A-Da-d])[\.\)\:]\s*(.+)$/
+            // ==============================
+            // OPTIONS A-D
+            // ==============================
+
+            const optionMatch =
+              line.match(
+                /^([A-Da-d])[\.\)\:]\s*(.+)$/
+              )
+
+
+            if (
+              optionMatch &&
+              optionMatch.length >= 3
+            ) {
+
+              const letter =
+                optionMatch[1]!
+                  .toUpperCase()
+
+              const value =
+                optionMatch[2]!
+                  .trim()
+
+              const optionIndex =
+                letter.charCodeAt(0)
+                - 65
+
+              options[
+                optionIndex
+              ] = value
+
+              return
+            }
+
+
+            // ==============================
+            // ANSWER
+            // ==============================
+
+            const answerMatch =
+              line.match(
+                /^(answer|ans|correct answer|correct|key)\s*[:\-]\s*(.+)$/i
+              )
+
+
+            if (
+              answerMatch &&
+              answerMatch.length >= 3
+            ) {
+
+              answer =
+                answerMatch[2]!
+                  .trim()
+
+              return
+            }
+
+
+            // ==============================
+            // QUESTION TEXT
+            // ==============================
+
+            questionLines.push(
+              line.replace(
+                /^(Q?\d+[\.\)]|QUESTION\s*\d+[\.\:]?)\s*/i,
+                ''
+              )
+            )
+
+          }
         )
 
-        if (
-          optionMatch &&
-          optionMatch.length >= 3
-        ) {
-          const letter =
-            optionMatch[1]!.toUpperCase()
 
-          const value =
-            optionMatch[2]!.trim()
-
-          const optionIndex =
-            letter.charCodeAt(0) - 65
-
-          options[optionIndex] = value
-
-          return
-        }
-
-
-        // -------------------------
-        // ANSWER
-        // -------------------------
-        const answerMatch = line.match(
-          /^(answer|ans|correct answer|correct|key)\s*[:\-]\s*(.+)$/i
-        )
-
-        if (
-          answerMatch &&
-          answerMatch.length >= 3
-        ) {
-          answer =
-            answerMatch[2]!.trim()
-
-          return
-        }
-
-
-        // -------------------------
-        // QUESTION TEXT
-        // -------------------------
-        questionLines.push(
-          line.replace(
-            /^(Q?\d+[\.\)]|QUESTION\s*\d+[\.\:]?)\s*/i,
-            ''
+        const hasOptions =
+          options.some(
+            option =>
+              option.trim() !== ''
           )
-        )
-      })
 
 
-      const hasOptions =
-        options.some(
-          option =>
-            option.trim() !== ''
-        )
+        let finalType =
+          block.type
 
 
-      let finalType =
-        block.type
+        if (hasOptions) {
 
+          finalType =
+            'Multiple Choice'
 
-      if (hasOptions) {
+          answer =
+            answer.toUpperCase()
 
-        finalType =
-          'Multiple Choice'
-
-        answer =
-          answer.toUpperCase()
-
-      } else if (
-        answer.toLowerCase() === 'true'
-        ||
-        answer.toLowerCase() === 'false'
-      ) {
-
-        finalType =
-          'True or False'
-
-        answer =
-          answer.toLowerCase() === 'true'
-            ? 'True'
-            : 'False'
-
-      } else if (
-        answer.trim() !== ''
-      ) {
-
-        finalType =
-          'Identification'
-
-      } else {
-
-        finalType =
-          'Essay'
-      }
-
-
-      return {
-        id:
-          Date.now() + index,
-
-        type:
-          finalType,
-
-        competency:
-          block.competency.trim()
+        } else if (
+          answer.toLowerCase()
+            === 'true'
           ||
-          'Unassigned Competency',
+          answer.toLowerCase()
+            === 'false'
+        ) {
 
-        question:
-          questionLines
-            .join(' ')
-            .trim(),
+          finalType =
+            'True or False'
 
-        options,
+          answer =
+            answer.toLowerCase()
+              === 'true'
+              ? 'True'
+              : 'False'
 
-        answer,
+        } else if (
+          answer.trim() !== ''
+        ) {
 
-        points: 1,
+          finalType =
+            'Identification'
 
-        time: 30
+        } else {
+
+          finalType =
+            'Essay'
+        }
+
+
+        return {
+
+          id:
+            Date.now() +
+            index,
+
+          type:
+            finalType,
+
+          competency:
+            block.competency
+              .trim()
+            ||
+            'Unassigned Competency',
+
+          question:
+            questionLines
+              .join(' ')
+              .trim(),
+
+          options,
+
+          answer,
+
+          points:
+            1,
+
+          time:
+            30
+        }
+
       }
-    })
+    )
     .filter(
       item =>
-        item.question.trim() !== ''
+        item.question
+          .trim() !== ''
     )
+
 }
 
-function normalizeQuestion(question: any) {
-  if (question.type === 'Multiple Choice') {
-    if (!question.options) {
-      question.options = ['', '', '', '']
-    }
 
-    if (!['A', 'B', 'C', 'D'].includes(question.answer)) {
-      question.answer = ''
-    }
-  }
+// ==========================================
+// NORMALIZE QUESTION
+// ==========================================
 
-  if (question.type === 'True or False') {
-    question.options = ['', '', '', '']
-
-    if (
-      question.answer !== 'True' &&
-      question.answer !== 'False'
-    ) {
-      question.answer = ''
-    }
-  }
+function normalizeQuestion(
+  question: ExamQuestion
+) {
 
   if (
-    question.type === 'Identification' ||
-    question.type === 'Essay'
+    question.type ===
+    'Multiple Choice'
   ) {
-    question.options = ['', '', '', '']
-  }
-}
 
-function handleFileUpload(event: Event) {
-  const target = event.target as HTMLInputElement
+    if (
+      !Array.isArray(
+        question.options
+      )
+    ) {
 
-  if (target.files && target.files.length > 0) {
-    selectedFile.value = target.files[0]!
-  }
-}
-
-function generateFromUpload() {
-  if (!selectedFile.value) {
-    alert('Please upload a file first.')
-    return
-  }
-
-  questions.value = [
-    {
-      id: Date.now(),
-      type: 'Multiple Choice',
-      question: 'Sample generated question from uploaded file.',
-      options: [
-        'Sample Option A',
-        'Sample Option B',
-        'Sample Option C',
-        'Sample Option D'
-      ],
-      answer: 'A',
-      points: 1,
-      time: 30
+      question.options =
+        ['', '', '', '']
     }
-  ]
 
-  alert('Frontend demo only. Laravel will process uploaded files later.')
+
+    if (
+      ![
+        'A',
+        'B',
+        'C',
+        'D'
+      ].includes(
+        question.answer
+      )
+    ) {
+
+      question.answer = ''
+    }
+
+  }
+
+
+  if (
+    question.type ===
+    'True or False'
+  ) {
+
+    question.options =
+      ['', '', '', '']
+
+
+    if (
+      question.answer !==
+        'True'
+      &&
+      question.answer !==
+        'False'
+    ) {
+
+      question.answer = ''
+    }
+
+  }
+
+
+  if (
+    question.type ===
+      'Identification'
+    ||
+    question.type ===
+      'Essay'
+  ) {
+
+    question.options =
+      ['', '', '', '']
+
+  }
+
 }
+
+
+// ==========================================
+// ADD BLANK QUESTION
+// ==========================================
 
 function addBlankQuestion() {
+
   questions.value.push({
-    id: Date.now(),
-    type: 'Multiple Choice',
-    competency: '',
-    question: '',
-    options: ['','','',''
-    ],
-    answer: '',
-    points: 1,
-    time: 30
+
+    id:
+      Date.now(),
+
+    type:
+      'Multiple Choice',
+
+    competency:
+      '',
+
+    question:
+      '',
+
+    options:
+      [
+        '',
+        '',
+        '',
+        ''
+      ],
+
+    answer:
+      '',
+
+    points:
+      1,
+
+    time:
+      30
+
   })
+
 }
 
-function deleteQuestion(index: number) {
-  questions.value.splice(index, 1)
+
+// ==========================================
+// DELETE QUESTION
+// ==========================================
+
+function deleteQuestion(
+  index: number
+) {
+
+  questions.value.splice(
+    index,
+    1
+  )
+
 }
+
+
+// ==========================================
+// OPEN CREATE POPUP
+// ==========================================
 
 function openCreatePopup() {
-  if (!examTitle.value.trim()) {
-    alert('Please enter exam title.')
+
+  if (
+    !examTitle.value.trim()
+  ) {
+
+    alert(
+      'Please enter exam title.'
+    )
+
     return
   }
-  if (!grade.value) {
-    alert('Please select a grade level.')
+
+
+  if (
+    !selectedClassId.value
+  ) {
+
+    alert(
+      'Please select a class.'
+    )
+
     return
   }
-  if (!section.value) {
-    alert('Please select a section.')
+
+
+  if (
+    !subject.value.trim()
+  ) {
+
+    alert(
+      'Please enter the subject.'
+    )
+
     return
   }
-  if (!subject.value.trim()) {
-    alert('Please enter the subject.')
+
+
+  if (
+    Number(
+      duration.value
+    ) <= 0
+  ) {
+
+    alert(
+      'Duration must be greater than 0.'
+    )
+
     return
   }
-  if (questions.value.length === 0) {
-    alert('Please generate or add at least one question.')
+
+
+  if (
+    Number(
+      passing.value
+    ) < 1
+    ||
+    Number(
+      passing.value
+    ) > 100
+  ) {
+
+    alert(
+      'Passing score must be between 1 and 100.'
+    )
+
     return
   }
-  showCreatePopup.value = true
+
+
+  if (
+    questions.value.length === 0
+  ) {
+
+    alert(
+      'Please generate or add at least one question.'
+    )
+
+    return
+  }
+
+
+  const hasEmptyQuestion =
+    questions.value.some(
+      question =>
+        !question.question.trim()
+    )
+
+
+  if (hasEmptyQuestion) {
+
+    alert(
+      'Please complete all question texts.'
+    )
+
+    return
+  }
+
+
+  showCreatePopup.value =
+    true
+
 }
+
+
+// ==========================================
+// STILL EDIT
+// ==========================================
 
 function stillEdit() {
-  showCreatePopup.value = false
+
+  if (
+    creatingExam.value
+  ) {
+    return
+  }
+
+
+  showCreatePopup.value =
+    false
+
 }
+
+
+// ==========================================
+// CREATE EXAM
+// ==========================================
 
 async function confirmCreateExam() {
-  showCreatePopup.value = false
-  creatingExam.value = true
+
+  if (
+    creatingExam.value
+  ) {
+    return
+  }
+
+
+  showCreatePopup.value =
+    false
+
+  creatingExam.value =
+    true
+
+
   try {
-    await api.post('/exams', {
-      title: examTitle.value,
-      description: description.value,
-      grade: grade.value,
-      section: section.value,
-      subject: subject.value,
-      duration: Number(duration.value),
-      passing: Number(passing.value),
-      questions: questions.value
-    })
-    alert('Generated exam created successfully!')
-    router.push('/faculty/dashboard')
+
+    await api.post(
+      '/exams',
+      {
+
+        title:
+          examTitle.value
+            .trim(),
+
+        description:
+          description.value
+            .trim(),
+
+        class_id:
+          Number(
+            selectedClassId.value
+          ),
+
+        subject:
+          subject.value
+            .trim(),
+
+        duration:
+          Number(
+            duration.value
+          ),
+
+        passing:
+          Number(
+            passing.value
+          ),
+
+        questions:
+          questions.value.map(
+            question => ({
+
+              type:
+                question.type,
+
+              competency:
+                question.competency
+                  .trim(),
+
+              question:
+                question.question
+                  .trim(),
+
+              options:
+                question.options,
+
+              answer:
+                question.answer,
+
+              points:
+                Number(
+                  question.points
+                ),
+
+              time:
+                Number(
+                  question.time
+                )
+
+            })
+          )
+
+      }
+    )
+
+
+    alert(
+      'Generated exam created successfully!'
+    )
+
+
+    router.push(
+      '/faculty/dashboard'
+    )
+
+
   } catch (error: any) {
+
     console.error(
       'Create exam error:',
-      error.response?.data || error
+      error.response?.data ||
+      error
     )
+
+
     alert(
-      error.response?.data?.message ||
+      error.response
+        ?.data
+        ?.message
+      ||
       'Failed to create generated exam.'
     )
+
+
   } finally {
-    creatingExam.value = false
+
+    creatingExam.value =
+      false
+
   }
+
 }
+
+
+// ==========================================
+// MOUNT
+// ==========================================
+
+onMounted(() => {
+
+  fetchClasses()
+
+})
+
 </script>
 
+
 <style scoped>
-*{
-  margin:0;
-  padding:0;
-  box-sizing:border-box;
-  font-family:'Poppins',sans-serif;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+
+  font-family:
+    'Poppins',
+    sans-serif;
 }
 
-.automatic-page{
-  min-height:100vh;
-  background:#f7f9fc;
-  padding:35px;
+
+.automatic-page {
+  min-height: 100vh;
+
+  padding: 35px;
+
+  background: #f7f9fc;
 }
 
-.back-btn{
-  background:white;
-  border:none;
-  padding:12px 18px;
-  border-radius:10px;
-  cursor:pointer;
-  margin-bottom:25px;
-  box-shadow:0 5px 15px rgba(0,0,0,.08);
+
+/* ==========================================
+   BACK BUTTON
+========================================== */
+
+.back-btn {
+  margin-bottom: 25px;
+
+  padding: 12px 18px;
+
+  border: none;
+  border-radius: 10px;
+
+  background: white;
+
+  box-shadow:
+    0 5px 15px
+    rgba(0, 0, 0, .08);
+
+  cursor: pointer;
 }
 
-.back-btn:hover{
-  background:#00c853;
-  color:white;
+
+.back-btn:hover {
+  background: #00c853;
+  color: white;
 }
 
-.page-header{
-  margin-bottom:30px;
+
+/* ==========================================
+   HEADER
+========================================== */
+
+.page-header {
+  margin-bottom: 30px;
 }
 
-.page-header h1{
-  color:#112244;
-  font-size:34px;
-  margin-bottom:8px;
+
+.page-header h1 {
+  margin-bottom: 8px;
+
+  color: #112244;
+
+  font-size: 34px;
 }
 
-.page-header p{
-  color:#6b7280;
+
+.page-header p {
+  color: #6b7280;
 }
 
-.top-grid{
-  display:grid;
-  grid-template-columns:2fr 1fr;
-  gap:25px;
-  margin-bottom:25px;
+
+/* ==========================================
+   GRID
+========================================== */
+
+.top-grid {
+  margin-bottom: 25px;
+
+  display: grid;
+
+  grid-template-columns:
+    2fr 1fr;
+
+  gap: 25px;
 }
 
-.method-grid{
-  display:grid;
-  grid-template-columns:1fr;
-  gap:25px;
-  margin-bottom:25px;
+
+.two-column {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap: 20px;
 }
 
-.card{
-  background:white;
-  border-radius:18px;
-  padding:25px;
-  box-shadow:0 5px 18px rgba(0,0,0,.08);
-  margin-bottom:25px;
+
+.three-column {
+  display: grid;
+
+  grid-template-columns:
+    1fr 1fr 1fr;
+
+  gap: 20px;
 }
 
-.card h2{
-  color:#112244;
-  margin-bottom:20px;
+
+/* ==========================================
+   CARD
+========================================== */
+
+.card {
+  margin-bottom: 25px;
+
+  padding: 25px;
+
+  background: white;
+
+  border-radius: 18px;
+
+  box-shadow:
+    0 5px 18px
+    rgba(0, 0, 0, .08);
 }
 
-.form-group{
-  margin-bottom:18px;
+
+.card h2 {
+  margin-bottom: 20px;
+
+  color: #112244;
 }
 
-.form-group label{
-  display:block;
-  font-weight:600;
-  margin-bottom:8px;
-  color:#374151;
+
+/* ==========================================
+   FORMS
+========================================== */
+
+.form-group {
+  margin-bottom: 18px;
 }
+
+
+.form-group label {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: #374151;
+
+  font-weight: 600;
+}
+
 
 input,
 textarea,
-select{
-  width:100%;
-  padding:13px 15px;
-  border:1px solid #d9dce2;
-  border-radius:10px;
-  outline:none;
-  font-size:15px;
+select {
+  width: 100%;
+
+  padding: 13px 15px;
+
+  border:
+    1px solid #d9dce2;
+
+  border-radius: 10px;
+
+  outline: none;
+
+  font-size: 15px;
 }
+
 
 input:focus,
 textarea:focus,
-select:focus{
-  border-color:#00c853;
+select:focus {
+  border-color: #00c853;
 }
 
-textarea{
-  resize:none;
-  min-height:100px;
+
+textarea {
+  min-height: 100px;
+
+  resize: none;
 }
 
-.two-column{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:20px;
+
+.class-warning {
+  margin-top: 7px;
+
+  color: #dc2626;
+
+  font-size: 12px;
 }
 
-.three-column{
-  display:grid;
-  grid-template-columns:1fr 1fr 1fr;
-  gap:20px;
+
+/* ==========================================
+   SUMMARY
+========================================== */
+
+.summary-box {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 20px;
 }
 
-.summary-box{
-  display:flex;
-  flex-direction:column;
-  gap:20px;
+
+.summary-box > div {
+  padding-bottom: 12px;
+
+  border-bottom:
+    1px solid #f1f5f9;
 }
 
-.summary-box span{
-  color:#6b7280;
-  font-size:14px;
+
+.summary-box > div:last-child {
+  border-bottom: none;
 }
 
-.summary-box h1{
-  color:#00c853;
-  font-size:34px;
+
+.summary-box span {
+  color: #6b7280;
+
+  font-size: 14px;
 }
 
-.warning-text{
-  color:#f59e0b !important;
+
+.summary-box h1 {
+  margin-top: 3px;
+
+  color: #00c853;
+
+  font-size: 34px;
 }
 
-.tabs{
-  display:flex;
-  gap:12px;
-  margin-bottom:20px;
+
+.warning-text {
+  color: #f59e0b !important;
 }
 
-.tabs button{
-  border:none;
-  background:#edf2f7;
-  padding:12px 20px;
-  border-radius:10px;
-  cursor:pointer;
-  font-weight:600;
+
+/* ==========================================
+   GENERATION METHOD
+========================================== */
+
+.tabs {
+  margin-bottom: 20px;
+
+  display: flex;
+
+  gap: 12px;
 }
 
-.tabs button.active{
-  background:#00c853;
-  color:white;
+
+.tabs button {
+  padding: 12px 20px;
+
+  border: none;
+
+  border-radius: 10px;
+
+  background: #edf2f7;
+
+  cursor: pointer;
+
+  font-weight: 600;
 }
 
-.format-box{
-  background:#f8fafc;
-  border-left:5px solid #00c853;
-  padding:18px;
-  border-radius:12px;
-  margin-bottom:18px;
-  color:#374151;
-  line-height:1.7;
+
+.tabs button.active {
+  background: #00c853;
+
+  color: white;
 }
 
-.paste-area{
-  min-height:260px;
-  margin-bottom:15px;
+
+.format-box {
+  margin-bottom: 18px;
+
+  padding: 18px;
+
+  background: #f8fafc;
+
+  border-left:
+    5px solid #00c853;
+
+  border-radius: 12px;
+
+  color: #374151;
+
+  line-height: 1.7;
 }
 
-.drop-area{
-  border:2px dashed #b8d5ff;
-  border-radius:16px;
-  padding:45px;
-  text-align:center;
-  background:#f8fbff;
+
+.format-box p {
+  margin-top: 8px;
 }
 
-.upload-icon{
-  font-size:50px;
-  margin-bottom:15px;
+
+.paste-area {
+  min-height: 260px;
+
+  margin-bottom: 15px;
 }
 
-.drop-area h3{
-  color:#112244;
-  margin-bottom:10px;
-}
 
-.drop-area p{
-  color:#666;
-  margin-bottom:15px;
-}
-
-.file-selected{
-  margin-top:15px;
-  color:#112244;
-}
+/* ==========================================
+   BUTTONS
+========================================== */
 
 .generate-btn,
 .create-btn,
-.add-question-btn{
-  border:none;
-  background:#00c853;
-  color:white;
-  padding:14px 22px;
-  border-radius:10px;
-  cursor:pointer;
-  font-weight:600;
+.add-question-btn {
+  padding: 14px 22px;
+
+  border: none;
+
+  border-radius: 10px;
+
+  background: #00c853;
+
+  color: white;
+
+  cursor: pointer;
+
+  font-weight: 600;
 }
+
 
 .generate-btn:hover,
 .create-btn:hover,
-.add-question-btn:hover{
-  background:#00b34a;
+.add-question-btn:hover {
+  background: #00b34a;
 }
 
-.create-btn{
-  width:100%;
-  margin-top:25px;
+
+.create-btn {
+  width: 100%;
+
+  margin-top: 25px;
 }
+
+
+.create-btn:disabled,
+.confirm-btn:disabled {
+  opacity: .6;
+
+  cursor: not-allowed;
+}
+
+
+/* ==========================================
+   QUESTIONS
+========================================== */
 
 .question-header,
-.question-card-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:20px;
-  margin-bottom:20px;
+.question-card-header {
+  margin-bottom: 20px;
+
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  align-items: center;
+
+  gap: 20px;
 }
 
-.question-card{
-  border:1px solid #ececec;
-  border-radius:16px;
-  padding:22px;
-  margin-bottom:20px;
-  background:#fafafa;
+
+.question-summary-text {
+  margin-top: -12px;
+
+  color: #64748b;
+
+  font-size: 12px;
 }
 
-.question-card h3{
-  color:#112244;
+
+.question-card {
+  margin-bottom: 20px;
+
+  padding: 22px;
+
+  border:
+    1px solid #ececec;
+
+  border-radius: 16px;
+
+  background: #fafafa;
 }
 
-.delete-btn{
-  border:none;
-  background:#fee2e2;
-  color:#dc2626;
-  padding:10px 16px;
-  border-radius:10px;
-  cursor:pointer;
-  font-weight:600;
+
+.question-card h3 {
+  color: #112244;
 }
 
-.delete-btn:hover{
-  background:#fecaca;
+
+.delete-btn {
+  padding: 10px 16px;
+
+  border: none;
+
+  border-radius: 10px;
+
+  background: #fee2e2;
+
+  color: #dc2626;
+
+  cursor: pointer;
+
+  font-weight: 600;
 }
 
-.warning-box{
-  background:#fff7ed;
-  color:#c2410c;
-  padding:14px;
-  border-radius:10px;
-  margin-top:10px;
-  font-weight:600;
+
+.delete-btn:hover {
+  background: #fecaca;
 }
 
-.empty{
-  text-align:center;
-  color:#888;
-  padding:35px;
+
+.warning-box {
+  margin-top: 10px;
+
+  padding: 14px;
+
+  background: #fff7ed;
+
+  border-radius: 10px;
+
+  color: #c2410c;
+
+  font-weight: 600;
 }
 
-.popup-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.55);
-  backdrop-filter:blur(5px);
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  z-index:9999;
+
+.empty {
+  padding: 35px;
+
+  color: #888;
+
+  text-align: center;
 }
 
-.popup-card{
-  width:430px;
-  max-width:95%;
-  background:white;
-  border-radius:20px;
-  padding:35px;
-  text-align:center;
-  box-shadow:0 20px 45px rgba(0,0,0,.2);
+
+/* ==========================================
+   POPUP
+========================================== */
+
+.popup-overlay {
+  position: fixed;
+
+  inset: 0;
+
+  z-index: 9999;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  background:
+    rgba(0, 0, 0, .55);
+
+  backdrop-filter:
+    blur(5px);
 }
 
-.popup-icon{
-  width:75px;
-  height:75px;
-  margin:0 auto 20px;
-  border-radius:50%;
-  background:#00c853;
-  color:white;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  font-size:34px;
-  font-weight:700;
+
+.popup-card {
+  width: 430px;
+
+  max-width: 95%;
+
+  padding: 35px;
+
+  background: white;
+
+  border-radius: 20px;
+
+  box-shadow:
+    0 20px 45px
+    rgba(0, 0, 0, .2);
+
+  text-align: center;
 }
 
-.popup-card h2{
-  color:#112244;
-  margin-bottom:15px;
+
+.popup-icon {
+  width: 75px;
+
+  height: 75px;
+
+  margin:
+    0 auto 20px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #00c853;
+
+  color: white;
+
+  font-size: 34px;
+
+  font-weight: 700;
 }
 
-.popup-card p{
-  color:#666;
-  line-height:1.7;
+
+.popup-card h2 {
+  margin-bottom: 15px;
+
+  color: #112244;
 }
 
-.popup-buttons{
-  display:flex;
-  gap:15px;
-  margin-top:30px;
+
+.popup-card p {
+  color: #666;
+
+  line-height: 1.7;
 }
+
+
+/* CONFIRMATION SUMMARY */
+
+.confirmation-summary {
+  margin-top: 20px;
+
+  padding: 15px;
+
+  background: #f8fafc;
+
+  border-radius: 12px;
+
+  text-align: left;
+}
+
+
+.confirmation-summary > div {
+  padding: 8px 0;
+
+  display: flex;
+
+  justify-content:
+    space-between;
+
+  gap: 15px;
+
+  border-bottom:
+    1px solid #e5e7eb;
+}
+
+
+.confirmation-summary > div:last-child {
+  border-bottom: none;
+}
+
+
+.confirmation-summary span {
+  color: #64748b;
+
+  font-size: 12px;
+}
+
+
+.confirmation-summary strong {
+  color: #1e293b;
+
+  font-size: 12px;
+
+  text-align: right;
+}
+
+
+.popup-buttons {
+  margin-top: 30px;
+
+  display: flex;
+
+  gap: 15px;
+}
+
 
 .cancel-btn,
-.confirm-btn{
-  flex:1;
-  border:none;
-  padding:14px;
-  border-radius:10px;
-  cursor:pointer;
-  font-weight:600;
+.confirm-btn {
+  flex: 1;
+
+  padding: 14px;
+
+  border: none;
+
+  border-radius: 10px;
+
+  cursor: pointer;
+
+  font-weight: 600;
 }
 
-.cancel-btn{
-  background:#e5e7eb;
+
+.cancel-btn {
+  background: #e5e7eb;
 }
 
-.confirm-btn{
-  background:#16a34a;
-  color:white;
+
+.confirm-btn {
+  background: #16a34a;
+
+  color: white;
 }
 
-@media(max-width:900px){
+
+/* ==========================================
+   RESPONSIVE
+========================================== */
+
+@media (max-width: 900px) {
+
   .top-grid,
   .two-column,
-  .three-column{
-    grid-template-columns:1fr;
+  .three-column {
+    grid-template-columns:
+      1fr;
   }
 
-  .automatic-page{
-    padding:20px;
+
+  .automatic-page {
+    padding: 20px;
   }
 
-  .page-header h1{
-    font-size:28px;
+
+  .page-header h1 {
+    font-size: 28px;
   }
+
 
   .question-header,
   .question-card-header,
-  .popup-buttons{
-    flex-direction:column;
-    align-items:stretch;
+  .popup-buttons {
+    flex-direction: column;
+
+    align-items: stretch;
   }
 
-  .tabs{
-    flex-direction:column;
+
+  .tabs {
+    flex-direction: column;
   }
+
+
+  .confirmation-summary > div {
+    flex-direction: column;
+
+    gap: 3px;
+  }
+
+
+  .confirmation-summary strong {
+    text-align: left;
+  }
+
 }
+
+
+@media (max-width: 600px) {
+
+  .automatic-page {
+    padding: 15px;
+  }
+
+
+  .card {
+    padding: 18px;
+  }
+
+
+  .page-header h1 {
+    font-size: 24px;
+  }
+
+
+  .popup-card {
+    padding: 25px 20px;
+  }
+
+}
+
 </style>

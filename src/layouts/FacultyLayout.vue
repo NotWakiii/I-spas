@@ -43,7 +43,9 @@
     <RouterLink to="/faculty/create-exam" @click="closeMobileMenu">
       📝 Create Exam
     </RouterLink>
-
+    <RouterLink to="/faculty/classes" @click="closeMobileMenu">
+      🏫 Class Management
+    </RouterLink>
     <RouterLink to="/faculty/exam-results" @click="closeMobileMenu">
       📋 Exam Results
     </RouterLink>

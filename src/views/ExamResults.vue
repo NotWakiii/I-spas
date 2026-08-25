@@ -59,6 +59,17 @@
             <h2>
               {{ exam.title }}
             </h2>
+            <div class="exam-info">
+              <span>
+                {{ exam.grade || 'No Grade' }}
+                -
+                {{ exam.section || 'No Section' }}
+              </span>
+
+              <span>
+                {{ exam.subject || 'No Subject' }}
+              </span>
+            </div>
 
           </div>
 
@@ -185,16 +196,10 @@ async function loadExamResults() {
   errorMessage.value = ''
 
   try {
-    const token = localStorage.getItem('token')
-
-    const response = await api.get(
-      '/faculty/exam-results',
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    )
+    const response =
+      await api.get(
+        '/faculty/exam-results'
+      )
 
     exams.value = response.data.data
 
@@ -234,7 +239,27 @@ function formatDate(date: string) {
 </script>
 
 <style scoped>
+.exam-info {
+  margin-top: 8px;
 
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 8px;
+}
+
+.exam-info span {
+  padding: 5px 9px;
+
+  border-radius: 999px;
+
+  background: #f0fdf4;
+
+  color: #166534;
+
+  font-size: 11px;
+  font-weight: 600;
+}
 .exam-results-page {
   width: 100%;
   min-height: 100vh;

@@ -52,47 +52,29 @@
                       type="text"
                   >
               </div>
-              <!-- GRADE -->
+              <!-- CLASS -->
               <div>
                   <label>
-                      Grade Level
+                      Class
                   </label>
-                  <select v-model="exam.grade">
+
+                  <select v-model="exam.class_id">
+
                       <option
-                          value=""
+                          :value="null"
                           disabled
                       >
-                          Select Grade Level
+                          Select Class
                       </option>
-                      <option value="Grade 11">
-                          Grade 11
-                      </option>
-                      <option value="Grade 12">
-                          Grade 12
-                      </option>
-                  </select>
-              </div>
-              <!-- SECTION -->
-              <div>
-                  <label>
-                      Section
-                  </label>
-                  <select v-model="exam.section">
+
                       <option
-                          value=""
-                          disabled
+                          v-for="schoolClass in classes"
+                          :key="schoolClass.id"
+                          :value="schoolClass.id"
                       >
-                          Select Section
+                          {{ schoolClass.grade }} - {{ schoolClass.section }}
                       </option>
-                      <option value="Section A">
-                          Section A
-                      </option>
-                      <option value="Section B">
-                          Section B
-                      </option>
-                      <option value="Section C">
-                          Section C
-                      </option>
+
                   </select>
               </div>
               <!-- SUBJECT -->
@@ -283,6 +265,13 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '../services/api'
 
+interface SchoolClass {
+    id: number
+    grade: string
+    section: string
+}
+
+const classes = ref<SchoolClass[]>([])
 const router = useRouter()
 const route = useRoute()
 
@@ -293,6 +282,7 @@ const exam = ref({
     id: 0,
     title: '',
     description: '',
+    class_id: null as number | null,
     grade: '',
     section: '',
     subject: '',
@@ -302,6 +292,60 @@ const exam = ref({
 
 const questions = ref<any[]>([])
 
+async function fetchClasses() {
+    try {
+
+        const response =
+            await api.get(
+                '/faculty/classes'
+            )
+
+        const data =
+            response.data.data ??
+            response.data
+
+        classes.value =
+            Array.isArray(data)
+                ? data
+                : []
+
+        classes.value.sort(
+            (a, b) => {
+
+                const gradeCompare =
+                    a.grade.localeCompare(
+                        b.grade,
+                        undefined,
+                        {
+                            numeric: true,
+                            sensitivity: 'base'
+                        }
+                    )
+
+                if (gradeCompare !== 0) {
+                    return gradeCompare
+                }
+
+                return a.section.localeCompare(
+                    b.section,
+                    undefined,
+                    {
+                        numeric: true,
+                        sensitivity: 'base'
+                    }
+                )
+            }
+        )
+
+    } catch (error) {
+
+        console.error(
+            'Failed to load classes:',
+            error
+        )
+
+    }
+}
 async function fetchExam() {
     loading.value = true
 
@@ -314,11 +358,21 @@ async function fetchExam() {
             id: data.id,
             title: data.title,
             description: data.description || '',
+
+            class_id:
+                data.class_id
+                    ? Number(data.class_id)
+                    : null,
+
             grade: data.grade || '',
             section: data.section || '',
             subject: data.subject || '',
-            duration: data.duration || 60,
-            passing: data.passing || 75
+
+            duration:
+                Number(data.duration || 60),
+
+            passing:
+                Number(data.passing || 75)
         }
         questions.value = (data.questions || []).map((q:any) => {
             let type = 'Multiple Choice'
@@ -391,31 +445,101 @@ function deleteQuestion(index:number) {
 }
 
 async function saveExam() {
+
+    if (!exam.value.title.trim()) {
+        alert('Please enter an exam title.')
+        return
+    }
+
+    if (!exam.value.class_id) {
+        alert('Please select a class.')
+        return
+    }
+
+    if (!exam.value.subject.trim()) {
+        alert('Please enter a subject.')
+        return
+    }
+
+    if (Number(exam.value.duration) <= 0) {
+        alert('Duration must be greater than 0.')
+        return
+    }
+
+    if (
+        Number(exam.value.passing) < 1 ||
+        Number(exam.value.passing) > 100
+    ) {
+        alert(
+            'Passing score must be between 1 and 100.'
+        )
+        return
+    }
+
     saving.value = true
 
     try {
-        await api.put(`/exams/${exam.value.id}`, {
-            title: exam.value.title,
-            description: exam.value.description,
-            duration: exam.value.duration,
-            passing: exam.value.passing,
-            questions: questions.value
-        })
 
-        alert('Exam updated successfully!')
+        await api.put(
+            `/exams/${exam.value.id}`,
+            {
+                title:
+                    exam.value.title.trim(),
 
-        router.push('/faculty/dashboard')
+                description:
+                    exam.value.description,
 
-    } catch (error:any) {
-        console.error(error.response?.data || error)
-        alert('Failed to update exam.')
+                class_id:
+                    exam.value.class_id,
+
+                subject:
+                    exam.value.subject.trim(),
+
+                duration:
+                    Number(exam.value.duration),
+
+                passing:
+                    Number(exam.value.passing),
+
+                questions:
+                    questions.value
+            }
+        )
+
+        alert(
+            'Exam updated successfully!'
+        )
+
+        router.push(
+            '/faculty/dashboard'
+        )
+
+    } catch (error: any) {
+
+        console.error(
+            'UPDATE EXAM ERROR:',
+            error.response?.data || error
+        )
+
+        alert(
+            error.response?.data?.message ||
+            'Failed to update exam.'
+        )
+
     } finally {
+
         saving.value = false
+
     }
 }
 
-onMounted(() => {
-    fetchExam()
+onMounted(async () => {
+
+    await Promise.all([
+        fetchClasses(),
+        fetchExam()
+    ])
+
 })
 </script>
 

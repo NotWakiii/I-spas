@@ -68,67 +68,45 @@
         </div>
 
 
-        <!-- GRADE / SECTION -->
-        <div class="two-column">
+        <!-- CLASS -->
+        <div class="form-group">
 
-          <div class="form-group">
+          <label>
+            Class
+          </label>
 
-            <label>
-              Grade
-            </label>
+          <select
+            v-model="selectedClassId"
+            :disabled="loadingClasses"
+          >
 
-            <select v-model="grade">
+            <option
+              disabled
+              value=""
+            >
+              {{
+                loadingClasses
+                  ? 'Loading classes...'
+                  : 'Select Class'
+              }}
+            </option>
 
-              <option
-                disabled
-                value=""
-              >
-                Select Grade
-              </option>
+            <option
+              v-for="schoolClass in classes"
+              :key="schoolClass.id"
+              :value="schoolClass.id"
+            >
+              {{ schoolClass.grade }} - {{ schoolClass.section }}
+            </option>
 
-              <option value="Grade 11">
-                Grade 11
-              </option>
+          </select>
 
-              <option value="Grade 12">
-                Grade 12
-              </option>
-
-            </select>
-
-          </div>
-
-
-          <div class="form-group">
-
-            <label>
-              Section
-            </label>
-
-            <select v-model="section">
-
-              <option
-                disabled
-                value=""
-              >
-                Select Section
-              </option>
-
-              <option value="Section A">
-                Section A
-              </option>
-
-              <option value="Section B">
-                Section B
-              </option>
-
-              <option value="Section C">
-                Section C
-              </option>
-
-            </select>
-
-          </div>
+          <p
+            v-if="!loadingClasses && classes.length === 0"
+            class="class-warning"
+          >
+            No classes found. Create a class in Class Management first.
+          </p>
 
         </div>
 
@@ -704,10 +682,10 @@
           </div>
 
           <div>
-            <span>Grade / Section</span>
+            <span>Class</span>
+
             <strong>
-              {{ grade }}
-              {{ section }}
+              {{ selectedClassLabel }}
             </strong>
           </div>
 
@@ -758,6 +736,7 @@
 
 import {
   computed,
+  onMounted,
   ref
 } from 'vue'
 
@@ -786,6 +765,25 @@ interface ManualQuestion {
   time: number
 }
 
+const selectedClassLabel =
+  computed(() => {
+
+    const schoolClass =
+      classes.value.find(
+        item =>
+          item.id ===
+          Number(
+            selectedClassId.value
+          )
+      )
+
+    if (!schoolClass) {
+      return 'Not selected'
+    }
+
+    return `${schoolClass.grade} - ${schoolClass.section}`
+
+  })
 
 // ==========================================
 // EXAM DETAILS
@@ -797,11 +795,20 @@ const examTitle =
 const description =
   ref('')
 
-const grade =
-  ref('')
+interface SchoolClass {
+  id: number
+  grade: string
+  section: string
+}
 
-const section =
-  ref('')
+const classes =
+  ref<SchoolClass[]>([])
+
+const selectedClassId =
+  ref<number | ''>('')
+
+const loadingClasses =
+  ref(false)
 
 const subject =
   ref('')
@@ -813,6 +820,49 @@ const passing =
   ref(75)
 
 
+  // ==========================================
+// LOAD FACULTY CLASSES
+// ==========================================
+
+async function fetchClasses() {
+
+  loadingClasses.value = true
+
+  try {
+
+    const response =
+      await api.get(
+        '/faculty/classes'
+      )
+
+    classes.value =
+      Array.isArray(
+        response.data?.data
+      )
+        ? response.data.data
+        : []
+
+  } catch (error: any) {
+
+    console.error(
+      'LOAD CLASSES ERROR:',
+      error
+    )
+
+    classes.value = []
+
+    alert(
+      error.response?.data?.message ||
+      'Failed to load classes.'
+    )
+
+  } finally {
+
+    loadingClasses.value = false
+
+  }
+
+}
 // ==========================================
 // QUESTION FORM
 // ==========================================
@@ -1159,31 +1209,16 @@ function openCreatePopup() {
 
     return
   }
-
-
   if (
-    !grade.value
+    !selectedClassId.value
   ) {
 
     alert(
-      'Please select grade.'
+      'Please select a class.'
     )
 
     return
   }
-
-
-  if (
-    !section.value
-  ) {
-
-    alert(
-      'Please select section.'
-    )
-
-    return
-  }
-
 
   if (
     !subject.value.trim()
@@ -1287,11 +1322,10 @@ async function confirmCreateExam() {
       description:
         description.value.trim(),
 
-      grade:
-        grade.value,
-
-      section:
-        section.value,
+      class_id:
+        Number(
+          selectedClassId.value
+        ),
 
       subject:
         subject.value.trim(),
@@ -1381,7 +1415,9 @@ async function confirmCreateExam() {
 }
 
 }
-
+onMounted(() => {
+  fetchClasses()
+})
 </script>
 
 
@@ -1506,7 +1542,11 @@ async function confirmCreateExam() {
   margin-bottom: 20px;
 }
 
-
+.class-warning {
+  margin-top: 7px;
+  color: #dc2626;
+  font-size: 12px;
+}
 /* ==========================================
    FORM
 ========================================== */

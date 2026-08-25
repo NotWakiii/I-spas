@@ -475,11 +475,20 @@ import * as XLSX from 'xlsx'
 interface ExamData {
   id: number
   title: string
+  class_id?: number | null
   course: string
   grade: string
   section: string
-  sd?: number | string | null
-  pl?: number | string | null
+}
+
+
+interface StatisticsData {
+  total_items: number
+  total_examinees: number
+  mean: number | string
+  mps: number | string
+  sd: number | string
+  pl: number | string
 }
 
 
@@ -504,15 +513,20 @@ interface RawItem {
 
   competency?: string
 
-  discrimination?: number | string
+  discrimination?: number | string | null
 
   commonWrongAnswer?: string
+
+  interpretation?: string
+
+  remarks?: string
 
   [key: string]: any
 }
 
 
-interface AnalyzedItem extends RawItem {
+interface AnalyzedItem
+  extends RawItem {
 
   number: number
 
@@ -538,8 +552,9 @@ interface AnalyzedItem extends RawItem {
    ROUTE
 ===================================================== */
 
-const route = useRoute()
-const exportingPdf = ref(false)
+const route =
+  useRoute()
+
 
 /* =====================================================
    STATE
@@ -551,6 +566,10 @@ const loading =
 
 const errorMessage =
   ref('')
+
+
+const exportingPdf =
+  ref(false)
 
 
 const search =
@@ -572,15 +591,13 @@ const exam =
 
     title: '',
 
+    class_id: null,
+
     course: '',
 
     grade: '',
 
-    section: '',
-
-    sd: null,
-
-    pl: null
+    section: ''
 
   })
 
@@ -589,8 +606,26 @@ const items =
   ref<RawItem[]>([])
 
 
+const statistics =
+  ref<StatisticsData>({
+
+    total_items: 0,
+
+    total_examinees: 0,
+
+    mean: '0.00',
+
+    mps: '0.00',
+
+    sd: '0.0000',
+
+    pl: '0.00'
+
+  })
+
+
 /* =====================================================
-   FILTERS
+   FILTER OPTIONS
 ===================================================== */
 
 const filters = [
@@ -616,9 +651,12 @@ const filters = [
 
 async function fetchItemAnalysis() {
 
-  loading.value = true
+  loading.value =
+    true
 
-  errorMessage.value = ''
+  errorMessage.value =
+    ''
+
 
   try {
 
@@ -627,8 +665,11 @@ async function fetchItemAnalysis() {
 
 
     /*
-     * Load exam information.
-     */
+    |--------------------------------------------------------------------------
+    | LOAD EXAM INFORMATION
+    |--------------------------------------------------------------------------
+    */
+
     const examResponse =
       await api.get(
         `/exams/${examId}`
@@ -636,23 +677,41 @@ async function fetchItemAnalysis() {
 
 
     const examData =
-      examResponse.data?.data || {}
+      examResponse
+        .data
+        ?.data
+      || {}
 
 
     exam.value = {
 
       id:
         Number(
-          examData.id || examId
+          examData.id ||
+          examId
         ),
 
       title:
         examData.title ||
         'Examination',
 
+      class_id:
+        examData.class_id
+          ? Number(
+              examData.class_id
+            )
+          : null,
+
+      /*
+       * Keep "course" property in Vue
+       * for compatibility with your
+       * existing template and Excel export.
+       *
+       * The actual backend field is subject.
+       */
       course:
-        examData.course ||
         examData.subject ||
+        examData.course ||
         '',
 
       grade:
@@ -662,103 +721,217 @@ async function fetchItemAnalysis() {
 
       section:
         examData.section ||
-        '',
-
-      sd:
-        examData.sd ??
-        examData.standard_deviation ??
-        null,
-
-      pl:
-        examData.pl ??
-        examData.performance_level ??
-        null
+        ''
 
     }
 
 
     /*
-     * Load item analysis.
-     */
+    |--------------------------------------------------------------------------
+    | LOAD ITEM ANALYSIS
+    |--------------------------------------------------------------------------
+    */
+
     const response =
       await api.get(
         `/exams/${examId}/item-analysis`
       )
 
 
-    const responseData =
-      response.data?.data
+    const responseBody =
+      response.data || {}
 
 
     /*
-     * Support:
-     *
-     * data: [...]
-     *
-     * OR
-     *
-     * data: {
-     *   items: [...],
-     *   summary: {...}
-     * }
-     */
-    if (Array.isArray(responseData)) {
+    |--------------------------------------------------------------------------
+    | ANALYSIS ITEMS
+    |--------------------------------------------------------------------------
+    */
 
-      items.value =
-        responseData
+    items.value =
+      Array.isArray(
+        responseBody.data
+      )
+        ? responseBody.data
+        : []
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | OFFICIAL BACKEND STATISTICS
+    |--------------------------------------------------------------------------
+    |
+    | Laravel calculates:
+    |
+    | Mean
+    |
+    | MPS =
+    | (Mean / Total Items) × 100
+    |
+    | PL =
+    | 50 + (MPS / 2)
+    |
+    | Vue only displays these values.
+    |
+    */
+
+    const backendStatistics =
+      responseBody.statistics
+      || {}
+
+
+    statistics.value = {
+
+      total_items:
+        Number(
+          backendStatistics
+            .total_items
+          ??
+          0
+        ),
+
+      total_examinees:
+        Number(
+          backendStatistics
+            .total_examinees
+          ??
+          0
+        ),
+
+      mean:
+        backendStatistics.mean
+        ??
+        '0.00',
+
+      mps:
+        backendStatistics.mps
+        ??
+        '0.00',
+
+      sd:
+        backendStatistics.sd
+        ??
+        '0.0000',
+
+      pl:
+        backendStatistics.pl
+        ??
+        '0.00'
 
     }
 
-    else {
 
-      items.value =
-        Array.isArray(
-          responseData?.items
-        )
-          ? responseData.items
-          : []
+    /*
+    |--------------------------------------------------------------------------
+    | USE EXAM INFORMATION RETURNED BY ITEM ANALYSIS
+    |--------------------------------------------------------------------------
+    */
 
+    if (
+      responseBody.exam
+    ) {
 
-      /*
-       * If backend already provides
-       * statistical values, use them.
-       */
-      if (responseData?.summary) {
+      exam.value = {
 
-        exam.value.sd =
-          responseData.summary.sd ??
-          responseData.summary
-            .standard_deviation ??
-          exam.value.sd
+        ...exam.value,
 
+        id:
+          Number(
+            responseBody
+              .exam
+              .id
+            ??
+            exam.value.id
+          ),
 
-        exam.value.pl =
-          responseData.summary.pl ??
-          responseData.summary
-            .performance_level ??
-          exam.value.pl
+        title:
+          responseBody
+            .exam
+            .title
+          ??
+          exam.value.title,
+
+        class_id:
+          responseBody
+            .exam
+            .class_id
+            ? Number(
+                responseBody
+                  .exam
+                  .class_id
+              )
+            : exam.value
+                .class_id,
+
+        grade:
+          responseBody
+            .exam
+            .grade
+          ??
+          exam.value.grade,
+
+        section:
+          responseBody
+            .exam
+            .section
+          ??
+          exam.value.section,
+
+        course:
+          responseBody
+            .exam
+            .subject
+          ??
+          responseBody
+            .exam
+            .course
+          ??
+          exam.value.course
 
       }
 
     }
 
-  }
 
-  catch (error) {
+  } catch (
+    error: unknown
+  ) {
 
     console.error(
       'ITEM ANALYSIS ERROR:',
       error
     )
 
+
+    const apiError =
+      error as {
+
+        response?: {
+
+          data?: {
+
+            message?: string
+
+          }
+
+        }
+
+      }
+
+
     errorMessage.value =
+      apiError
+        .response
+        ?.data
+        ?.message
+      ||
       'Failed to load the item analysis.'
 
-  }
 
-  finally {
+  } finally {
 
-    loading.value = false
+    loading.value =
+      false
 
   }
 
@@ -770,249 +943,286 @@ async function fetchItemAnalysis() {
 ===================================================== */
 
 const analyzedItems =
-  computed<AnalyzedItem[]>(() => {
+  computed<AnalyzedItem[]>(
+    () => {
 
-    return items.value.map(
-      (
-        item,
-        index
-      ) => {
+      return items.value.map(
+        (
+          item,
+          index
+        ) => {
 
-        /*
-         * Total examinees.
-         */
-        const total =
-          Number(
-            item.total || 0
-          )
+          /*
+          |--------------------------------------------------------------------------
+          | TOTAL EXAMINEES FOR ITEM
+          |--------------------------------------------------------------------------
+          */
 
-
-        /*
-         * Correct responses.
-         */
-        const correct =
-          Number(
-            item.correct || 0
-          )
+          const total =
+            Number(
+              item.total || 0
+            )
 
 
-        /*
-         * Prefer backend percentage.
-         *
-         * Otherwise calculate:
-         *
-         * correct / total × 100
-         */
-        let percentage =
-          Number(
-            item.successRate ??
-            item.percentage ??
-            0
-          )
+          /*
+          |--------------------------------------------------------------------------
+          | CORRECT RESPONSES
+          |--------------------------------------------------------------------------
+          */
+
+          const correct =
+            Number(
+              item.correct || 0
+            )
 
 
-        if (
-          (
-            item.successRate === undefined &&
-            item.percentage === undefined
-          )
+          /*
+          |--------------------------------------------------------------------------
+          | ITEM PERCENTAGE
+          |--------------------------------------------------------------------------
+          |
+          | Prefer percentage already
+          | calculated by Laravel.
+          |
+          */
 
-          &&
+          let percentage =
+            Number(
+              item.successRate
+              ??
+              item.percentage
+              ??
+              0
+            )
 
-          total > 0
-        ) {
+
+          /*
+           * Fallback only when backend
+           * percentage is unavailable.
+           */
+
+          if (
+            item.successRate ===
+              undefined
+            &&
+            item.percentage ===
+              undefined
+            &&
+            total > 0
+          ) {
+
+            percentage =
+              (
+                correct
+                /
+                total
+              )
+              *
+              100
+
+          }
+
 
           percentage =
-            (
-              correct /
-              total
-            ) * 100
+            Math.round(
+              percentage
+              *
+              100
+            )
+            /
+            100
+
+
+          /*
+          |--------------------------------------------------------------------------
+          | MASTERY CLASSIFICATION
+          |--------------------------------------------------------------------------
+          */
+
+          let masteryLevel =
+            ''
+
+          let masteryClass =
+            ''
+
+          let remarks =
+            ''
+
+          let remarksClass =
+            ''
+
+
+          /*
+           * 96 - 100
+           */
+          if (
+            percentage >= 96
+          ) {
+
+            masteryLevel =
+              'Mastered'
+
+            masteryClass =
+              'mastered'
+
+            remarks =
+              'Retain or Revise'
+
+            remarksClass =
+              'retain-revise'
+
+          }
+
+
+          /*
+           * 86 - 95
+           */
+          else if (
+            percentage >= 86
+          ) {
+
+            masteryLevel =
+              'Approximating Mastery'
+
+            masteryClass =
+              'approximating'
+
+            remarks =
+              'Retain'
+
+            remarksClass =
+              'retain'
+
+          }
+
+
+          /*
+           * 66 - 85
+           */
+          else if (
+            percentage >= 66
+          ) {
+
+            masteryLevel =
+              'Moving Towards Mastery'
+
+            masteryClass =
+              'moving'
+
+            remarks =
+              'Retain'
+
+            remarksClass =
+              'retain'
+
+          }
+
+
+          /*
+           * 35 - 65
+           */
+          else if (
+            percentage >= 35
+          ) {
+
+            masteryLevel =
+              'Average Mastery'
+
+            masteryClass =
+              'average'
+
+            remarks =
+              'Revise'
+
+            remarksClass =
+              'revise'
+
+          }
+
+
+          /*
+           * 0 - 34
+           */
+          else {
+
+            masteryLevel =
+              'Low Mastery'
+
+            masteryClass =
+              'low'
+
+            remarks =
+              'Reject'
+
+            remarksClass =
+              'reject'
+
+          }
+
+
+          return {
+
+            ...item,
+
+            number:
+              Number(
+                item.number
+              )
+              ||
+              index + 1,
+
+            correct,
+
+            total,
+
+            percentage,
+
+            competency:
+              String(
+                item.competency
+                ||
+                item.competency_name
+                ||
+                item.learning_competency
+                ||
+                'Unassigned Competency'
+              ),
+
+            masteryLevel,
+
+            masteryClass,
+
+            remarks,
+
+            remarksClass
+
+          }
 
         }
 
+      )
 
-        /*
-         * Round percentage.
-         */
-        percentage =
-          Math.round(
-            percentage * 100
-          ) / 100
-
-
-        let masteryLevel = ''
-
-        let masteryClass = ''
-
-        let remarks = ''
-
-        let remarksClass = ''
-
-
-        /*
-         * =====================================
-         * AGENCY MASTERY CLASSIFICATION
-         * =====================================
-         */
-
-
-        /*
-         * 96 - 100
-         */
-        if (
-          percentage >= 96
-        ) {
-
-          masteryLevel =
-            'Mastered'
-
-          masteryClass =
-            'mastered'
-
-          remarks =
-            'Retain or Revise'
-
-          remarksClass =
-            'retain-revise'
-
-        }
-
-
-        /*
-         * 86 - 95
-         */
-        else if (
-          percentage >= 86
-        ) {
-
-          masteryLevel =
-            'Approximating Mastery'
-
-          masteryClass =
-            'approximating'
-
-          remarks =
-            'Retain'
-
-          remarksClass =
-            'retain'
-
-        }
-
-
-        /*
-         * 66 - 85
-         */
-        else if (
-          percentage >= 66
-        ) {
-
-          masteryLevel =
-            'Moving Towards Mastery'
-
-          masteryClass =
-            'moving'
-
-          remarks =
-            'Retain'
-
-          remarksClass =
-            'retain'
-
-        }
-
-
-        /*
-         * 35 - 65
-         */
-        else if (
-          percentage >= 35
-        ) {
-
-          masteryLevel =
-            'Average Mastery'
-
-          masteryClass =
-            'average'
-
-          remarks =
-            'Revise'
-
-          remarksClass =
-            'revise'
-
-        }
-
-
-        /*
-         * 0 - 34
-         */
-        else {
-
-          masteryLevel =
-            'Low Mastery'
-
-          masteryClass =
-            'low'
-
-          remarks =
-            'Reject'
-
-          remarksClass =
-            'reject'
-
-        }
-
-
-        return {
-
-          ...item,
-
-          number:
-            Number(
-              item.number
-            ) ||
-            index + 1,
-
-          correct,
-
-          total,
-
-          percentage,
-
-          competency:
-            String(
-              item.competency ||
-              item.competency_name ||
-              item.learning_competency ||
-              'Unassigned Competency'
-            ),
-
-          masteryLevel,
-
-          masteryClass,
-
-          remarks,
-
-          remarksClass
-
-        }
-
-      }
-
-    )
-
-  })
+    }
+  )
 
 
 /* =====================================================
-   TOTAL QUESTIONS
+   TOTAL QUESTIONS / TOTAL ITEMS
 ===================================================== */
 
 const totalQuestions =
   computed(
-    () =>
-      analyzedItems.value.length
+    () => {
+
+      return Number(
+        statistics
+          .value
+          .total_items
+        ||
+        0
+      )
+
+    }
   )
 
 
@@ -1021,169 +1231,142 @@ const totalQuestions =
 ===================================================== */
 
 const totalExaminees =
-  computed(() => {
+  computed(
+    () => {
 
-    if (
-      analyzedItems.value.length === 0
-    ) {
-
-      return 0
+      return Number(
+        statistics
+          .value
+          .total_examinees
+        ||
+        0
+      )
 
     }
-
-
-    return Math.max(
-
-      ...analyzedItems.value.map(
-        item =>
-          Number(
-            item.total || 0
-          )
-      ),
-
-      0
-
-    )
-
-  })
+  )
 
 
 /* =====================================================
-   MEAN SCORE
+   MEAN
 ===================================================== */
 
 const meanScore =
-  computed(() => {
+  computed(
+    () => {
 
-    const examinees =
-      totalExaminees.value
+      const value =
+        Number(
+          statistics
+            .value
+            .mean
+          ||
+          0
+        )
 
 
-    if (
-      examinees <= 0
-    ) {
+      if (
+        Number.isNaN(
+          value
+        )
+      ) {
 
-      return '0.00'
+        return '0.00'
+
+      }
+
+
+      return value
+        .toFixed(
+          2
+        )
 
     }
-
-
-    /*
-     * Total correct responses across
-     * every question.
-     */
-    const totalCorrect =
-      analyzedItems.value.reduce(
-
-        (
-          sum,
-          item
-        ) =>
-
-          sum +
-          Number(
-            item.correct || 0
-          ),
-
-        0
-
-      )
-
-
-    /*
-     * Mean test score per student.
-     */
-    return (
-      totalCorrect /
-      examinees
-    ).toFixed(2)
-
-  })
+  )
 
 
 /* =====================================================
    MEAN PERCENTAGE SCORE
 ===================================================== */
 
+/*
+ * SCHOOL FORMULA:
+ *
+ * MPS =
+ * (Mean / Total Items) × 100
+ *
+ * Formula is calculated by Laravel.
+ */
+
 const mps =
-  computed(() => {
+  computed(
+    () => {
 
-    if (
-      totalQuestions.value <= 0
-    ) {
+      const value =
+        Number(
+          statistics
+            .value
+            .mps
+          ||
+          0
+        )
 
-      return '0.00'
+
+      if (
+        Number.isNaN(
+          value
+        )
+      ) {
+
+        return '0.00'
+
+      }
+
+
+      return value
+        .toFixed(
+          2
+        )
 
     }
-
-
-    const mean =
-      Number(
-        meanScore.value
-      )
-
-
-    return (
-
-      (
-        mean /
-        totalQuestions.value
-      )
-
-      *
-
-      100
-
-    ).toFixed(2)
-
-  })
+  )
 
 
 /* =====================================================
-   SD
+   STANDARD DEVIATION
 ===================================================== */
 
-/*
- * Standard deviation cannot be calculated
- * correctly using only per-item totals.
- *
- * The backend should send the actual SD
- * based on individual student scores.
- */
 const standardDeviation =
-  computed(() => {
+  computed(
+    () => {
 
-    if (
-      exam.value.sd === null ||
-      exam.value.sd === undefined ||
-      exam.value.sd === ''
-    ) {
+      const value =
+        Number(
+          statistics
+            .value
+            .sd
+          ||
+          0
+        )
 
-      return '—'
+
+      if (
+        Number.isNaN(
+          value
+        )
+      ) {
+
+        return '0.0000'
+
+      }
+
+
+      return value
+        .toFixed(
+          4
+        )
 
     }
-
-
-    const value =
-      Number(
-        exam.value.sd
-      )
-
-
-    if (
-      Number.isNaN(value)
-    ) {
-
-      return String(
-        exam.value.sd
-      )
-
-    }
-
-
-    return value.toFixed(2)
-
-  })
+  )
 
 
 /* =====================================================
@@ -1191,44 +1374,46 @@ const standardDeviation =
 ===================================================== */
 
 /*
- * Use backend value because the exact
- * institutional PL formula should come
- * from the agency.
+ * SCHOOL FORMULA:
+ *
+ * PL =
+ * 50 + (MPS / 2)
+ *
+ * Formula is calculated by Laravel.
  */
+
 const performanceLevel =
-  computed(() => {
+  computed(
+    () => {
 
-    if (
-      exam.value.pl === null ||
-      exam.value.pl === undefined ||
-      exam.value.pl === ''
-    ) {
+      const value =
+        Number(
+          statistics
+            .value
+            .pl
+          ||
+          0
+        )
 
-      return '—'
+
+      if (
+        Number.isNaN(
+          value
+        )
+      ) {
+
+        return '0.00'
+
+      }
+
+
+      return value
+        .toFixed(
+          2
+        )
 
     }
-
-
-    const value =
-      Number(
-        exam.value.pl
-      )
-
-
-    if (
-      Number.isNaN(value)
-    ) {
-
-      return String(
-        exam.value.pl
-      )
-
-    }
-
-
-    return value.toFixed(2)
-
-  })
+  )
 
 
 /* =====================================================
@@ -1239,7 +1424,8 @@ function masteryCount(
   mastery: string
 ) {
 
-  return analyzedItems.value
+  return analyzedItems
+    .value
     .filter(
       item =>
         item.masteryLevel ===
@@ -1255,25 +1441,23 @@ function masteryCount(
 ===================================================== */
 
 const reviseCount =
-  computed(() => {
+  computed(
+    () => {
 
-    return analyzedItems.value
-      .filter(
+      return analyzedItems
+        .value
+        .filter(
+          item =>
+            item.remarks ===
+              'Revise'
+            ||
+            item.remarks ===
+              'Retain or Revise'
+        )
+        .length
 
-        item =>
-
-          item.remarks ===
-            'Revise'
-
-          ||
-
-          item.remarks ===
-            'Retain or Revise'
-
-      )
-      .length
-
-  })
+    }
+  )
 
 
 /* =====================================================
@@ -1281,17 +1465,20 @@ const reviseCount =
 ===================================================== */
 
 const rejectCount =
-  computed(() => {
+  computed(
+    () => {
 
-    return analyzedItems.value
-      .filter(
-        item =>
-          item.remarks ===
-          'Reject'
-      )
-      .length
+      return analyzedItems
+        .value
+        .filter(
+          item =>
+            item.remarks ===
+            'Reject'
+        )
+        .length
 
-  })
+    }
+  )
 
 
 /* =====================================================
@@ -1299,182 +1486,252 @@ const rejectCount =
 ===================================================== */
 
 const filteredItems =
-  computed<AnalyzedItem[]>(() => {
+  computed<AnalyzedItem[]>(
+    () => {
 
-    let result =
-      [
-        ...analyzedItems.value
-      ]
+      let result =
+        [
+          ...analyzedItems.value
+        ]
 
 
-    /*
-     * Filter by mastery.
-     */
-    if (
-      selectedFilter.value !==
-      'All Items'
-    ) {
+      /*
+      |--------------------------------------------------------------------------
+      | FILTER BY MASTERY
+      |--------------------------------------------------------------------------
+      */
 
-      result =
-        result.filter(
+      if (
+        selectedFilter.value !==
+        'All Items'
+      ) {
 
-          item =>
+        result =
+          result.filter(
+            item =>
+              item.masteryLevel ===
+              selectedFilter.value
+          )
 
-            item.masteryLevel ===
-            selectedFilter.value
+      }
 
+
+      /*
+      |--------------------------------------------------------------------------
+      | SEARCH
+      |--------------------------------------------------------------------------
+      */
+
+      if (
+        search.value.trim()
+      ) {
+
+        const keyword =
+          search
+            .value
+            .trim()
+            .toLowerCase()
+
+
+        result =
+          result.filter(
+            item => {
+
+              const competency =
+                String(
+                  item.competency ||
+                  ''
+                )
+                  .toLowerCase()
+
+
+              const question =
+                String(
+                  item.question ||
+                  ''
+                )
+                  .toLowerCase()
+
+
+              return (
+
+                competency
+                  .includes(
+                    keyword
+                  )
+
+                ||
+
+                question
+                  .includes(
+                    keyword
+                  )
+
+                ||
+
+                String(
+                  item.number
+                )
+                  .includes(
+                    keyword
+                  )
+
+              )
+
+            }
+          )
+
+      }
+
+
+      /*
+      |--------------------------------------------------------------------------
+      | SORT
+      |--------------------------------------------------------------------------
+      */
+
+      if (
+        sortBy.value ===
+        'lowest'
+      ) {
+
+        result.sort(
+          (
+            a,
+            b
+          ) =>
+            a.percentage
+            -
+            b.percentage
         )
 
-    }
+      }
 
 
-    /*
-     * Search.
-     */
-    if (
-      search.value.trim()
-    ) {
+      else if (
+        sortBy.value ===
+        'highest'
+      ) {
 
-      const keyword =
-        search.value
-          .trim()
-          .toLowerCase()
-
-
-      result =
-        result.filter(
-          item => {
-
-            const competency =
-              String(
-                item.competency ||
-                ''
-              )
-                .toLowerCase()
-
-
-            const question =
-              String(
-                item.question ||
-                ''
-              )
-                .toLowerCase()
-
-
-            return (
-
-              competency.includes(
-                keyword
-              )
-
-              ||
-
-              question.includes(
-                keyword
-              )
-
-              ||
-
-              String(
-                item.number
-              ).includes(
-                keyword
-              )
-
-            )
-
-          }
+        result.sort(
+          (
+            a,
+            b
+          ) =>
+            b.percentage
+            -
+            a.percentage
         )
 
-    }
+      }
 
 
-    /*
-     * Sorting.
-     */
-    if (
-      sortBy.value ===
-      'lowest'
-    ) {
+      else {
 
-      result.sort(
-        (
-          a,
-          b
-        ) =>
-          a.percentage -
-          b.percentage
-      )
+        result.sort(
+          (
+            a,
+            b
+          ) =>
+            a.number
+            -
+            b.number
+        )
 
-    }
+      }
 
 
-    else if (
-      sortBy.value ===
-      'highest'
-    ) {
-
-      result.sort(
-        (
-          a,
-          b
-        ) =>
-          b.percentage -
-          a.percentage
-      )
+      return result
 
     }
-
-
-    else {
-
-      result.sort(
-        (
-          a,
-          b
-        ) =>
-          a.number -
-          b.number
-      )
-
-    }
-
-
-    return result
-
-  })
+  )
 
 
 /* =====================================================
    GROUP BY COMPETENCY
 ===================================================== */
-const groupedItems = computed(() => {
-  const groups: Record<string, AnalyzedItem[]> = {}
 
-  filteredItems.value.forEach((item) => {
-    const competency =
-      String(
-        item.competency ||
-        'Unassigned Competency'
-      ).trim()
+const groupedItems =
+  computed(
+    () => {
 
-    if (!groups[competency]) {
-      groups[competency] = []
+      const groups:
+        Record<
+          string,
+          AnalyzedItem[]
+        > =
+        {}
+
+
+      filteredItems
+        .value
+        .forEach(
+          item => {
+
+            const competency =
+              String(
+                item.competency ||
+                'Unassigned Competency'
+              )
+                .trim()
+
+
+            if (
+              !groups[
+                competency
+              ]
+            ) {
+
+              groups[
+                competency
+              ] =
+                []
+
+            }
+
+
+            groups[
+              competency
+            ]
+              .push(
+                item
+              )
+
+          }
+        )
+
+
+      return Object
+        .entries(
+          groups
+        )
+        .map(
+          (
+            [
+              competency,
+              groupItems
+            ]
+          ) => ({
+
+            competency,
+
+            items:
+              groupItems
+                .sort(
+                  (
+                    a,
+                    b
+                  ) =>
+                    a.number
+                    -
+                    b.number
+                )
+
+          })
+        )
+
     }
-
-    groups[competency].push(item)
-  })
-
-  return Object.entries(groups).map(
-    ([competency, items]) => ({
-      competency,
-      items: items.sort(
-        (a, b) =>
-          a.number - b.number
-      )
-    })
   )
-})
 
 
 /* =====================================================
@@ -1482,135 +1739,129 @@ const groupedItems = computed(() => {
 ===================================================== */
 
 const masterySummary =
-  computed(() => {
+  computed(
+    () => {
 
-    const definitions = [
+      const definitions = [
 
-      {
+        {
 
-        level:
-          'Mastered',
+          level:
+            'Mastered',
 
-        className:
-          'mastered',
+          className:
+            'mastered',
 
-        description:
-          'Students have demonstrated a thorough understanding of the competency and can consistently apply the required knowledge and skills with little or no assistance.'
+          description:
+            'Students have demonstrated a thorough understanding of the competency and can consistently apply the required knowledge and skills with little or no assistance.'
 
-      },
+        },
 
+        {
 
-      {
+          level:
+            'Approximating Mastery',
 
-        level:
-          'Approximating Mastery',
+          className:
+            'approximating',
 
-        className:
-          'approximating',
+          description:
+            'Students have achieved a high level of understanding of the competency, with only minor misconceptions or errors that can be addressed through brief reinforcement.'
 
-        description:
-          'Students have achieved a high level of understanding of the competency, with only minor misconceptions or errors that can be addressed through brief reinforcement.'
+        },
 
-      },
+        {
 
+          level:
+            'Moving Towards Mastery',
 
-      {
+          className:
+            'moving',
 
-        level:
-          'Moving Towards Mastery',
+          description:
+            'Students show a satisfactory understanding of the competency but still require additional practice and reinforcement to attain full mastery.'
 
-        className:
-          'moving',
+        },
 
-        description:
-          'Students show a satisfactory understanding of the competency but still require additional practice and reinforcement to attain full mastery.'
+        {
 
-      },
+          level:
+            'Average Mastery',
 
+          className:
+            'average',
 
-      {
+          description:
+            'Students have only a partial understanding of the competency. Significant gaps in knowledge and skills are evident, requiring re-teaching and targeted interventions.'
 
-        level:
-          'Average Mastery',
+        },
 
-        className:
-          'average',
+        {
 
-        description:
-          'Students have only a partial understanding of the competency. Significant gaps in knowledge and skills are evident, requiring re-teaching and targeted interventions.'
+          level:
+            'Low Mastery',
 
-      },
+          className:
+            'low',
 
-
-      {
-
-        level:
-          'Low Mastery',
-
-        className:
-          'low',
-
-        description:
-          'Students have not yet developed the essential knowledge and skills related to the competency. Intensive remediation and focused instructional support are needed before progressing to more advanced learning.'
-
-      }
-
-    ]
-
-
-    return definitions.map(
-      definition => {
-
-        const matches =
-          analyzedItems.value
-            .filter(
-
-              item =>
-
-                item.masteryLevel ===
-                definition.level
-
-            )
-            .sort(
-              (
-                a,
-                b
-              ) =>
-                a.number -
-                b.number
-            )
-
-
-        return {
-
-          ...definition,
-
-          count:
-            matches.length,
-
-          itemNumbers:
-            matches.length
-
-              ?
-
-              matches
-                .map(
-                  item =>
-                    item.number
-                )
-                .join(', ')
-
-              :
-
-              '—'
+          description:
+            'Students have not yet developed the essential knowledge and skills related to the competency. Intensive remediation and focused instructional support are needed before progressing to more advanced learning.'
 
         }
 
-      }
+      ]
 
-    )
 
-  })
+      return definitions.map(
+        definition => {
+
+          const matches =
+            analyzedItems
+              .value
+              .filter(
+                item =>
+                  item.masteryLevel ===
+                  definition.level
+              )
+              .sort(
+                (
+                  a,
+                  b
+                ) =>
+                  a.number
+                  -
+                  b.number
+              )
+
+
+          return {
+
+            ...definition,
+
+            count:
+              matches.length,
+
+            itemNumbers:
+              matches.length
+
+                ? matches
+                    .map(
+                      item =>
+                        item.number
+                    )
+                    .join(
+                      ', '
+                    )
+
+                : '—'
+
+          }
+
+        }
+      )
+
+    }
+  )
 
 
 /* =====================================================
@@ -1620,7 +1871,9 @@ const masterySummary =
 function exportExcel() {
 
   if (
-    analyzedItems.value.length === 0
+    analyzedItems
+      .value
+      .length === 0
   ) {
 
     alert(
@@ -1633,17 +1886,18 @@ function exportExcel() {
 
 
   /*
-   * =========================================
-   * MAIN ANALYSIS SHEET
-   * =========================================
-   */
+  |--------------------------------------------------------------------------
+  | ITEM ANALYSIS SHEET
+  |--------------------------------------------------------------------------
+  */
 
   const analysisRows:
-    any[][] = []
+    any[][] =
+    []
 
 
   /*
-   * Report heading.
+   * Report title.
    */
   analysisRows.push(
     [
@@ -1664,47 +1918,69 @@ function exportExcel() {
   )
 
 
+  /*
+  |--------------------------------------------------------------------------
+  | EXAM INFORMATION + OFFICIAL STATISTICS
+  |--------------------------------------------------------------------------
+  */
+
   analysisRows.push(
     [
+
       'GRADE:',
-      exam.value.grade || '—',
+
+      exam.value.grade ||
+      '—',
 
       '',
 
       'TOTAL ITEMS:',
+
       totalQuestions.value
+
     ]
   )
 
 
   analysisRows.push(
     [
+
       'SECTION:',
-      exam.value.section || '—',
+
+      exam.value.section ||
+      '—',
 
       '',
 
       'MEAN:',
+
       meanScore.value
+
     ]
   )
 
 
   analysisRows.push(
     [
+
       'SUBJECT:',
-      exam.value.course || '—',
+
+      exam.value.course ||
+      '—',
 
       '',
 
       'SD:',
+
       standardDeviation.value
+
     ]
   )
 
 
   analysisRows.push(
     [
+
       '',
 
       '',
@@ -1712,13 +1988,16 @@ function exportExcel() {
       '',
 
       'MPS:',
+
       `${mps.value}%`
+
     ]
   )
 
 
   analysisRows.push(
     [
+
       '',
 
       '',
@@ -1726,13 +2005,16 @@ function exportExcel() {
       '',
 
       'PL:',
+
       performanceLevel.value
+
     ]
   )
 
 
   analysisRows.push(
     [
+
       '',
 
       '',
@@ -1740,7 +2022,9 @@ function exportExcel() {
       '',
 
       'TOTAL ENROLLMENT:',
+
       totalExaminees.value
+
     ]
   )
 
@@ -1751,10 +2035,14 @@ function exportExcel() {
 
 
   /*
-   * Table headings.
-   */
+  |--------------------------------------------------------------------------
+  | TABLE HEADERS
+  |--------------------------------------------------------------------------
+  */
+
   analysisRows.push(
     [
+
       'COMPETENCIES',
 
       'ITEM NO.',
@@ -1766,20 +2054,27 @@ function exportExcel() {
       'INTERPRETATION',
 
       'REMARKS'
+
     ]
   )
 
 
   /*
-   * Table rows.
-   */
-  analyzedItems.value
+  |--------------------------------------------------------------------------
+  | ITEM ANALYSIS ROWS
+  |--------------------------------------------------------------------------
+  */
+
+  analyzedItems
+    .value
+    .slice()
     .sort(
       (
         a,
         b
       ) =>
-        a.number -
+        a.number
+        -
         b.number
     )
     .forEach(
@@ -1804,18 +2099,20 @@ function exportExcel() {
         )
 
       }
-
     )
 
 
   const analysisSheet =
-    XLSX.utils
+    XLSX
+      .utils
       .aoa_to_sheet(
         analysisRows
       )
 
 
-  analysisSheet['!cols'] = [
+  analysisSheet[
+    '!cols'
+  ] = [
 
     {
       wch: 50
@@ -1844,12 +2141,12 @@ function exportExcel() {
   ]
 
 
-  /*
-   * Merge report headings.
-   */
-  analysisSheet['!merges'] = [
+  analysisSheet[
+    '!merges'
+  ] = [
 
     {
+
       s: {
         r: 0,
         c: 0
@@ -1859,9 +2156,11 @@ function exportExcel() {
         r: 0,
         c: 5
       }
+
     },
 
     {
+
       s: {
         r: 1,
         c: 0
@@ -1871,19 +2170,21 @@ function exportExcel() {
         r: 1,
         c: 5
       }
+
     }
 
   ]
 
 
   /*
-   * =========================================
-   * SUMMARY SHEET
-   * =========================================
-   */
+  |--------------------------------------------------------------------------
+  | SUMMARY SHEET
+  |--------------------------------------------------------------------------
+  */
 
   const summaryRows:
-    any[][] = []
+    any[][] =
+    []
 
 
   summaryRows.push(
@@ -1900,40 +2201,49 @@ function exportExcel() {
 
   summaryRows.push(
     [
+
       'MASTERY LEVEL',
+
       'TEST ITEM',
+
       'REMARKS'
+
     ]
   )
 
 
-  masterySummary.value.forEach(
-    summary => {
+  masterySummary
+    .value
+    .forEach(
+      summary => {
 
-      summaryRows.push(
-        [
+        summaryRows.push(
+          [
 
-          summary.level,
+            summary.level,
 
-          summary.itemNumbers,
+            summary.itemNumbers,
 
-          summary.description
+            summary.description
 
-        ]
-      )
+          ]
+        )
 
-    }
-  )
+      }
+    )
 
 
   const summarySheet =
-    XLSX.utils
+    XLSX
+      .utils
       .aoa_to_sheet(
         summaryRows
       )
 
 
-  summarySheet['!cols'] = [
+  summarySheet[
+    '!cols'
+  ] = [
 
     {
       wch: 30
@@ -1950,9 +2260,12 @@ function exportExcel() {
   ]
 
 
-  summarySheet['!merges'] = [
+  summarySheet[
+    '!merges'
+  ] = [
 
     {
+
       s: {
         r: 0,
         c: 0
@@ -1962,22 +2275,26 @@ function exportExcel() {
         r: 0,
         c: 2
       }
+
     }
 
   ]
 
 
   /*
-   * =========================================
-   * WORKBOOK
-   * =========================================
-   */
+  |--------------------------------------------------------------------------
+  | CREATE WORKBOOK
+  |--------------------------------------------------------------------------
+  */
 
   const workbook =
-    XLSX.utils.book_new()
+    XLSX
+      .utils
+      .book_new()
 
 
-  XLSX.utils
+  XLSX
+    .utils
     .book_append_sheet(
 
       workbook,
@@ -1989,7 +2306,8 @@ function exportExcel() {
     )
 
 
-  XLSX.utils
+  XLSX
+    .utils
     .book_append_sheet(
 
       workbook,
@@ -2002,8 +2320,11 @@ function exportExcel() {
 
 
   /*
-   * Safe filename.
-   */
+  |--------------------------------------------------------------------------
+  | SAFE FILENAME
+  |--------------------------------------------------------------------------
+  */
+
   const filename =
     (
       exam.value.title ||
@@ -2024,37 +2345,73 @@ function exportExcel() {
   )
 
 }
+
+
+/* =====================================================
+   EXPORT PDF
+===================================================== */
+
 async function exportPdf() {
 
-  if (exportingPdf.value) {
+  if (
+    exportingPdf.value
+  ) {
+
     return
+
   }
 
-  exportingPdf.value = true
+
+  exportingPdf.value =
+    true
+
 
   try {
 
-    const examId = route.params.id
+    const examId =
+      route.params.id
 
-    const response = await api.get(
-      `/exams/${examId}/item-analysis/pdf`,
-      {
-        responseType: 'blob'
-      }
-    )
 
-    const blob = new Blob(
-      [response.data],
-      {
-        type: 'application/pdf'
-      }
-    )
+    const response =
+      await api.get(
+        `/exams/${examId}/item-analysis/pdf`,
+        {
+
+          responseType:
+            'blob'
+
+        }
+      )
+
+
+    const blob =
+      new Blob(
+        [
+          response.data
+        ],
+        {
+
+          type:
+            'application/pdf'
+
+        }
+      )
+
 
     const url =
-      window.URL.createObjectURL(blob)
+      window
+        .URL
+        .createObjectURL(
+          blob
+        )
+
 
     const link =
-      document.createElement('a')
+      document
+        .createElement(
+          'a'
+        )
+
 
     const safeTitle =
       (
@@ -2066,49 +2423,73 @@ async function exportPdf() {
           '-'
         )
 
-    link.href = url
+
+    link.href =
+      url
+
 
     link.download =
       `${safeTitle}-Item-Analysis.pdf`
 
-    document.body.appendChild(link)
+
+    document
+      .body
+      .appendChild(
+        link
+      )
+
 
     link.click()
 
+
     link.remove()
 
-    window.URL.revokeObjectURL(url)
 
-  } catch (error) {
+    window
+      .URL
+      .revokeObjectURL(
+        url
+      )
+
+
+  } catch (
+    error
+  ) {
 
     console.error(
       'PDF EXPORT ERROR:',
       error
     )
 
+
     alert(
       'Unable to generate Item Analysis PDF.'
     )
 
+
   } finally {
 
-    exportingPdf.value = false
+    exportingPdf.value =
+      false
 
   }
+
 }
+
 
 /* =====================================================
    MOUNT
 ===================================================== */
 
-onMounted(() => {
+onMounted(
+  () => {
 
-  fetchItemAnalysis()
+    fetchItemAnalysis()
 
-})
+  }
+)
 
 </script>
-
 
 <style scoped>
 
