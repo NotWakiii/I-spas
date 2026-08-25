@@ -1,22 +1,70 @@
 import axios from 'axios'
-
-//api depends on the backend url, so if you change the backend url, you need to change it here too
+// API depends on the backend URL.
+// If the backend IP changes, update this URL.
 const api = axios.create({
- baseURL: ' http://192.168.100.59:8000/api',
+  baseURL: 'http://192.168.1.13:8000/api',
+
   headers: {
     Accept: 'application/json',
     'Content-Type': 'application/json',
   },
 })
 
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
+// ==========================================
+// REQUEST INTERCEPTOR
+// Automatically attach Sanctum token
+// ==========================================
+api.interceptors.request.use(
+  (config) => {
+    const token =
+      localStorage.getItem('token')
+    if (token) {
+      config.headers.Authorization =
+        `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
   }
+)
+// ==========================================
+// RESPONSE INTERCEPTOR
+// Handle expired / invalid token
+// ==========================================
+api.interceptors.response.use(
+  (response) => {
+    return response
+  },
+  (error) => {
+    if (error.response?.status === 401) {
+      // Remove invalid login information
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      localStorage.removeItem('role')
+      /*
+       * Don't redirect again if we're
+       * already on a login page.
+       */
+      const currentPath =
+        window.location.pathname
+      if (
+        currentPath.startsWith('/admin')
+      ) {
 
-  return config
-})
-
+        if (
+          currentPath !== '/admin/login'
+        ) {
+          window.location.href =
+            '/admin/login'
+        }
+      } else {
+        if (currentPath !== '/') {
+          window.location.href = '/'
+        }
+      }
+    }
+    return Promise.reject(error)
+  }
+)
 export default api

@@ -2,7 +2,7 @@
 
 <div class="edit-page">
 
-   
+
 
     <div class="page-header">
 
@@ -30,105 +30,107 @@
         </div>
 
      <button
-    class="save-btn"
-    :disabled="saving"
-    @click="saveExam"
->
-    {{ saving ? 'Saving...' : '💾 Save Changes' }}
-</button>
-
+        class="save-btn"
+        :disabled="saving"
+        @click="saveExam"
+      >
+        {{ saving ? 'Saving...' : '💾 Save Changes' }}
+    </button>
     </div>
-
-  
-
-    <div class="details-card">
-
-        <h2>
-
-            Exam Information
-
-        </h2>
-
-        <div class="details-grid">
-
-            <div>
-
-                <label>
-
-                    Exam Title
-
-                </label>
-
-                <input
-
-                    v-model="exam.title"
-
-                    type="text"
-
-                >
-
-            </div>
-
-            <div>
-
-                <label>
-
-                    Course
-
-                </label>
-
-                <input
-
-                    v-model="exam.course"
-
-                    type="text"
-
-                >
-
-            </div>
-
-            <div>
-
-                <label>
-
-                    Duration
-
-                </label>
-
-                <input
-
-                    v-model="exam.duration"
-
-                    type="number"
-
-                >
-
-            </div>
-
-            <div>
-
-                <label>
-
-                    Passing Score
-
-                </label>
-
-                <input
-
-                    v-model="exam.passing"
-
-                    type="number"
-
-                >
-
-            </div>
-
-        </div>
-
-    </div>
-
-    
-
+      <div class="details-card">
+          <h2>
+              Exam Information
+          </h2>
+          <div class="details-grid">
+              <!-- EXAM TITLE -->
+              <div>
+                  <label>
+                      Exam Title
+                  </label>
+                  <input
+                      v-model="exam.title"
+                      type="text"
+                  >
+              </div>
+              <!-- GRADE -->
+              <div>
+                  <label>
+                      Grade Level
+                  </label>
+                  <select v-model="exam.grade">
+                      <option
+                          value=""
+                          disabled
+                      >
+                          Select Grade Level
+                      </option>
+                      <option value="Grade 11">
+                          Grade 11
+                      </option>
+                      <option value="Grade 12">
+                          Grade 12
+                      </option>
+                  </select>
+              </div>
+              <!-- SECTION -->
+              <div>
+                  <label>
+                      Section
+                  </label>
+                  <select v-model="exam.section">
+                      <option
+                          value=""
+                          disabled
+                      >
+                          Select Section
+                      </option>
+                      <option value="Section A">
+                          Section A
+                      </option>
+                      <option value="Section B">
+                          Section B
+                      </option>
+                      <option value="Section C">
+                          Section C
+                      </option>
+                  </select>
+              </div>
+              <!-- SUBJECT -->
+              <div>
+                  <label>
+                      Subject
+                  </label>
+                  <input
+                      v-model="exam.subject"
+                      type="text"
+                      placeholder="e.g. Computer Systems Servicing"
+                  >
+              </div>
+              <!-- DURATION -->
+              <div>
+                  <label>
+                      Duration (minutes)
+                  </label>
+                  <input
+                      v-model="exam.duration"
+                      type="number"
+                      min="1"
+                  >
+              </div>
+              <!-- PASSING -->
+              <div>
+                  <label>
+                      Passing Score (%)
+                  </label>
+                  <input
+                      v-model="exam.passing"
+                      type="number"
+                      min="1"
+                      max="100"
+                  >
+              </div>
+          </div>
+      </div>
     <div
 
         v-for="(question,index) in questions"
@@ -173,7 +175,7 @@
 
         ></textarea>
 
-                
+
 
        <div class="form-group">
     <label>Question Type</label>
@@ -211,7 +213,7 @@
     </div>
 </div>
 
-        
+
 
         <div class="question-footer">
 
@@ -254,7 +256,7 @@
 
     </div>
 
-   
+
 
     <div class="add-question">
 
@@ -291,7 +293,9 @@ const exam = ref({
     id: 0,
     title: '',
     description: '',
-    course: '',
+    grade: '',
+    section: '',
+    subject: '',
     duration: 60,
     passing: 75
 })
@@ -310,11 +314,12 @@ async function fetchExam() {
             id: data.id,
             title: data.title,
             description: data.description || '',
-            course: data.course || '',
+            grade: data.grade || '',
+            section: data.section || '',
+            subject: data.subject || '',
             duration: data.duration || 60,
             passing: data.passing || 75
         }
-
         questions.value = (data.questions || []).map((q:any) => {
             let type = 'Multiple Choice'
 
@@ -392,7 +397,6 @@ async function saveExam() {
         await api.put(`/exams/${exam.value.id}`, {
             title: exam.value.title,
             description: exam.value.description,
-            course: exam.value.course,
             duration: exam.value.duration,
             passing: exam.value.passing,
             questions: questions.value

@@ -20,13 +20,30 @@
           </span>
         </p>
       </div>
-      <button
-        class="export-btn"
-        type="button"
-        @click="exportExcel"
-      >
-        📥 Export Excel
-      </button>
+      <div class="export-actions">
+
+  <button
+    class="export-btn"
+    type="button"
+    @click="exportExcel"
+  >
+    📥 Export Excel
+  </button>
+
+  <button
+    class="pdf-export-btn"
+    type="button"
+    :disabled="exportingPdf"
+    @click="exportPdf"
+  >
+    {{
+      exportingPdf
+        ? 'Generating PDF...'
+        : '🖨 Export PDF'
+    }}
+  </button>
+
+</div>
     </div>
     <!-- ==========================================
          LOADING
@@ -522,7 +539,7 @@ interface AnalyzedItem extends RawItem {
 ===================================================== */
 
 const route = useRoute()
-
+const exportingPdf = ref(false)
 
 /* =====================================================
    STATE
@@ -1431,79 +1448,33 @@ const filteredItems =
 /* =====================================================
    GROUP BY COMPETENCY
 ===================================================== */
+const groupedItems = computed(() => {
+  const groups: Record<string, AnalyzedItem[]> = {}
 
-const groupedItems =
-  computed(() => {
+  filteredItems.value.forEach((item) => {
+    const competency =
+      String(
+        item.competency ||
+        'Unassigned Competency'
+      ).trim()
 
-    const groups =
-      new Map<
-        string,
-        AnalyzedItem[]
-      >()
+    if (!groups[competency]) {
+      groups[competency] = []
+    }
 
-
-    filteredItems.value.forEach(
-      item => {
-
-        const competency =
-          item.competency ||
-          'Unassigned Competency'
-
-
-        if (
-          !groups.has(
-            competency
-          )
-        ) {
-
-          groups.set(
-            competency,
-            []
-          )
-
-        }
-
-
-        groups
-          .get(
-            competency
-          )
-          ?.push(
-            item
-          )
-
-      }
-
-    )
-
-
-    return Array.from(
-      groups.entries()
-    ).map(
-      (
-        [
-          competency,
-          grouped
-        ]
-      ) => ({
-
-        competency,
-
-        items:
-          grouped.sort(
-            (
-              a,
-              b
-            ) =>
-              a.number -
-              b.number
-          )
-
-      })
-
-    )
-
+    groups[competency].push(item)
   })
+
+  return Object.entries(groups).map(
+    ([competency, items]) => ({
+      competency,
+      items: items.sort(
+        (a, b) =>
+          a.number - b.number
+      )
+    })
+  )
+})
 
 
 /* =====================================================
@@ -2053,7 +2024,78 @@ function exportExcel() {
   )
 
 }
+async function exportPdf() {
 
+  if (exportingPdf.value) {
+    return
+  }
+
+  exportingPdf.value = true
+
+  try {
+
+    const examId = route.params.id
+
+    const response = await api.get(
+      `/exams/${examId}/item-analysis/pdf`,
+      {
+        responseType: 'blob'
+      }
+    )
+
+    const blob = new Blob(
+      [response.data],
+      {
+        type: 'application/pdf'
+      }
+    )
+
+    const url =
+      window.URL.createObjectURL(blob)
+
+    const link =
+      document.createElement('a')
+
+    const safeTitle =
+      (
+        exam.value.title ||
+        'Exam'
+      )
+        .replace(
+          /[\\/:*?"<>|]/g,
+          '-'
+        )
+
+    link.href = url
+
+    link.download =
+      `${safeTitle}-Item-Analysis.pdf`
+
+    document.body.appendChild(link)
+
+    link.click()
+
+    link.remove()
+
+    window.URL.revokeObjectURL(url)
+
+  } catch (error) {
+
+    console.error(
+      'PDF EXPORT ERROR:',
+      error
+    )
+
+    alert(
+      'Unable to generate Item Analysis PDF.'
+    )
+
+  } finally {
+
+    exportingPdf.value = false
+
+  }
+}
 
 /* =====================================================
    MOUNT
@@ -3236,6 +3278,16 @@ onMounted(() => {
       );
 
   }
+    .export-actions {
+    width: 100%;
+
+    flex-direction: column;
+  }
+
+  .export-btn,
+  .pdf-export-btn {
+    width: 100%;
+  }
 
 
   .exam-information {
@@ -3358,6 +3410,39 @@ onMounted(() => {
 
   }
 
+}
+.export-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pdf-export-btn {
+  border: none;
+
+  background: #dc2626;
+
+  color: #ffffff;
+
+  padding: 14px 22px;
+
+  border-radius: 12px;
+
+  cursor: pointer;
+
+  font-weight: 600;
+
+  transition: .25s;
+}
+
+.pdf-export-btn:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.pdf-export-btn:disabled {
+  opacity: .65;
+
+  cursor: not-allowed;
 }
 
 </style>

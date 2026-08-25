@@ -80,23 +80,23 @@
       <h2>Faculty Login</h2>
 
       <p class="login-description">
-        Enter your assigned username and password.
+        Enter your assigned email and password.
       </p>
 
       <form @submit.prevent="facultyLogin">
 
-        <!-- USERNAME -->
+        <!-- EMAIL -->
         <div class="input-group">
-          <label for="username">
-            Username
+          <label for="email">
+            Email
           </label>
 
           <input
-            id="username"
-            v-model="username"
-            type="text"
-            placeholder="Enter your username"
-            autocomplete="username"
+            id="email"
+            v-model="email"
+            type="email"
+            placeholder="Enter your email"
+            autocomplete="email"
           />
         </div>
 
@@ -175,14 +175,6 @@
         <div class="login-actions">
 
           <button
-            type="button"
-            class="cancel-btn"
-            @click="closeLogin"
-          >
-            Cancel
-          </button>
-
-            <button
               type="submit"
               class="login-btn"
               :disabled="isLoggingIn"
@@ -195,7 +187,15 @@
               <span v-else>
                 Login
               </span>
-            </button>
+          </button>
+
+          <button
+            type="button"
+            class="cancel-btn"
+            @click="closeLogin"
+          >
+            Cancel
+          </button>
 
         </div>
 
@@ -210,13 +210,13 @@
 
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import api from '../services/api'
 
 const router = useRouter()
 
 const showFacultyLogin = ref(false)
 
-const username = ref('')
+const email = ref('')
 const password = ref('')
 
 const showPassword = ref(false)
@@ -240,7 +240,7 @@ function closeLogin() {
 
   showFacultyLogin.value = false
 
-  username.value = ''
+  email.value = ''
   password.value = ''
 
   showPassword.value = false
@@ -253,30 +253,34 @@ function closeLogin() {
 async function facultyLogin() {
 
   loginError.value = ''
-
-  if (!username.value || !password.value) {
-
-    loginError.value =
-      'Please enter username and password.'
-
-    return
-  }
-
-  // Prevent multiple login requests
-  if (isLoggingIn.value) return
-
   isLoggingIn.value = true
 
   try {
 
-    const response = await axios.post(
-      'http://192.168.100.59:8000/api/login',
+    const response = await api.post(
+      '/login',
       {
-        name: username.value,
+        email: email.value,
         password: password.value
       }
     )
 
+    const user = response.data.user
+
+    // Make sure only faculty enters here
+    if (user.role !== 'faculty') {
+      loginError.value =
+        'This login is for faculty accounts only.'
+
+      return
+    }
+
+    // Clear previous session
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    localStorage.removeItem('role')
+
+    // Save faculty session
     localStorage.setItem(
       'token',
       response.data.token
@@ -284,18 +288,54 @@ async function facultyLogin() {
 
     localStorage.setItem(
       'user',
-      JSON.stringify(response.data.user)
+      JSON.stringify(user)
     )
 
-    router.push('/faculty/dashboard')
+    localStorage.setItem(
+      'role',
+      user.role
+    )
 
-  } catch (error) {
+    await router.push(
+      '/faculty/dashboard'
+    )
 
-    loginError.value =
-      'Invalid username or password.'
+  } catch (error: any) {
+
+    console.error(
+      'FACULTY LOGIN ERROR:',
+      error
+    )
+
+    // Deactivated faculty
+    if (error.response?.status === 403) {
+
+      loginError.value =
+        error.response?.data?.message ||
+        'Your account has been deactivated. Please contact the administrator.'
+
+    }
+
+    // Wrong email/password
+    else if (error.response?.status === 422) {
+
+      loginError.value =
+        error.response?.data
+          ?.errors?.email?.[0] ||
+        'Invalid email or password.'
+
+    }
+
+    else {
+
+      loginError.value =
+        'Unable to login. Please try again.'
+
+    }
 
   } finally {
 
+    // IMPORTANT
     isLoggingIn.value = false
 
   }

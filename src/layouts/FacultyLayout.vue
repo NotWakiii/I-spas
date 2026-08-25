@@ -157,7 +157,6 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../services/api'
-import Results from '@/views/Results.vue'
 
 const router = useRouter()
 
@@ -190,13 +189,21 @@ async function confirmLogout() {
 
     } catch (error) {
 
-        console.log('Logout API failed, continuing logout.')
+        console.log(
+            'Logout API failed, continuing logout.'
+        )
+
+    } finally {
+
+        // CLEAR ALL LOGIN DATA
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        localStorage.removeItem('role')
+
+        // FACULTY → MAIN LOGIN
+        await router.replace('/')
 
     }
-
-    localStorage.removeItem('token')
-
-    router.push('/')
 
 }
 

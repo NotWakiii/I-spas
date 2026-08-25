@@ -387,47 +387,112 @@ function parseQuestions(text: string) {
     .filter(Boolean)
 
   const blocks: {
-  type: string
-  competency: string
-  lines: string[]
+    type: string
+    competency: string
+    lines: string[]
   }[] = []
 
   let currentType = 'Multiple Choice'
   let currentBlock: string[] = []
   let currentCompetency = ''
 
-  lines.forEach(line => {
+  for (const line of lines) {
+
+    // -------------------------
+    // COMPETENCY
+    // -------------------------
     const competencyMatch = line.match(
-    /^competenc(?:y|ies)\s*[:\-]\s*(.+)$/i
+      /^competenc(?:y|ies)\s*[:\-]\s*(.+)$/i
     )
 
     if (competencyMatch) {
+
+      // Save any previous unfinished block first
+      if (currentBlock.length > 0) {
+        blocks.push({
+          type: currentType,
+          competency: currentCompetency,
+          lines: [...currentBlock]
+        })
+
+        currentBlock = []
+      }
+
       currentCompetency =
         competencyMatch[1]!.trim()
 
-      return
+      // VERY IMPORTANT:
+      // Do not add competency line
+      // into question text.
+      continue
     }
+
+
+    // -------------------------
+    // QUESTION TYPE
+    // -------------------------
     if (/^true\s*or\s*false$/i.test(line)) {
+
+      if (currentBlock.length > 0) {
+        blocks.push({
+          type: currentType,
+          competency: currentCompetency,
+          lines: [...currentBlock]
+        })
+
+        currentBlock = []
+      }
+
       currentType = 'True or False'
-      currentBlock = []
-      return
+      continue
     }
+
 
     if (/^identification$/i.test(line)) {
+
+      if (currentBlock.length > 0) {
+        blocks.push({
+          type: currentType,
+          competency: currentCompetency,
+          lines: [...currentBlock]
+        })
+
+        currentBlock = []
+      }
+
       currentType = 'Identification'
-      currentBlock = []
-      return
+      continue
     }
+
 
     if (/^essay$/i.test(line)) {
+
+      if (currentBlock.length > 0) {
+        blocks.push({
+          type: currentType,
+          competency: currentCompetency,
+          lines: [...currentBlock]
+        })
+
+        currentBlock = []
+      }
+
       currentType = 'Essay'
-      currentBlock = []
-      return
+      continue
     }
 
+
+    // -------------------------
+    // NORMAL QUESTION CONTENT
+    // -------------------------
     currentBlock.push(line)
 
-    if (/^(answer|ans|correct answer|correct|key)\s*[:\-]\s*/i.test(line)) {
+
+    // Once answer is detected,
+    // finish this question block.
+    if (
+      /^(answer|ans|correct answer|correct|key)\s*[:\-]\s*/i.test(line)
+    ) {
       blocks.push({
         type: currentType,
         competency: currentCompetency,
@@ -436,8 +501,10 @@ function parseQuestions(text: string) {
 
       currentBlock = []
     }
-  })
+  }
 
+
+  // Save last unfinished block
   if (currentBlock.length > 0) {
     blocks.push({
       type: currentType,
@@ -446,83 +513,152 @@ function parseQuestions(text: string) {
     })
   }
 
+
   return blocks
     .map((block, index) => {
+
       const options = ['', '', '', '']
+
       let answer = ''
+
       const questionLines: string[] = []
 
-      block.lines.forEach(line => {
-        const optionMatch = line.match(/^([A-Da-d])[\.\)\:]\s*(.+)$/)
 
-        if (optionMatch && optionMatch.length >= 3) {
-          const letter = optionMatch[1]!.toUpperCase()
-          const value = optionMatch[2]!
-          const optionIndex = letter.charCodeAt(0) - 65
+      block.lines.forEach(line => {
+
+        // -------------------------
+        // OPTIONS A-D
+        // -------------------------
+        const optionMatch = line.match(
+          /^([A-Da-d])[\.\)\:]\s*(.+)$/
+        )
+
+        if (
+          optionMatch &&
+          optionMatch.length >= 3
+        ) {
+          const letter =
+            optionMatch[1]!.toUpperCase()
+
+          const value =
+            optionMatch[2]!.trim()
+
+          const optionIndex =
+            letter.charCodeAt(0) - 65
 
           options[optionIndex] = value
+
           return
         }
 
+
+        // -------------------------
+        // ANSWER
+        // -------------------------
         const answerMatch = line.match(
           /^(answer|ans|correct answer|correct|key)\s*[:\-]\s*(.+)$/i
         )
 
-        if (answerMatch && answerMatch.length >= 3) {
-          answer = answerMatch[2]!.trim()
+        if (
+          answerMatch &&
+          answerMatch.length >= 3
+        ) {
+          answer =
+            answerMatch[2]!.trim()
+
           return
         }
 
+
+        // -------------------------
+        // QUESTION TEXT
+        // -------------------------
         questionLines.push(
-          line.replace(/^(Q?\d+[\.\)]|QUESTION\s*\d+[\.\:]?)\s*/i, '')
+          line.replace(
+            /^(Q?\d+[\.\)]|QUESTION\s*\d+[\.\:]?)\s*/i,
+            ''
+          )
         )
       })
 
-      const hasOptions = options.some(option => option.trim() !== '')
 
-      let finalType = block.type
+      const hasOptions =
+        options.some(
+          option =>
+            option.trim() !== ''
+        )
+
+
+      let finalType =
+        block.type
+
 
       if (hasOptions) {
-        finalType = 'Multiple Choice'
-        answer = answer.toUpperCase()
-      }
 
-      else if (
-        answer.toLowerCase() === 'true' ||
+        finalType =
+          'Multiple Choice'
+
+        answer =
+          answer.toUpperCase()
+
+      } else if (
+        answer.toLowerCase() === 'true'
+        ||
         answer.toLowerCase() === 'false'
       ) {
-        finalType = 'True or False'
+
+        finalType =
+          'True or False'
+
         answer =
           answer.toLowerCase() === 'true'
             ? 'True'
             : 'False'
+
+      } else if (
+        answer.trim() !== ''
+      ) {
+
+        finalType =
+          'Identification'
+
+      } else {
+
+        finalType =
+          'Essay'
       }
 
-      else if (answer.trim() !== '') {
-        finalType = 'Identification'
-      }
-
-      else {
-        finalType = 'Essay'
-      }
 
       return {
-        id: Date.now() + index,
-        type: finalType,
+        id:
+          Date.now() + index,
+
+        type:
+          finalType,
+
         competency:
-          block.competency ||
+          block.competency.trim()
+          ||
           'Unassigned Competency',
+
         question:
           questionLines
             .join(' ')
             .trim(),
+
         options,
+
         answer,
+
         points: 1,
+
         time: 30
       }
     })
-    .filter(item => item.question.trim() !== '')
+    .filter(
+      item =>
+        item.question.trim() !== ''
+    )
 }
 
 function normalizeQuestion(question: any) {

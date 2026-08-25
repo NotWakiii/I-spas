@@ -60,9 +60,6 @@
               {{ exam.title }}
             </h2>
 
-            <p>
-              {{ exam.course || 'No course specified' }}
-            </p>
           </div>
 
           <span class="exam-code">
@@ -150,22 +147,28 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import api from '../services/api'
 
 const router = useRouter()
 
 interface ExamResult {
   id: number
   title: string
-  course: string | null
+
+  grade: string | null
+  section: string | null
+  subject: string | null
+
   access_code: string
   passing: number
   status: string
+
   students_count: number
   average_score: number
   average_percentage: number
   highest_score: number
   lowest_score: number
+
   created_at: string
 }
 
@@ -184,8 +187,8 @@ async function loadExamResults() {
   try {
     const token = localStorage.getItem('token')
 
-    const response = await axios.get(
-      'http://192.168.100.59:8000/api/faculty/exam-results',
+    const response = await api.get(
+      '/faculty/exam-results',
       {
         headers: {
           Authorization: `Bearer ${token}`
@@ -231,50 +234,84 @@ function formatDate(date: string) {
 </script>
 
 <style scoped>
+
 .exam-results-page {
   width: 100%;
+  min-height: 100vh;
+
+  padding:
+    32px
+    36px
+    40px;
+
+  background:
+    #f6faf7;
 }
 
 .page-header {
-  margin-bottom: 25px;
+  margin-bottom: 28px;
 }
 
 .page-header h1 {
-  color: #111827;
-  margin-bottom: 6px;
+  margin: 0 0 8px;
+
+  color: #112244;
+
+  font-size: 34px;
+  font-weight: 700;
 }
 
 .page-header p {
+  margin: 0;
+
   color: #6b7280;
+
+  font-size: 15px;
 }
 
 .results-list {
   display: grid;
-  gap: 18px;
+  gap: 22px;
 }
 
 .results-card {
+  width: 100%;
+
+  padding: 26px;
+
   background: #ffffff;
-  padding: 24px;
-  border-radius: 14px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+
+  border: 1px solid #edf1ee;
+  border-radius: 16px;
+
+  box-shadow:
+    0 6px 20px
+    rgba(0, 0, 0, 0.06);
 }
 
 .exam-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 15px;
-  margin-bottom: 22px;
+
+  gap: 20px;
+
+  margin-bottom: 26px;
 }
 
 .exam-header h2 {
-  color: #111827;
-  margin-bottom: 4px;
+  margin: 0 0 6px;
+
+  color: #112244;
+
+  font-size: 25px;
 }
 
 .exam-header p {
+  margin: 0;
+
   color: #6b7280;
+
   font-size: 14px;
 }
 
@@ -289,16 +326,24 @@ function formatDate(date: string) {
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
-  margin-bottom: 22px;
+
+  grid-template-columns:
+    repeat(5, minmax(0, 1fr));
+
+  gap: 14px;
+
+  margin-bottom: 24px;
 }
 
 .stat-box {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  padding: 15px;
-  border-radius: 10px;
+  min-height: 88px;
+
+  padding: 16px;
+
+  background: #f9fbfa;
+
+  border: 1px solid #e3e9e5;
+  border-radius: 11px;
 }
 
 .stat-label {
@@ -315,8 +360,13 @@ function formatDate(date: string) {
 
 .exam-footer {
   display: flex;
+
   justify-content: space-between;
   align-items: center;
+
+  gap: 20px;
+
+  padding-top: 4px;
 }
 
 .exam-date {
@@ -347,12 +397,27 @@ function formatDate(date: string) {
 }
 
 @media (max-width: 1000px) {
+
+  .exam-results-page {
+    padding: 26px;
+  }
+
   .stats {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns:
+      repeat(2, 1fr);
   }
 }
 
 @media (max-width: 600px) {
+
+  .exam-results-page {
+    padding: 18px;
+  }
+
+  .page-header h1 {
+    font-size: 28px;
+  }
+
   .stats {
     grid-template-columns: 1fr;
   }

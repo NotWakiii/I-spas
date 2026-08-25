@@ -319,20 +319,14 @@
 
 <script setup lang="ts">
 
-import {
-  ref,
-  computed,
-  onMounted
+import {ref,computed,onMounted
 } from 'vue'
 
 
-import {
-  useRoute,
-  useRouter
-} from 'vue-router'
+import {useRoute,useRouter} from 'vue-router'
 
 
-import axios from 'axios'
+import api from '../services/api'
 
 
 import * as XLSX from 'xlsx'
@@ -495,10 +489,8 @@ async function loadStudentScores() {
 
 
     const response =
-      await axios.get(
-
-        `http://192.168.100.59:8000/api/faculty/exam-results/${examId}`,
-
+      await api.get(
+        `/faculty/exam-results/${examId}`,
         {
 
           headers: {

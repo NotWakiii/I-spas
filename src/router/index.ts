@@ -19,10 +19,30 @@ import StudentScores from '../views/StudentScores.vue'
 import ItemAnalysisHub from '../views/ItemAnalysisHub.vue'
 import ItemAnalysis from '../views/ItemAnalysis.vue'
 
+//student views
 import StudentDashboard from '../views/student/StudentDashboard.vue'
 import StudentLobby from '../views/student/StudentLobby.vue'
 import StudentExam from '../views/student/StudentExam.vue'
 import StudentResults from '../views/student/StudentResults.vue'
+
+//admin views
+import AdminLayout
+  from '../layouts/AdminLayout.vue'
+
+import AdminLogin
+  from '../views/admin/AdminLogin.vue'
+
+import DashboardAdmin
+  from '../views/admin/DashboardAdmin.vue'
+
+import FacultyManagement
+  from '../views/admin/FacultyManagement.vue'
+
+import ExaminationOverview
+  from '../views/admin/ExaminationOverview.vue'
+
+import ResultsOverview
+  from '../views/admin/ResultsOverview.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -61,6 +81,10 @@ const router = createRouter({
       path: '/faculty',
       component: FacultyLayout,
 
+      meta: {
+        requiresAuth: true,
+        role: 'faculty'
+      },
       children: [
         {
           path: 'dashboard',
@@ -123,13 +147,125 @@ const router = createRouter({
           component: ExamResults,
         },
         {
-          path: '/faculty/exam-results/:examId',
+          path: 'exam-results/:examId',
           name: 'StudentScores',
           component: StudentScores,
         },
       ],
     },
+    //Admin Routes
+    {
+      path: '/admin/login',
+      name: 'AdminLogin',
+      component: AdminLogin,
+
+      meta: {
+        guestOnly: true
+      }
+    },
+
+    {
+      path: '/admin',
+      component: AdminLayout,
+
+      meta: {
+        requiresAuth: true,
+        role: 'admin'
+      },
+
+      children: [
+
+        {
+          path: '',
+          redirect: '/admin/dashboard'
+        },
+
+        {
+          path: 'dashboard',
+          name: 'AdminDashboard',
+          component: DashboardAdmin
+        },
+
+        {
+          path: 'faculty',
+          name: 'FacultyManagement',
+          component: FacultyManagement
+        },
+
+        {
+          path: 'exams',
+          name: 'ExaminationOverview',
+          component: ExaminationOverview
+        },
+
+        {
+          path: 'results',
+          name: 'AdminResultsOverview',
+          component: ResultsOverview
+        }
+
+      ]
+    },
   ],
 })
+router.beforeEach((to) => {
+  const token =
+    localStorage.getItem('token')
 
+  const role =
+    localStorage.getItem('role')
+
+  // =========================
+  // PROTECTED ROUTES
+  // =========================
+  if (to.meta.requiresAuth) {
+
+    if (!token) {
+
+      if (to.meta.role === 'admin') {
+        return '/admin/login'
+      }
+
+      return '/'
+    }
+
+    // ADMIN ONLY
+    if (
+      to.meta.role === 'admin' &&
+      role !== 'admin'
+    ) {
+
+      if (role === 'faculty') {
+        return '/faculty/dashboard'
+      }
+
+      return '/admin/login'
+    }
+
+    // FACULTY ONLY
+    if (
+      to.meta.role === 'faculty' &&
+      role !== 'faculty'
+    ) {
+
+      if (role === 'admin') {
+        return '/admin/dashboard-admin'
+      }
+
+      return '/'
+    }
+  }
+
+  // Already logged-in admin
+  // should not return to admin login
+  if (
+    to.meta.guestOnly &&
+    token &&
+    role === 'admin'
+  ) {
+    return '/admin/dashboard-admin'
+  }
+
+  return true
+})
 export default router

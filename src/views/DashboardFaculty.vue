@@ -1,614 +1,341 @@
 <template>
-
 <div class="dashboard">
-
-
-
     <div class="dashboard-header">
-
         <div>
-
             <h1>
-
                 Faculty Dashboard
-
             </h1>
-
             <p>
-
                 Welcome back! Manage your examinations and quizzes.
-
             </p>
-
         </div>
-
         <button
             class="new-exam-btn"
             @click="goToCreateExam"
         >
-
             + New Exam
-
         </button>
-
     </div>
-
-
-
     <div class="stats">
-
         <div class="card">
-
             <div>
-
                 <span>Total Exams</span>
-
                 <h2>{{ totalExams }}</h2>
-
             </div>
-
             <div class="emoji">
-
                 🕮
-
             </div>
-
         </div>
-
         <div class="card">
-
             <div>
-
                 <span>Published</span>
-
                 <h2>{{ totalPublished }}</h2>
-
             </div>
-
             <div class="emoji">
-
                 🗹
-
             </div>
-
         </div>
-
         <div class="card">
-
             <div>
-
                 <span>Drafts</span>
-
                 <h2>{{ totalDrafts }}</h2>
-
             </div>
-
             <div class="emoji">
-
                 🗐
-
             </div>
-
         </div>
-
       <div class="card">
-
         <div>
           <span>Exam Finished</span>
-
           <h2>{{ totalFinished }}</h2>
         </div>
-
         <div class="emoji">
           ✅
         </div>
-
       </div>
-
     </div>
 
-
-
     <div class="exam-section">
-
         <div class="exam-header">
-
             <div>
-
                 <h2>
-
                     Examinations
-
                 </h2>
-
                 <p>
-
                     View and manage all examinations.
-
                 </p>
-
             </div>
-
             <div class="filters">
-
                 <input
                     v-model="search"
                     type="text"
                     placeholder="Search examination..."
                 >
-
                 <select
-                    v-model="selectedCourse"
+                  v-model="selectedSubject"
                 >
-
-                    <option>
-
-                        All Courses
-
-                    </option>
-
-                    <option
-                        v-for="course in courses"
-                        :key="course"
-                    >
-
-                        {{ course }}
-
-                    </option>
-
+                  <option value="All Subjects">
+                    All Subjects
+                  </option>
+                  <option
+                    v-for="subject in subjects"
+                    :key="subject"
+                    :value="subject"
+                  >
+                    {{ subject }}
+                  </option>
                 </select>
-
+              </div>
             </div>
-
-        </div>
-
         <!-- ===========================================
              EXAM CARDS
         ============================================ -->
-
         <div
-            v-if="filteredExams.length"
-        >
-
+            v-if="filteredExams.length">
             <div
-
                 v-for="exam in filteredExams"
-
                 :key="exam.id"
-
-                class="exam-card"
-
-            >
-
-
-
+                class="exam-card">
                 <div class="exam-title">
-
                     <div>
-
                         <h3>
-
                             {{ exam.title }}
-
                         </h3>
-
                         <span
-
                             class="badge"
-
                             :class="exam.status === 'Published'
                                 ? 'published'
-                                : 'draft'"
-
-                        >
-
+                                : 'draft'">
                             {{ exam.status }}
-
                         </span>
-
                     </div>
-
                     <div class="buttons">
-
                         <button
-
                             class="edit"
-
-                            @click="editExam(exam.id)"
-
-                        >
-
+                            @click="editExam(exam.id)">
                             ✏ Edit
-
                         </button>
-
                         <button
-
                             class="preview"
-
-                            @click="previewExam(exam)"
-
-                        >
-
+                            @click="previewExam(exam)">
                             👁 Preview
-
                         </button>
-
                         <!-- Draft -->
-
                        <button
-  v-if="exam.status === 'Draft'"
-  class="publish-btn"
-  @click="publishExam(exam)"
->
-  📢 Publish
-</button>
-
-<button
-  v-else-if="exam.status === 'Published'"
-  class="start-btn"
-  @click="startExam(exam)"
->
-  ▶ Start Exam
-</button>
-
-<button
-  v-else-if="exam.status === 'Finished'"
-  class="start-btn"
-  @click="startAgain(exam)"
->
-  🔁 Start Again
-</button>
-
-                        <button
-
-                            class="delete"
-
-                            @click="deleteExam(exam.id)"
-
-                        >
-
-                            🗑 Delete
-
+                          v-if="exam.status === 'Draft'"
+                          class="publish-btn"
+                          @click="publishExam(exam)">
+                          📢 Publish
                         </button>
-
+                        <button
+                          v-else-if="exam.status === 'Published'"
+                          class="start-btn"
+                          @click="startExam(exam)"
+                        >
+                          ▶ Start Exam
+                        </button>
+                        <button
+                          v-else-if="exam.status === 'Finished'"
+                          class="start-btn"
+                          @click="startAgain(exam)"
+                        >
+                          🔁 Start Again
+                        </button>
+                        <button
+                            class="delete"
+                            @click="deleteExam(exam.id)">
+                            🗑 Delete
+                        </button>
                     </div>
-
                 </div>
-
                 <!-- ===========================================
                      EXAM DETAILS
                 ============================================ -->
-
                 <div class="exam-info">
-
                     <div>
-
-                        <small>
-
-                            Course
-
-                        </small>
-
-                        <strong>
-
-                            {{ exam.course }}
-
-                        </strong>
-
+                      <small>
+                        Grade
+                      </small>
+                      <strong>
+                        {{ exam.grade }}
+                      </strong>
                     </div>
-
                     <div>
-
+                      <small>
+                        Section
+                      </small>
+                      <strong>
+                        {{ exam.section }}
+                      </strong>
+                    </div>
+                    <div>
+                      <small>
+                        Subject
+                      </small>
+                      <strong>
+                        {{ exam.subject }}
+                      </strong>
+                    </div>
+                    <div>
                         <small>
-
                             Duration
-
                         </small>
-
                         <strong>
-
                             {{ exam.duration }} mins
-
                         </strong>
-
                     </div>
-
                     <div>
-
                         <small>
-
                             Questions
-
                         </small>
-
                         <strong>
-
                             {{ exam.items }}
-
                         </strong>
-
                     </div>
-
                     <div>
-
                         <small>
-
                             Points
-
                         </small>
-
                         <strong>
-
                             {{ exam.points }}
-
                         </strong>
-
                     </div>
-
                     <div>
-
                         <small>
-
                             Passing
-
                         </small>
-
                         <strong>
-
                             {{ exam.passing }}%
-
                         </strong>
-
                     </div>
-
                     <div>
-
                         <small>
-
                             Students
-
                         </small>
-
                         <strong>
-
                             {{ exam.students }}
-
                         </strong>
-
                     </div>
-
                     <div>
-
                         <small>
-
                             Created
-
                         </small>
-
                         <strong>
-
                             {{ exam.created }}
-
                         </strong>
-
                     </div>
-
                 </div>
-
             </div>
-
         </div>
-
         <!-- EMPTY -->
-
         <div
-
             v-else
-
-            class="empty"
-
-        >
-
+            class="empty">
             <h2>
-
                 📂 No examinations found
-
             </h2>
-
             <p>
-
                 Try another search or course.
-
             </p>
-
         </div>
-
     </div>
-
   <!-- ===========================================
      PREVIEW POPUP
 =========================================== -->
-
 <div
     v-if="showPreview"
     class="preview-overlay"
-    @click.self="closePreview"
->
-
+    @click.self="closePreview">
     <div class="preview-modal">
-
-
-
         <div class="preview-header">
-
             <div>
-
                 <h2>
-
                     {{ selectedExam.title }}
-
                 </h2>
-
                 <p>
-
                     Student Preview
-
                 </p>
-
             </div>
-
             <button
                 class="close-btn"
-                @click="closePreview"
-            >
-
+                @click="closePreview">
                 ✕
-
             </button>
-
         </div>
-
-
-
         <div class="preview-info">
-
             <div>
-
                 <small>
-
-                    Course
-
-                </small>
-
-                <strong>
-
-                    {{ selectedExam.course }}
-
-                </strong>
-
-            </div>
-
-            <div>
-
-                <small>
-
                     Duration
-
                 </small>
-
                 <strong>
-
                     {{ selectedExam.duration }} mins
-
                 </strong>
-
             </div>
-
             <div>
-
                 <small>
-
                     Questions
-
                 </small>
-
                 <strong>
-
                    {{ selectedExam.questions.length }}
-
                 </strong>
-
             </div>
-
             <div>
-
                 <small>
-
                     Passing
-
                 </small>
-
                 <strong>
-
                     {{ selectedExam.passing }}%
-
                 </strong>
-
             </div>
-
         </div>
+        <div
+          v-for="(question,index) in selectedExam.questions"
+          :key="question.id"
+          v-show="previewQuestion === index + 1"
+          class="question-preview">
+          <h3>
+            Question {{ index + 1 }}
+          </h3>
 
+          <p>
+            {{ question.question }}
+          </p>
 
+          <div
+            v-if="question.question_type === 'multiple_choice'"
+          >
+            <div
+              v-for="option in question.options"
+              :key="option.id"
+              class="option"
+            >
+              ○ {{ option.option_text }}
+            </div>
+          </div>
 
-<div
-  v-for="(question,index) in selectedExam.questions"
-  :key="question.id"
-  v-show="previewQuestion === index + 1"
-  class="question-preview"
->
-  <h3>
-    Question {{ index + 1 }}
-  </h3>
-
-  <p>
-    {{ question.question }}
-  </p>
-
-  <div
-    v-if="question.question_type === 'multiple_choice'"
-  >
-    <div
-      v-for="option in question.options"
-      :key="option.id"
-      class="option"
-    >
-      ○ {{ option.option_text }}
-    </div>
-  </div>
-
-  <div
-    v-else
-    class="option"
-  >
-    Answer: {{ question.answer || 'No answer provided' }}
-  </div>
-</div>
-
-
-
+          <div
+            v-else
+            class="option"
+          >
+            Answer: {{ question.answer || 'No answer provided' }}
+          </div>
+        </div>
         <div class="preview-footer">
-
             <button
-                @click="previousQuestion"
-            >
-
+                @click="previousQuestion">
                 ← Previous
-
             </button>
-
             <span>
-
                 Question {{ previewQuestion }}
-
                 of
-
                 {{ selectedExam.items }}
-
             </span>
-
             <button
-                @click="nextQuestion"
-            >
-
+                @click="nextQuestion">
                 Next →
-
             </button>
-
         </div>
-
     </div>
-
 </div>
 
 <!-- ===========================================
@@ -653,74 +380,72 @@
 
 
 
-        <div
-            v-if="selectedStartExam"
-            class="dialog-info"
-        >
+<div
+  v-if="selectedStartExam"
+  class="dialog-info"
+>
 
-            <div>
+  <div>
+    <small>
+      Examination
+    </small>
 
-                <small>
+    <strong>
+      {{ selectedStartExam.title }}
+    </strong>
+  </div>
 
-                    Examination
+  <div>
+    <small>
+      Grade
+    </small>
 
-                </small>
+    <strong>
+      {{ selectedStartExam.grade }}
+    </strong>
+  </div>
 
-                <strong>
+  <div>
+    <small>
+      Section
+    </small>
 
-                    {{ selectedStartExam.title }}
+    <strong>
+      {{ selectedStartExam.section }}
+    </strong>
+  </div>
 
-                </strong>
+  <div>
+    <small>
+      Subject
+    </small>
 
-            </div>
+    <strong>
+      {{ selectedStartExam.subject }}
+    </strong>
+  </div>
 
-            <div>
+  <div>
+    <small>
+      Duration
+    </small>
 
-                <small>
+    <strong>
+      {{ selectedStartExam.duration }} mins
+    </strong>
+  </div>
 
-                    Course
+  <div>
+    <small>
+      Questions
+    </small>
 
-                </small>
+    <strong>
+      {{ selectedStartExam.items }}
+    </strong>
+  </div>
 
-                <strong>
 
-                    {{ selectedStartExam.course }}
-
-                </strong>
-
-            </div>
-
-            <div>
-
-                <small>
-
-                    Duration
-
-                </small>
-
-                <strong>
-
-                    {{ selectedStartExam.duration }} mins
-
-                </strong>
-
-            </div>
-
-            <div>
-
-                <small>
-
-                    Questions
-
-                </small>
-
-                <strong>
-
-                    {{ selectedStartExam.items }}
-
-                </strong>
-
-            </div>
 
         </div>
 
@@ -767,7 +492,7 @@ const router = useRouter()
 // ===========================================
 
 const search = ref('')
-const selectedCourse = ref('All Courses')
+const selectedSubject = ref('All Subjects')
 
 // ===========================================
 // PREVIEW POPUP
@@ -778,17 +503,19 @@ const showPreview = ref(false)
 const previewQuestion = ref(1)
 
 const selectedExam = ref({
-    id:0,
-    title:'',
-    course:'',
-    status:'',
-    duration:0,
-    items:0,
-    points:0,
-    passing:0,
-    students:'',
-    questions: [] as any[],
-    created:''
+  id: 0,
+  title: '',
+  grade: '',
+  section: '',
+  subject: '',
+  status: '',
+  duration: 0,
+  items: 0,
+  points: 0,
+  passing: 0,
+  students: '',
+  questions: [] as any[],
+  created: ''
 })
 
 // ===========================================
@@ -806,33 +533,58 @@ async function fetchExams() {
   try {
     const response = await api.get('/exams')
 
-   exams.value = response.data.data.map((exam:any) =>{
+exams.value = response.data.data.map((exam:any) => {
   const questions = exam.questions || []
 
   return {
     id: exam.id,
     title: exam.title,
-    course: exam.course || 'No Course',
-   status:
-  exam.status === 'draft'
-    ? 'Draft'
-    : exam.status === 'published'
-    ? 'Published'
-    : exam.status === 'started'
-    ? 'Started'
-    : exam.status === 'finished'
-    ? 'Finished'
-    : exam.status,
-    duration: exam.duration,
-    items: questions.length,
-    points: questions.reduce(
-      (sum:number, q:any) => sum + Number(q.points || 0),
-      0
-    ),
-    passing: exam.passing || 0,
-    students: '0 / 0',
-    created: new Date(exam.created_at).toLocaleDateString(),
-    questions: questions
+
+    grade:
+      exam.grade || 'No Grade',
+
+    section:
+      exam.section || 'No Section',
+
+    subject:
+      exam.subject || 'No Subject',
+
+    status:
+      exam.status === 'draft'
+        ? 'Draft'
+        : exam.status === 'published'
+        ? 'Published'
+        : exam.status === 'started'
+        ? 'Started'
+        : exam.status === 'finished'
+        ? 'Finished'
+        : exam.status,
+
+    duration:
+      exam.duration,
+
+    items:
+      questions.length,
+
+    points:
+      questions.reduce(
+        (sum:number, q:any) =>
+          sum + Number(q.points || 0),
+        0
+      ),
+
+    passing:
+      exam.passing || 0,
+
+    students:
+      '0 / 0',
+
+    created:
+      new Date(
+        exam.created_at
+      ).toLocaleDateString(),
+
+    questions
   }
 })
   } catch (error) {
@@ -847,24 +599,16 @@ onMounted(() => {
   fetchExams()
 })
 
-
-
-const courses = computed(() => {
-
-    return [
-
-        ...new Set(
-
-            exams.value.map(
-
-                exam => exam.course
-
-            )
-
+const subjects = computed(() => {
+  return [
+    ...new Set(
+      exams.value
+        .map(
+          exam => exam.subject
         )
-
-    ]
-
+        .filter(Boolean)
+    )
+  ]
 })
 
 async function startAgain(exam:any) {
@@ -889,35 +633,53 @@ async function startAgain(exam:any) {
 
 const filteredExams = computed(() => {
 
-    return exams.value.filter(exam => {
+  const keyword =
+    search.value
+      .trim()
+      .toLowerCase()
 
-        const courseMatch =
+  return exams.value.filter(exam => {
 
-            selectedCourse.value === 'All Courses'
+    const subjectMatch =
+      selectedSubject.value ===
+        'All Subjects'
+      ||
+      exam.subject ===
+        selectedSubject.value
 
-            ||
+    const searchMatch =
+      !keyword
+      ||
+      String(
+        exam.title || ''
+      )
+        .toLowerCase()
+        .includes(keyword)
+      ||
+      String(
+        exam.grade || ''
+      )
+        .toLowerCase()
+        .includes(keyword)
+      ||
+      String(
+        exam.section || ''
+      )
+        .toLowerCase()
+        .includes(keyword)
+      ||
+      String(
+        exam.subject || ''
+      )
+        .toLowerCase()
+        .includes(keyword)
 
-            exam.course === selectedCourse.value
-
-        const searchMatch =
-
-            exam.title
-
-            .toLowerCase()
-
-            .includes(
-
-                search.value.toLowerCase()
-
-            )
-
-        return courseMatch && searchMatch
-
-    })
-
+    return (
+      subjectMatch &&
+      searchMatch
+    )
+  })
 })
-
-
 
 const totalExams = computed(
 
@@ -1407,11 +1169,15 @@ async function deleteExam(id:number) {
   cursor:pointer;
 }
 
-.preview-info{
-  display:grid;
-  grid-template-columns:repeat(4,1fr);
-  gap:14px;
-  margin-bottom:24px;
+.preview-info {
+  display: grid;
+
+  grid-template-columns:
+    repeat(3, 1fr);
+
+  gap: 14px;
+
+  margin-bottom: 24px;
 }
 
 .preview-info div,
