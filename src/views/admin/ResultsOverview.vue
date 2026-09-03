@@ -19,7 +19,6 @@
           <span>Exams with Results</span>
           <h2>{{ results.length }}</h2>
         </div>
-        <div class="stat-icon">📊</div>
       </div>
 
       <div class="stat-card">
@@ -27,7 +26,6 @@
           <span>Total Examinees</span>
           <h2>{{ totalStudents }}</h2>
         </div>
-        <div class="stat-icon">👥</div>
       </div>
 
       <div class="stat-card">
@@ -35,7 +33,6 @@
           <span>Total Passed</span>
           <h2>{{ totalPassed }}</h2>
         </div>
-        <div class="stat-icon">✓</div>
       </div>
 
       <div class="stat-card">
@@ -43,7 +40,6 @@
           <span>Total Failed</span>
           <h2>{{ totalFailed }}</h2>
         </div>
-        <div class="stat-icon">✕</div>
       </div>
 
     </div>
@@ -95,7 +91,7 @@
 
             <option
               v-for="faculty in facultyOptions"
-              :key="faculty.id"
+              :key="faculty.id ?? faculty.name"
               :value="String(faculty.id)"
             >
               {{ faculty.name }}
@@ -508,7 +504,7 @@ import api from '../../services/api'
 
 
 interface Faculty {
-  id: number | null
+  id: number
   name: string
   email: string | null
 }

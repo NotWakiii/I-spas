@@ -2,7 +2,7 @@ import axios from 'axios'
 // API depends on the backend URL.
 // If the backend IP changes, update this URL.
 const api = axios.create({
-  baseURL: 'http://192.168.1.13:8000/api',
+  baseURL: '/ispas-api/api',
 
   headers: {
     Accept: 'application/json',

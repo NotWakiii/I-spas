@@ -9,11 +9,6 @@
         <h1>
           {{ exam?.title || 'Student Scores' }}
         </h1>
-
-        <p v-if="exam">
-          {{ exam.course || 'No Course' }}
-          • Passing Score: {{ exam.passing }}%
-        </p>
       </div>
 
       <button

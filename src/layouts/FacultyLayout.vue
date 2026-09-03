@@ -37,25 +37,25 @@
   <nav class="menu">
 
     <RouterLink to="/faculty/dashboard" @click="closeMobileMenu">
-      🏠 Dashboard
+       Dashboard
     </RouterLink>
 
     <RouterLink to="/faculty/create-exam" @click="closeMobileMenu">
-      📝 Create Exam
+       Create Exam
     </RouterLink>
     <RouterLink to="/faculty/classes" @click="closeMobileMenu">
-      🏫 Class Management
+       Class Management
     </RouterLink>
     <RouterLink to="/faculty/exam-results" @click="closeMobileMenu">
-      📋 Exam Results
+       Exam Results
     </RouterLink>
 
     <RouterLink to="/faculty/item-analysis" @click="closeMobileMenu">
-      📊 Item Analysis
+       Item Analysis
     </RouterLink>
 
     <RouterLink to="/faculty/student-history" @click="closeMobileMenu">
-      👥 Students History
+       Students History
     </RouterLink>
 
   </nav>

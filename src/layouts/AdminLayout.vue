@@ -62,11 +62,6 @@
           class="nav-item"
           @click="closeMobileMenu"
         >
-
-          <span class="nav-icon">
-            🏠
-          </span>
-
           <span>
             Dashboard
           </span>
@@ -79,15 +74,9 @@
           class="nav-item"
           @click="closeMobileMenu"
         >
-
-          <span class="nav-icon">
-            👨‍🏫
-          </span>
-
           <span>
             Faculty Management
           </span>
-
         </RouterLink>
 
 
@@ -96,11 +85,6 @@
           class="nav-item"
           @click="closeMobileMenu"
         >
-
-          <span class="nav-icon">
-            📝
-          </span>
-
           <span>
             Examination Overview
           </span>
@@ -113,15 +97,19 @@
           class="nav-item"
           @click="closeMobileMenu"
         >
-
-          <span class="nav-icon">
-            📊
-          </span>
-
           <span>
             Results Overview
           </span>
 
+        </RouterLink>
+        <RouterLink
+          to="/admin/audit-logs"
+          class="nav-item"
+          @click="closeMobileMenu"
+        >
+          <span>
+            Audit Logs
+          </span>
         </RouterLink>
 
       </nav>
@@ -137,10 +125,6 @@
           :disabled="loggingOut"
           @click="logout"
         >
-
-          <span class="nav-icon">
-            🚪
-          </span>
 
           <span>
             {{
@@ -229,12 +213,6 @@
     >
 
       <div class="dialog">
-
-        <div class="dialog-icon">
-          🚪
-        </div>
-
-
         <h2>
           Logout?
         </h2>

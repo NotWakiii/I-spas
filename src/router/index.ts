@@ -46,6 +46,9 @@ import ExaminationOverview
 import ResultsOverview
   from '../views/admin/ResultsOverview.vue'
 
+import AuditLogs
+  from '../views/admin/AuditLogs.vue'
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
 
@@ -209,8 +212,12 @@ const router = createRouter({
           path: 'results',
           name: 'AdminResultsOverview',
           component: ResultsOverview
+        },
+        {
+          path: 'audit-logs',
+          name: 'AdminAuditLogs',
+          component: AuditLogs
         }
-
       ]
     },
   ],
@@ -256,7 +263,7 @@ router.beforeEach((to) => {
     ) {
 
       if (role === 'admin') {
-        return '/admin/dashboard-admin'
+        return '/admin/dashboard'
       }
 
       return '/'
@@ -270,7 +277,7 @@ router.beforeEach((to) => {
     token &&
     role === 'admin'
   ) {
-    return '/admin/dashboard-admin'
+    return '/admin/dashboard'
   }
 
   return true

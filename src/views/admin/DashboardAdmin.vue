@@ -32,10 +32,6 @@
             {{ dashboard.total_faculty }}
           </h2>
         </div>
-
-        <div class="emoji">
-          👨‍🏫
-        </div>
       </div>
 
 
@@ -46,10 +42,6 @@
           <h2>
             {{ dashboard.total_exams }}
           </h2>
-        </div>
-
-        <div class="emoji">
-          🕮
         </div>
       </div>
 
@@ -62,10 +54,6 @@
             {{ dashboard.total_examinees }}
           </h2>
         </div>
-
-        <div class="emoji">
-          👥
-        </div>
       </div>
 
 
@@ -76,10 +64,6 @@
           <h2>
             {{ dashboard.submitted_results }}
           </h2>
-        </div>
-
-        <div class="emoji">
-          🗹
         </div>
       </div>
 
@@ -137,10 +121,6 @@
           <!-- FACULTY -->
           <div class="overview-card">
 
-            <div class="overview-icon">
-              👨‍🏫
-            </div>
-
             <div class="overview-content">
 
               <span>
@@ -162,11 +142,6 @@
 
           <!-- EXAMS -->
           <div class="overview-card">
-
-            <div class="overview-icon">
-              📝
-            </div>
-
             <div class="overview-content">
 
               <span>
@@ -188,11 +163,6 @@
 
           <!-- EXAMINEES -->
           <div class="overview-card">
-
-            <div class="overview-icon">
-              👥
-            </div>
-
             <div class="overview-content">
 
               <span>
@@ -214,11 +184,6 @@
 
           <!-- RESULTS -->
           <div class="overview-card">
-
-            <div class="overview-icon">
-              📊
-            </div>
-
             <div class="overview-content">
 
               <span>

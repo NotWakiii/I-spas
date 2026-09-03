@@ -262,29 +262,40 @@
                 :key="student.id"
                 type="button"
                 class="student-suggestion"
+                :class="{
+                  'student-already-taken': student.already_taken,
+                  'student-in-lobby': student.in_lobby
+                }"
+                :disabled="student.already_taken || student.in_lobby"
                 @click="selectStudent(student)"
               >
-
                 <span class="student-avatar">
-                  {{
-                    getInitials(
-                      student.student_name
-                    )
-                  }}
+                  {{ getInitials(student.student_name) }}
                 </span>
 
                 <span class="student-suggestion-info">
-
                   <strong>
                     {{ student.student_name }}
                   </strong>
 
-                  <small>
-                    {{ classLabel }}
+                  <small
+                    v-if="student.already_taken"
+                    class="already-taken-label"
+                  >
+                    ✓ Already Taken
                   </small>
 
-                </span>
+                  <small
+                    v-else-if="student.in_lobby"
+                    class="in-lobby-label"
+                  >
+                    ✓ In Lobby
+                  </small>
 
+                  <small v-else>
+                    Available
+                  </small>
+                </span>
               </button>
 
             </div>
@@ -419,6 +430,8 @@ import api from '../../services/api'
 interface Student {
   id: number
   student_name: string
+  already_taken: boolean
+  in_lobby: boolean
 }
 
 
@@ -476,7 +489,6 @@ const classInfo =
 
 const students =
   ref<Student[]>([])
-
 
 // ==========================================
 // STUDENT SELECTION
@@ -797,6 +809,20 @@ function selectStudent(
   student: Student
 ) {
 
+  if (
+    student.already_taken ||
+    student.in_lobby
+  ) {
+
+    errorMessage.value =
+      student.already_taken
+        ? 'This student has already taken this examination.'
+        : 'This student is already in the examination lobby.'
+
+    return
+  }
+
+
   selectedStudent.value =
     student
 
@@ -896,6 +922,34 @@ function validateForm():
 
     errorMessage.value =
       'Please select your name from the class list.'
+
+    return false
+  }
+
+
+  if (
+    selectedStudent.value.already_taken
+  ) {
+
+    errorMessage.value =
+      'This student has already taken this examination.'
+
+    selectedStudent.value =
+      null
+
+    return false
+  }
+
+
+  if (
+    selectedStudent.value.in_lobby
+  ) {
+
+    errorMessage.value =
+      'This student is already in the examination lobby.'
+
+    selectedStudent.value =
+      null
 
     return false
   }
@@ -1152,9 +1206,6 @@ function goHome() {
 </script>
 
 <style scoped>
-
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
-
 
 /* ==========================================
    GLOBAL
@@ -2518,4 +2569,62 @@ button{
 .change-exam-btn:hover {
     color:#15803d;
 }
+/* ==========================================
+   ALREADY TAKEN STUDENT
+========================================== */
+
+.student-suggestion.student-already-taken {
+    background:#f8fafc;
+    cursor:not-allowed;
+    opacity:.72;
+}
+
+.student-suggestion.student-already-taken:hover {
+    background:#f8fafc;
+}
+
+.student-already-taken .student-avatar {
+    background:#e2e8f0;
+    color:#64748b;
+}
+
+.already-taken-label {
+    display:block;
+    margin-top:3px;
+    color:#16a34a !important;
+    font-size:8px;
+    font-weight:800;
+}
+
+/* ==========================================
+   STUDENT CURRENTLY IN LOBBY
+========================================== */
+
+.student-suggestion.student-in-lobby {
+    background:#fff7ed;
+    cursor:not-allowed;
+    opacity:.78;
+}
+
+.student-suggestion.student-in-lobby:hover {
+    background:#fff7ed;
+}
+
+.student-in-lobby .student-avatar {
+    background:#ffedd5;
+    color:#c2410c;
+}
+
+.in-lobby-label {
+    display:block;
+    margin-top:3px;
+    color:#c2410c !important;
+    font-size:8px;
+    font-weight:800;
+}
+
+.student-suggestion:disabled {
+    cursor:not-allowed;
+}
+
 </style>

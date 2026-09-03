@@ -131,8 +131,7 @@
 
         </div>
 
-
-        <!-- ADD STUDENT -->
+        <!-- ADD SINGLE STUDENT -->
         <div class="student-add">
 
           <input
@@ -146,6 +145,55 @@
             @click="addStudent(schoolClass)"
           >
             Add
+          </button>
+
+        </div>
+
+
+        <!-- BULK ADD STUDENTS -->
+        <div class="bulk-student-add">
+
+          <div class="bulk-header">
+
+            <div>
+              <strong>
+                Paste Student List
+              </strong>
+
+              <small>
+                One student name per line
+              </small>
+            </div>
+
+            <span
+              v-if="getBulkStudentCount(schoolClass.id) > 0"
+              class="bulk-count"
+            >
+              {{ getBulkStudentCount(schoolClass.id) }}
+              student(s)
+            </span>
+
+          </div>
+
+
+          <textarea
+            v-model="bulkStudentNames[schoolClass.id]"
+            placeholder="Paste student names here..."
+          ></textarea>
+
+          <button
+            class="bulk-add-btn"
+            :disabled="
+              bulkAddingClassId === schoolClass.id ||
+              getBulkStudentCount(schoolClass.id) === 0
+            "
+            @click="addStudentList(schoolClass)"
+          >
+            {{
+              bulkAddingClassId === schoolClass.id
+                ? 'Adding Students...'
+                : `Add ${getBulkStudentCount(schoolClass.id)} Students`
+            }}
           </button>
 
         </div>
@@ -428,6 +476,11 @@ const search =
 const newStudentNames =
   reactive<Record<number, string>>({})
 
+const bulkStudentNames =
+  reactive<Record<number, string>>({})
+
+const bulkAddingClassId =
+  ref<number | null>(null)
 
 // ==========================================
 // CLASS MODAL
@@ -839,7 +892,220 @@ async function deleteClass(
 // ==========================================
 // ADD STUDENT
 // ==========================================
+function getBulkStudentCount(
+  classId: number
+): number {
 
+  const text =
+    bulkStudentNames[classId] || ''
+
+  return new Set(
+      text
+        .split(/\r?\n/)
+        .map(name => name.trim())
+        .filter(Boolean)
+    ).size
+}
+async function addStudentList(
+  schoolClass: SchoolClass
+) {
+
+  const rawText =
+    bulkStudentNames[
+      schoolClass.id
+    ] || ''
+
+
+  /*
+   * Split pasted text by line.
+   */
+  const pastedNames =
+    rawText
+      .split(/\r?\n/)
+      .map(
+        name =>
+          name.trim()
+      )
+      .filter(Boolean)
+
+
+  /*
+   * Remove duplicates from pasted list.
+   */
+  const uniqueNames =
+    [
+      ...new Set(
+        pastedNames
+      )
+    ]
+
+
+  if (
+    uniqueNames.length === 0
+  ) {
+
+    alert(
+      'Please paste at least one student name.'
+    )
+
+    return
+  }
+
+
+  /*
+   * Existing students in this class.
+   */
+  const existingNames =
+    new Set(
+      schoolClass.students.map(
+        student =>
+          student.student_name
+            .trim()
+            .toLowerCase()
+      )
+    )
+
+
+  /*
+   * Remove students already in class.
+   */
+  const namesToAdd =
+    uniqueNames.filter(
+      name =>
+        !existingNames.has(
+          name.toLowerCase()
+        )
+    )
+
+
+  const duplicateCount =
+    uniqueNames.length -
+    namesToAdd.length
+
+
+  if (
+    namesToAdd.length === 0
+  ) {
+
+    alert(
+      'All pasted students are already in this class.'
+    )
+
+    return
+  }
+
+
+  const confirmed =
+    window.confirm(
+      `Add ${namesToAdd.length} student(s) to ` +
+      `${schoolClass.grade} - ${schoolClass.section}?`
+    )
+
+
+  if (!confirmed) {
+    return
+  }
+
+
+  bulkAddingClassId.value =
+    schoolClass.id
+
+
+  let addedCount = 0
+
+  let failedCount = 0
+
+
+  try {
+
+    /*
+     * Add students one by one using your
+     * existing Laravel endpoint.
+     *
+     * This means NO new backend route
+     * is required.
+     */
+    for (
+      const studentName
+      of namesToAdd
+    ) {
+
+      try {
+
+        await api.post(
+          `/faculty/classes/${schoolClass.id}/students`,
+          {
+            student_name:
+              studentName
+          }
+        )
+
+        addedCount++
+
+      } catch (error) {
+
+        failedCount++
+
+        console.error(
+          `Failed to add ${studentName}:`,
+          error
+        )
+
+      }
+
+    }
+
+
+    /*
+     * Clear textarea after successful import.
+     */
+    bulkStudentNames[
+      schoolClass.id
+    ] = ''
+
+
+    /*
+     * Reload class list once after
+     * all students are processed.
+     */
+    await fetchClasses()
+
+
+    let message =
+      `${addedCount} student(s) added successfully.`
+
+
+    if (
+      duplicateCount > 0
+    ) {
+
+      message +=
+        `\n${duplicateCount} duplicate student(s) skipped.`
+
+    }
+
+
+    if (
+      failedCount > 0
+    ) {
+
+      message +=
+        `\n${failedCount} student(s) failed to add.`
+
+    }
+
+
+    alert(message)
+
+
+  } finally {
+
+    bulkAddingClassId.value =
+      null
+
+  }
+
+}
 async function addStudent(
   schoolClass: SchoolClass
 ) {
@@ -1100,151 +1366,117 @@ onMounted(() => {
 
 .class-page {
   min-height: 100vh;
-
-  padding: 28px;
-
-  background: #f4fbf6;
-
-  font-family:
-    'Poppins',
-    sans-serif;
-
+  padding: 32px 40px;
+  background: #f8fafc;
+  font-family: 'Inter', 'Poppins', sans-serif;
   color: #0f172a;
+  -webkit-font-smoothing: antialiased;
 }
 
 
 /* HEADER */
 
 .page-header {
-  margin-bottom: 22px;
-
+  margin-bottom: 28px;
   display: flex;
-
-  justify-content:
-    space-between;
-
+  justify-content: space-between;
   align-items: center;
-
   gap: 15px;
 }
 
 
 .page-header h1 {
   margin: 0;
-
-  font-size: 28px;
-
-  font-weight: 800;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
 
 .page-header p {
-  margin-top: 6px;
-
+  margin-top: 5px;
   color: #64748b;
-
   font-size: 13px;
 }
 
 
 .create-class-btn {
   border: none;
-
-  padding:
-    11px 17px;
-
+  padding: 12px 20px;
   border-radius: 8px;
-
-  background: #16a34a;
-
+  background: #00c853;
   color: white;
-
-  font-size: 12px;
-
-  font-weight: 700;
-
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
+  transition: background .15s ease;
+}
+
+.create-class-btn:hover {
+  background: #00a844;
 }
 
 
 /* STATS */
 
 .stats {
-  margin-bottom: 20px;
-
+  margin-bottom: 24px;
   display: grid;
-
-  grid-template-columns:
-    repeat(2, 1fr);
-
-  gap: 15px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
 }
 
 
 .stat-card {
-  padding: 18px;
-
+  padding: 20px 22px;
   background: white;
-
-  border:
-    1px solid #bbf7d0;
-
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(15,23,42,.03);
 }
 
 
 .stat-card span {
   color: #64748b;
-
   font-size: 12px;
+  font-weight: 500;
 }
 
 
 .stat-card strong {
   display: block;
-
-  margin-top: 7px;
-
-  color: #15803d;
-
+  margin-top: 8px;
+  color: #0f172a;
   font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 
 /* TOOLBAR */
 
 .toolbar {
-  margin-bottom: 20px;
+  margin-bottom: 22px;
 }
 
 
 .toolbar input {
   width: 100%;
-
   max-width: 430px;
-
-  height: 44px;
-
-  padding:
-    0 13px;
-
-  border:
-    1px solid #cbd5e1;
-
+  height: 42px;
+  padding: 0 14px;
+  border: 1px solid #e2e8f0;
   border-radius: 8px;
-
-  background: white;
-
+  background: #f8fafc;
   outline: none;
+  font-size: 13px;
+  transition: border-color .15s ease, background .15s ease;
 }
 
 
 .toolbar input:focus {
-  border-color: #16a34a;
-
-  box-shadow:
-    0 0 0 3px
-    rgba(22,163,74,.08);
+  background: white;
+  border-color: #00c853;
 }
 
 
@@ -1252,104 +1484,91 @@ onMounted(() => {
 
 .class-grid {
   display: grid;
-
-  grid-template-columns:
-    repeat(
-      2,
-      minmax(0,1fr)
-    );
-
-  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0,1fr));
+  gap: 16px;
 }
 
 
 .class-card {
-  padding: 20px;
-
+  padding: 22px;
   background: white;
-
-  border:
-    1px solid #e2e8f0;
-
+  border: 1px solid #e2e8f0;
   border-radius: 14px;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
 
-  box-shadow:
-    0 5px 18px
-    rgba(15,23,42,.04);
+.class-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 14px rgba(15,23,42,.06);
 }
 
 
 .class-card-header {
   margin-bottom: 18px;
-
   display: flex;
-
-  justify-content:
-    space-between;
-
+  justify-content: space-between;
   gap: 15px;
 }
 
 
 .grade {
-  color: #16a34a;
-
+  color: #00a844;
   font-size: 11px;
-
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 
 .class-card h2 {
-  margin:
-    3px 0 5px;
-
-  font-size: 20px;
+  margin: 4px 0 5px;
+  font-size: 19px;
+  font-weight: 700;
 }
 
 
 .class-card small {
-  color: #64748b;
-
-  font-size: 10px;
+  color: #94a3b8;
+  font-size: 11px;
 }
 
 
 .class-actions {
   display: flex;
-
-  gap: 7px;
+  gap: 8px;
 }
 
 
 .edit-btn,
 .delete-btn {
-  border: none;
-
-  padding:
-    7px 10px;
-
+  border: 1px solid #e2e8f0;
+  padding: 7px 12px;
   border-radius: 6px;
-
-  font-size: 10px;
-
-  font-weight: 700;
-
+  background: white;
+  font-size: 11px;
+  font-weight: 600;
   cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
 }
 
 
 .edit-btn {
-  background: #dcfce7;
+  color: #334155;
+}
 
-  color: #15803d;
+.edit-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
 }
 
 
 .delete-btn {
-  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
 
-  color: #dc2626;
+.delete-btn:hover {
+  background: #fef2f2;
 }
 
 
@@ -1357,54 +1576,136 @@ onMounted(() => {
 
 .student-add {
   margin-bottom: 15px;
-
   display: flex;
-
   gap: 8px;
 }
 
+/* ==========================================
+   BULK ADD STUDENTS
+========================================== */
+
+.bulk-student-add {
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px dashed #a7e8bc;
+  border-radius: 10px;
+  background: #f2fbf5;
+}
+
+
+.bulk-header {
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+
+.bulk-header strong {
+  display: block;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+
+.bulk-header small {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 10px;
+}
+
+
+.bulk-count {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #e3f9e9;
+  color: #00a844;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+
+.bulk-student-add textarea {
+  width: 100%;
+  min-height: 125px;
+  padding: 12px;
+  border: 1px solid #cdefd9;
+  border-radius: 8px;
+  background: white;
+  outline: none;
+  resize: vertical;
+  font-family: 'Inter', 'Poppins', sans-serif;
+  font-size: 12px;
+  line-height: 1.6;
+  transition: border-color .15s ease;
+}
+
+
+.bulk-student-add textarea:focus {
+  border-color: #00c853;
+}
+
+
+.bulk-add-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px 14px;
+  border: none;
+  border-radius: 7px;
+  background: #0f172a;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s ease;
+}
+
+
+.bulk-add-btn:hover:not(:disabled) {
+  background: #1e293b;
+}
+
+
+.bulk-add-btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
 
 .student-add input {
   flex: 1;
-
   min-width: 0;
-
   height: 40px;
-
-  padding:
-    0 11px;
-
-  border:
-    1px solid #cbd5e1;
-
+  padding: 0 12px;
+  border: 1px solid #e2e8f0;
   border-radius: 7px;
-
   outline: none;
+  font-size: 13px;
+  transition: border-color .15s ease;
 }
 
 
 .student-add input:focus {
-  border-color: #16a34a;
+  border-color: #00c853;
 }
 
 
 .student-add button {
   border: none;
-
-  padding:
-    0 16px;
-
+  padding: 0 18px;
   border-radius: 7px;
-
-  background: #16a34a;
-
+  background: #00c853;
   color: white;
-
-  font-size: 11px;
-
-  font-weight: 700;
-
+  font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
+  transition: background .15s ease;
+}
+
+.student-add button:hover {
+  background: #00a844;
 }
 
 
@@ -1412,123 +1713,94 @@ onMounted(() => {
 
 .student-list {
   max-height: 310px;
-
   overflow-y: auto;
 }
 
 
 .student-row {
-  padding:
-    10px 4px;
-
+  padding: 11px 4px;
   display: flex;
-
-  justify-content:
-    space-between;
-
+  justify-content: space-between;
   align-items: center;
-
   gap: 12px;
-
-  border-bottom:
-    1px solid #f1f5f9;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 
 .student-info {
   min-width: 0;
-
   display: flex;
-
   align-items: center;
-
-  gap: 9px;
+  gap: 10px;
 }
 
 
 .avatar {
   width: 33px;
-
   height: 33px;
-
   min-width: 33px;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
   border-radius: 50%;
-
-  background: #dcfce7;
-
-  color: #15803d;
-
-  font-size: 11px;
-
-  font-weight: 800;
+  background: #e3f9e9;
+  color: #00a844;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 
 .student-info span {
   overflow: hidden;
-
   color: #334155;
-
-  font-size: 12px;
-
+  font-size: 13px;
   text-overflow: ellipsis;
-
   white-space: nowrap;
 }
 
 
 .student-actions {
   display: flex;
-
-  gap: 5px;
+  gap: 6px;
 }
 
 
 .student-edit,
 .student-delete {
-  border: none;
-
-  padding:
-    5px 8px;
-
+  border: 1px solid #e2e8f0;
+  padding: 5px 10px;
   border-radius: 5px;
-
-  font-size: 9px;
-
-  font-weight: 700;
-
+  background: white;
+  font-size: 10px;
+  font-weight: 600;
   cursor: pointer;
+  transition: background .15s ease;
 }
 
 
 .student-edit {
-  background: #f1f5f9;
-
   color: #475569;
+}
+
+.student-edit:hover {
+  background: #f8fafc;
 }
 
 
 .student-delete {
-  background: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
 
-  color: #dc2626;
+.student-delete:hover {
+  background: #fef2f2;
 }
 
 
 .no-students {
-  padding: 20px;
-
+  padding: 22px;
   color: #94a3b8;
-
-  font-size: 11px;
-
+  font-size: 12px;
   text-align: center;
 }
 
@@ -1537,65 +1809,48 @@ onMounted(() => {
 
 .state-message,
 .empty-state {
-  padding: 50px;
-
+  padding: 56px;
   background: white;
-
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
-
   color: #64748b;
-
   text-align: center;
 }
 
 
 .empty-state h3 {
-  margin-bottom: 5px;
-
-  color: #334155;
+  margin-bottom: 6px;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 700;
 }
 
 
 .empty-state p {
-  font-size: 12px;
+  font-size: 13px;
 }
 
 
 .error-box {
   padding: 16px;
-
   display: flex;
-
-  justify-content:
-    space-between;
-
+  justify-content: space-between;
   align-items: center;
-
   background: #fef2f2;
-
-  border:
-    1px solid #fecaca;
-
+  border: 1px solid #fecaca;
   border-radius: 9px;
-
-  color: #dc2626;
-
+  color: #b91c1c;
   font-size: 12px;
 }
 
 
 .error-box button {
   border: none;
-
-  padding:
-    7px 11px;
-
+  padding: 8px 12px;
   border-radius: 6px;
-
-  background: #dc2626;
-
+  background: #b91c1c;
   color: white;
-
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -1604,112 +1859,80 @@ onMounted(() => {
 
 .modal-overlay {
   position: fixed;
-
   inset: 0;
-
   z-index: 9999;
-
   padding: 20px;
-
   display: flex;
-
   align-items: center;
-
   justify-content: center;
-
-  background:
-    rgba(15,23,42,.55);
-
-  backdrop-filter:
-    blur(5px);
+  background: rgba(15,23,42,.5);
+  backdrop-filter: blur(4px);
 }
 
 
 .modal {
   width: 430px;
-
   max-width: 100%;
-
-  padding: 25px;
-
+  padding: 28px;
   background: white;
-
-  border-radius: 14px;
-
-  box-shadow:
-    0 20px 55px
-    rgba(0,0,0,.25);
+  border-radius: 16px;
+  box-shadow: 0 20px 50px rgba(15,23,42,.2);
 }
 
 
 .modal h2 {
-  margin:
-    0 0 20px;
-
-  font-size: 20px;
+  margin: 0 0 20px;
+  font-size: 19px;
+  font-weight: 700;
 }
 
 
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 16px;
 }
 
 
 .form-group label {
   display: block;
-
   margin-bottom: 6px;
-
   color: #475569;
-
   font-size: 11px;
-
-  font-weight: 700;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 
 .form-group input {
   width: 100%;
-
   height: 42px;
-
-  padding:
-    0 11px;
-
-  border:
-    1px solid #cbd5e1;
-
+  padding: 0 12px;
+  border: 1px solid #e2e8f0;
   border-radius: 7px;
-
   outline: none;
+  font-size: 13px;
+  transition: border-color .15s ease;
 }
 
 
 .form-group input:focus {
-  border-color: #16a34a;
+  border-color: #00c853;
 }
 
 
 .modal-error {
-  margin-bottom: 15px;
-
-  padding: 10px;
-
+  margin-bottom: 16px;
+  padding: 11px;
   background: #fef2f2;
-
   border-radius: 6px;
-
-  color: #dc2626;
-
-  font-size: 11px;
+  color: #b91c1c;
+  font-size: 12px;
 }
 
 
 .modal-actions {
-  margin-top: 20px;
-
+  margin-top: 22px;
   display: flex;
-
   gap: 10px;
 }
 
@@ -1717,37 +1940,38 @@ onMounted(() => {
 .cancel-btn,
 .save-btn {
   flex: 1;
-
   border: none;
-
-  padding: 11px;
-
-  border-radius: 7px;
-
-  font-weight: 700;
-
+  height: 44px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
   cursor: pointer;
 }
 
 
 .cancel-btn {
-  background: #e2e8f0;
-
+  background: #f1f5f9;
   color: #475569;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background: #e2e8f0;
 }
 
 
 .save-btn {
-  background: #16a34a;
-
+  background: #00c853;
   color: white;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: #00a844;
 }
 
 
 .cancel-btn:disabled,
 .save-btn:disabled {
   opacity: .6;
-
   cursor: not-allowed;
 }
 
@@ -1757,8 +1981,7 @@ onMounted(() => {
 @media(max-width: 900px) {
 
   .class-grid {
-    grid-template-columns:
-      1fr;
+    grid-template-columns: 1fr;
   }
 
 }
@@ -1772,11 +1995,8 @@ onMounted(() => {
 
 
   .page-header {
-    align-items:
-      flex-start;
-
-    flex-direction:
-      column;
+    align-items: flex-start;
+    flex-direction: column;
   }
 
 
@@ -1786,20 +2006,17 @@ onMounted(() => {
 
 
   .stats {
-    grid-template-columns:
-      1fr;
+    grid-template-columns: 1fr;
   }
 
 
   .student-row {
-    align-items:
-      flex-start;
+    align-items: flex-start;
   }
 
 
   .student-actions {
-    flex-direction:
-      column;
+    flex-direction: column;
   }
 
 }

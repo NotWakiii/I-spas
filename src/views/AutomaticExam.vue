@@ -45,31 +45,44 @@
 
         <!-- CLASS -->
         <div class="form-group">
-          <label>Class</label>
+          <label>Assign to Classes</label>
 
-          <select
-            v-model="selectedClassId"
-            :disabled="loadingClasses"
+          <div
+            v-if="loadingClasses"
+            class="class-loading"
           >
-            <option
-              value=""
-              disabled
-            >
-              {{
-                loadingClasses
-                  ? 'Loading classes...'
-                  : 'Select Class'
-              }}
-            </option>
+            Loading classes...
+          </div>
 
-            <option
+          <div
+            v-else-if="classes.length > 0"
+            class="class-selection-box"
+          >
+            <label
               v-for="schoolClass in classes"
               :key="schoolClass.id"
-              :value="schoolClass.id"
+              class="class-checkbox-item"
+              :class="{
+                selected: selectedClassIds.includes(schoolClass.id)
+              }"
             >
-              {{ schoolClass.grade }} - {{ schoolClass.section }}
-            </option>
-          </select>
+              <input
+                v-model="selectedClassIds"
+                type="checkbox"
+                :value="schoolClass.id"
+              >
+
+              <div class="class-checkbox-info">
+                <strong>
+                  Grade {{ schoolClass.grade }}
+                </strong>
+
+                <span>
+                  {{ schoolClass.section }}
+                </span>
+              </div>
+            </label>
+          </div>
 
           <p
             v-if="
@@ -79,6 +92,14 @@
             class="class-warning"
           >
             No classes found. Create a class in Class Management first.
+          </p>
+
+          <p
+            v-if="selectedClassIds.length > 0"
+            class="selected-class-count"
+          >
+            {{ selectedClassIds.length }}
+            class(es) selected
           </p>
         </div>
 
@@ -463,7 +484,7 @@
         <div class="confirmation-summary">
 
           <div>
-            <span>Class</span>
+            <span>Classes</span>
 
             <strong>
               {{ selectedClassLabel }}
@@ -574,7 +595,7 @@ interface ExamQuestion {
 // ==========================================
 
 const passing =
-  ref(75)
+  ref(50)
 
 const creatingExam =
   ref(false)
@@ -599,8 +620,8 @@ const subject =
 const classes =
   ref<SchoolClass[]>([])
 
-const selectedClassId =
-  ref<number | ''>('')
+const selectedClassIds =
+  ref<number[]>([])
 
 const loadingClasses =
   ref(false)
@@ -670,23 +691,26 @@ const totalPoints =
 const selectedClassLabel =
   computed(() => {
 
-    const schoolClass =
-      classes.value.find(
-        item =>
-          item.id ===
-          Number(
-            selectedClassId.value
-          )
-      )
-
-    if (!schoolClass) {
+    if (
+      selectedClassIds.value.length === 0
+    ) {
       return 'Not selected'
     }
 
-    return (
-      `${schoolClass.grade} - ` +
-      `${schoolClass.section}`
-    )
+    const selected =
+      classes.value.filter(
+        schoolClass =>
+          selectedClassIds.value.includes(
+            schoolClass.id
+          )
+      )
+
+    return selected
+      .map(
+        schoolClass =>
+          `${schoolClass.grade} - ${schoolClass.section}`
+      )
+      .join(', ')
 
   })
 
@@ -1352,11 +1376,11 @@ function openCreatePopup() {
 
 
   if (
-    !selectedClassId.value
+    selectedClassIds.value.length === 0
   ) {
 
     alert(
-      'Please select a class.'
+      'Please select at least one class.'
     )
 
     return
@@ -1438,7 +1462,6 @@ function openCreatePopup() {
 
   showCreatePopup.value =
     true
-
 }
 
 
@@ -1495,10 +1518,8 @@ async function confirmCreateExam() {
           description.value
             .trim(),
 
-        class_id:
-          Number(
-            selectedClassId.value
-          ),
+        class_ids:
+          selectedClassIds.value,
 
         subject:
           subject.value
@@ -1553,7 +1574,7 @@ async function confirmCreateExam() {
 
 
     alert(
-      'Generated exam created successfully!'
+      `${selectedClassIds.value.length} exam(s) created successfully!`
     )
 
 
@@ -2220,7 +2241,108 @@ textarea {
   color: white;
 }
 
+/* ==========================================
+   MULTIPLE CLASS SELECTION
+========================================== */
 
+.class-selection-box {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+
+  max-height: 250px;
+  overflow-y: auto;
+
+  padding: 12px;
+
+  border: 1px solid #d9dce2;
+  border-radius: 12px;
+
+  background: #f8fafc;
+}
+
+
+.class-checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 12px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+
+  background: white;
+
+  cursor: pointer;
+
+  transition: .2s;
+}
+
+
+.class-checkbox-item:hover {
+  border-color: #00c853;
+}
+
+
+.class-checkbox-item.selected {
+  border-color: #00c853;
+  background: #f0fdf4;
+}
+
+
+.class-checkbox-item input {
+  width: 18px;
+  height: 18px;
+
+  flex-shrink: 0;
+
+  accent-color: #00c853;
+}
+
+
+.class-checkbox-info {
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+
+.class-checkbox-info strong {
+  color: #112244;
+
+  font-size: 14px;
+}
+
+
+.class-checkbox-info span {
+  color: #64748b;
+
+  font-size: 12px;
+}
+
+
+.selected-class-count {
+  margin-top: 8px;
+
+  color: #16a34a;
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
+
+.class-loading {
+  padding: 14px;
+
+  color: #64748b;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+
+  background: #f8fafc;
+}
 /* ==========================================
    RESPONSIVE
 ========================================== */

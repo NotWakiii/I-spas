@@ -13,7 +13,7 @@
             class="new-exam-btn"
             @click="goToCreateExam"
         >
-            + New Exam
+            New Exam
         </button>
     </div>
     <div class="stats">
@@ -22,17 +22,11 @@
                 <span>Total Exams</span>
                 <h2>{{ totalExams }}</h2>
             </div>
-            <div class="emoji">
-                🕮
-            </div>
         </div>
         <div class="card">
             <div>
                 <span>Published</span>
                 <h2>{{ totalPublished }}</h2>
-            </div>
-            <div class="emoji">
-                🗹
             </div>
         </div>
         <div class="card">
@@ -40,17 +34,11 @@
                 <span>Drafts</span>
                 <h2>{{ totalDrafts }}</h2>
             </div>
-            <div class="emoji">
-                🗐
-            </div>
         </div>
       <div class="card">
         <div>
           <span>Exam Finished</span>
           <h2>{{ totalFinished }}</h2>
-        </div>
-        <div class="emoji">
-          ✅
         </div>
       </div>
     </div>
@@ -113,38 +101,38 @@
                         <button
                             class="edit"
                             @click="editExam(exam.id)">
-                            ✏ Edit
+                            Edit
                         </button>
                         <button
                             class="preview"
                             @click="previewExam(exam)">
-                            👁 Preview
+                            Preview
                         </button>
                         <!-- Draft -->
                        <button
                           v-if="exam.status === 'Draft'"
                           class="publish-btn"
                           @click="publishExam(exam)">
-                          📢 Publish
+                           Publish
                         </button>
                         <button
                           v-else-if="exam.status === 'Published'"
                           class="start-btn"
                           @click="startExam(exam)"
                         >
-                          ▶ Start Exam
+                           Start Exam
                         </button>
                         <button
                           v-else-if="exam.status === 'Finished'"
                           class="start-btn"
                           @click="startAgain(exam)"
                         >
-                          🔁 Start Again
+                           Start Again
                         </button>
                         <button
                             class="delete"
                             @click="deleteExam(exam.id)">
-                            🗑 Delete
+                            Delete
                         </button>
                     </div>
                 </div>
@@ -232,7 +220,7 @@
             v-else
             class="empty">
             <h2>
-                📂 No examinations found
+                No examinations found
             </h2>
             <p>
                 Try another search or course.
@@ -259,7 +247,7 @@
             <button
                 class="close-btn"
                 @click="closePreview">
-                ✕
+                Close
             </button>
         </div>
         <div class="preview-info">
@@ -309,7 +297,7 @@
               :key="option.id"
               class="option"
             >
-              ○ {{ option.option_text }}
+              {{ option.option_text }}
             </div>
           </div>
 
@@ -322,8 +310,9 @@
         </div>
         <div class="preview-footer">
             <button
+                class="nav-btn"
                 @click="previousQuestion">
-                ← Previous
+                Previous
             </button>
             <span>
                 Question {{ previewQuestion }}
@@ -331,8 +320,9 @@
                 {{ selectedExam.items }}
             </span>
             <button
+                class="nav-btn"
                 @click="nextQuestion">
-                Next →
+                Next
             </button>
         </div>
     </div>
@@ -348,106 +338,80 @@
 >
 
     <div class="dialog">
-
-
-
-        <div class="dialog-icon">
-
-            ▶
-
-        </div>
-
-
-
         <h2>
-
             Start Examination?
-
         </h2>
-
-
-
         <p>
-
             Are you sure you want to start this examination?
-
             <br><br>
-
             You will be redirected to the Monitoring Lobby where students
             can join using the generated access code.
-
         </p>
+      <div
+        v-if="selectedStartExam"
+        class="dialog-info"
+      >
 
+        <div>
+          <small>
+            Examination
+          </small>
 
-
-<div
-  v-if="selectedStartExam"
-  class="dialog-info"
->
-
-  <div>
-    <small>
-      Examination
-    </small>
-
-    <strong>
-      {{ selectedStartExam.title }}
-    </strong>
-  </div>
-
-  <div>
-    <small>
-      Grade
-    </small>
-
-    <strong>
-      {{ selectedStartExam.grade }}
-    </strong>
-  </div>
-
-  <div>
-    <small>
-      Section
-    </small>
-
-    <strong>
-      {{ selectedStartExam.section }}
-    </strong>
-  </div>
-
-  <div>
-    <small>
-      Subject
-    </small>
-
-    <strong>
-      {{ selectedStartExam.subject }}
-    </strong>
-  </div>
-
-  <div>
-    <small>
-      Duration
-    </small>
-
-    <strong>
-      {{ selectedStartExam.duration }} mins
-    </strong>
-  </div>
-
-  <div>
-    <small>
-      Questions
-    </small>
-
-    <strong>
-      {{ selectedStartExam.items }}
-    </strong>
-  </div>
-
-
-
+          <strong>
+            {{ selectedStartExam.title }}
+          </strong>
         </div>
+
+        <div>
+          <small>
+            Grade
+          </small>
+
+          <strong>
+            {{ selectedStartExam.grade }}
+          </strong>
+        </div>
+
+        <div>
+          <small>
+            Section
+          </small>
+
+          <strong>
+            {{ selectedStartExam.section }}
+          </strong>
+        </div>
+
+        <div>
+          <small>
+            Subject
+          </small>
+
+          <strong>
+            {{ selectedStartExam.subject }}
+          </strong>
+        </div>
+
+        <div>
+          <small>
+            Duration
+          </small>
+
+          <strong>
+            {{ selectedStartExam.duration }} mins
+          </strong>
+        </div>
+
+        <div>
+          <small>
+            Questions
+          </small>
+
+          <strong>
+            {{ selectedStartExam.items }}
+          </strong>
+        </div>
+      </div>
 
 
 
@@ -848,86 +812,83 @@ async function deleteExam(id:number) {
 }
 
 .dashboard{
-  padding:28px;
-  background:#f4fbf6;
+  padding:32px 40px;
+  background:#f8fafc;
   min-height:100vh;
-  font-family:'Poppins',sans-serif;
+  font-family:'Inter','Poppins',sans-serif;
   color:#0f172a;
+  -webkit-font-smoothing:antialiased;
 }
 
 .dashboard-header{
   display:flex;
   justify-content:space-between;
   align-items:center;
-  margin-bottom:22px;
+  margin-bottom:28px;
 }
 
 .dashboard-header h1{
-  font-size:28px;
-  font-weight:800;
+  font-size:26px;
+  font-weight:700;
+  letter-spacing:-0.02em;
   color:#0f172a;
 }
 
 .dashboard-header p{
-  margin-top:6px;
+  margin-top:5px;
   color:#64748b;
   font-size:14px;
 }
 
 .new-exam-btn{
   border:none;
-  background:#16a34a;
+  background:#00c853;
   color:white;
-  padding:13px 24px;
-  border-radius:10px;
-  font-weight:700;
+  padding:12px 22px;
+  border-radius:8px;
+  font-weight:600;
+  font-size:14px;
   cursor:pointer;
+  transition:background .15s ease;
 }
 
-/* TOP CARDS LIKE SCREENSHOT */
+.new-exam-btn:hover{
+  background:#00a845;
+}
+
+/* TOP CARDS */
 .stats{
   display:grid;
   grid-template-columns:repeat(4,1fr);
-  gap:16px;
-  margin-bottom:24px;
+  gap:14px;
+  margin-bottom:28px;
 }
 
 .card{
-  background:rgb(252, 252, 252);
-  border:1px solid #00d400;
-  border-radius:10px;
-  padding:17px 18px;
-  min-height:74px;
+  background:#ffffff;
+  border:1px solid #e2e8f0;
+  border-radius:12px;
+  padding:20px 22px;
+  min-height:76px;
   display:flex;
   align-items:center;
-  justify-content:space-between;
-  box-shadow:0 2px 6px rgba(10, 55, 160, 0.04);
+  box-shadow:0 1px 2px rgba(15,23,42,.03);
 }
 
 .card span{
   display:block;
-  color:#000000;
-  font-size:17px;
+  color:#64748b;
+  font-size:13px;
   font-weight:500;
-  margin-bottom:15px;
+  margin-bottom:8px;
 }
 
 .card h2{
-  color:#141414;
-  font-size:22px;
-  font-weight:800;
+  color:#0f172a;
+  font-size:26px;
+  font-weight:700;
   line-height:1;
-}
-
-.emoji{
-  width:50px;
-  height:50px;
-  border-radius:8px;
-  background:#c9c8c871;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:40px;
+  letter-spacing:-0.01em;
 }
 
 /* EXAM SECTION */
@@ -935,8 +896,8 @@ async function deleteExam(id:number) {
   background:white;
   border:1px solid #e2e8f0;
   border-radius:14px;
-  padding:24px;
-  box-shadow:0 5px 18px rgba(15,23,42,.04);
+  padding:26px;
+  box-shadow:0 1px 3px rgba(15,23,42,.04);
 }
 
 .exam-header{
@@ -944,19 +905,21 @@ async function deleteExam(id:number) {
   justify-content:space-between;
   align-items:center;
   gap:16px;
-  margin-bottom:22px;
+  margin-bottom:24px;
+  padding-bottom:20px;
+  border-bottom:1px solid #f1f5f9;
 }
 
 .exam-header h2{
-  font-size:20px;
-  font-weight:800;
+  font-size:18px;
+  font-weight:700;
   color:#0f172a;
 }
 
 .exam-header p{
   color:#64748b;
   font-size:13px;
-  margin-top:5px;
+  margin-top:4px;
 }
 
 .filters{
@@ -966,23 +929,25 @@ async function deleteExam(id:number) {
 
 .filters input,
 .filters select{
-  height:40px;
-  border:1px solid #cbd5e1;
+  height:38px;
+  border:1px solid #e2e8f0;
   border-radius:8px;
-  background:white;
+  background:#f8fafc;
   padding:0 12px;
   outline:none;
   font-size:13px;
+  color:#0f172a;
+  transition:border-color .15s ease, background .15s ease;
 }
 
 .filters input{
-  width:220px;
+  width:230px;
 }
 
 .filters input:focus,
 .filters select:focus{
-  border-color:#16a34a;
-  box-shadow:0 0 0 3px rgba(22,163,74,.12);
+  background:white;
+  border-color:#94a3b8;
 }
 
 /* EXAM CARDS */
@@ -991,28 +956,14 @@ async function deleteExam(id:number) {
   background:#fff;
   border:1px solid #e2e8f0;
   border-radius:12px;
-  padding:20px;
-  margin-bottom:16px;
-  overflow:hidden;
-  transition:.2s;
-}
-
-.exam-card::before{
-  content:"";
-  position:absolute;
-  top:0;
-  left:0;
-  width:4px;
-  height:100%;
-  background:#f97316;
-}
-
-.exam-card:has(.published)::before{
-  background:#16a34a;
+  padding:20px 22px;
+  margin-bottom:14px;
+  transition:border-color .15s ease, box-shadow .15s ease;
 }
 
 .exam-card:hover{
-  box-shadow:0 12px 25px rgba(15,23,42,.08);
+  border-color:#cbd5e1;
+  box-shadow:0 4px 14px rgba(15,23,42,.06);
 }
 
 .exam-title{
@@ -1021,11 +972,13 @@ async function deleteExam(id:number) {
   align-items:flex-start;
   gap:16px;
   margin-bottom:18px;
+  padding-bottom:16px;
+  border-bottom:1px solid #f1f5f9;
 }
 
 .exam-title h3{
-  font-size:17px;
-  font-weight:800;
+  font-size:16px;
+  font-weight:700;
   color:#0f172a;
   margin-bottom:8px;
 }
@@ -1033,29 +986,22 @@ async function deleteExam(id:number) {
 .badge{
   display:inline-flex;
   align-items:center;
-  gap:6px;
-  padding:5px 10px;
+  padding:4px 11px;
   border-radius:999px;
-  font-size:12px;
-  font-weight:700;
-}
-
-.badge::before{
-  content:"";
-  width:7px;
-  height:7px;
-  border-radius:50%;
-  background:currentColor;
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:0.02em;
+  text-transform:uppercase;
 }
 
 .draft{
-  background:#fff7ed;
-  color:#f97316;
+  background:#fef3e7;
+  color:#c2540a;
 }
 
 .published{
-  background:#dcfce7;
-  color:#16a34a;
+  background:#e7f5ec;
+  color:#0f7a3d;
 }
 
 .buttons{
@@ -1065,65 +1011,89 @@ async function deleteExam(id:number) {
 }
 
 .buttons button{
-  height:36px;
-  padding:0 12px;
+  height:34px;
+  padding:0 14px;
   border-radius:7px;
-  border:1px solid #cbd5e1;
+  border:1px solid #e2e8f0;
   background:white;
   color:#334155;
   font-size:12px;
-  font-weight:700;
+  font-weight:600;
   cursor:pointer;
+  transition:background .15s ease, border-color .15s ease;
 }
 
-.publish,
-.start{
-  background:#16a34a !important;
-  border-color:#16a34a !important;
+.buttons button:hover{
+  background:#f8fafc;
+  border-color:#cbd5e1;
+}
+
+.publish-btn,
+.start-btn{
+  background:#00c853 !important;
+  border-color:#00c853 !important;
   color:white !important;
 }
 
+.publish-btn:hover,
+.start-btn:hover{
+  background:#38925c !important;
+}
+
 .delete{
-  color:#dc2626 !important;
-  border-color:#fca5a5 !important;
+  color:#b91c1c !important;
+  border-color:#fecaca !important;
+}
+
+.delete:hover{
+  background:#fef2f2 !important;
 }
 
 .exam-info{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(115px,1fr));
-  gap:12px;
+  gap:10px;
 }
 
 .exam-info div{
   background:#f8fafc;
-  border-radius:9px;
-  padding:13px 10px;
+  border-radius:8px;
+  padding:12px 10px;
   text-align:center;
 }
 
 .exam-info small{
   display:block;
-  color:#64748b;
+  color:#94a3b8;
   font-size:11px;
+  font-weight:500;
   margin-bottom:6px;
+  text-transform:uppercase;
+  letter-spacing:0.03em;
 }
 
 .exam-info strong{
-  color:#020617;
+  color:#0f172a;
   font-size:13px;
-  font-weight:800;
+  font-weight:700;
 }
 
 /* EMPTY */
 .empty{
   text-align:center;
-  padding:60px 20px;
-  color:#64748b;
+  padding:70px 20px;
+  color:#94a3b8;
 }
 
 .empty h2{
-  color:#0f172a;
-  margin-bottom:10px;
+  color:#334155;
+  font-size:16px;
+  font-weight:700;
+  margin-bottom:8px;
+}
+
+.empty p{
+  font-size:13px;
 }
 
 /* MODALS */
@@ -1131,8 +1101,8 @@ async function deleteExam(id:number) {
 .dialog-overlay{
   position:fixed;
   inset:0;
-  background:rgba(15,23,42,.55);
-  backdrop-filter:blur(6px);
+  background:rgba(15,23,42,.5);
+  backdrop-filter:blur(4px);
   display:flex;
   justify-content:center;
   align-items:center;
@@ -1142,8 +1112,8 @@ async function deleteExam(id:number) {
 .preview-modal,
 .dialog{
   background:white;
-  border-radius:18px;
-  box-shadow:0 20px 60px rgba(0,0,0,.25);
+  border-radius:16px;
+  box-shadow:0 20px 50px rgba(15,23,42,.2);
 }
 
 .preview-modal{
@@ -1157,39 +1127,78 @@ async function deleteExam(id:number) {
 .preview-header{
   display:flex;
   justify-content:space-between;
-  align-items:center;
+  align-items:flex-start;
   margin-bottom:22px;
+  padding-bottom:18px;
+  border-bottom:1px solid #f1f5f9;
+}
+
+.preview-header h2{
+  font-size:19px;
+  font-weight:700;
+  color:#0f172a;
+}
+
+.preview-header p{
+  color:#64748b;
+  font-size:13px;
+  margin-top:4px;
 }
 
 .close-btn{
-  width:40px;
-  height:40px;
-  border:none;
-  border-radius:50%;
+  border:1px solid #e2e8f0;
+  background:white;
+  border-radius:7px;
+  padding:8px 14px;
+  font-size:12px;
+  font-weight:600;
+  color:#334155;
   cursor:pointer;
+}
+
+.close-btn:hover{
+  background:#f8fafc;
 }
 
 .preview-info {
   display: grid;
-
-  grid-template-columns:
-    repeat(3, 1fr);
-
-  gap: 14px;
-
-  margin-bottom: 24px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 26px;
 }
 
 .preview-info div,
 .dialog-info div{
   background:#f8fafc;
-  border-radius:10px;
+  border-radius:9px;
   padding:14px;
   text-align:center;
 }
 
+.preview-info small,
+.dialog-info small{
+  display:block;
+  color:#94a3b8;
+  font-size:11px;
+  font-weight:500;
+  margin-bottom:6px;
+  text-transform:uppercase;
+  letter-spacing:0.03em;
+}
+
+.preview-info strong,
+.dialog-info strong{
+  color:#0f172a;
+  font-size:13px;
+  font-weight:700;
+}
+
 .question-preview h3{
-  color:#16a34a;
+  color:#0f172a;
+  font-size:14px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:0.03em;
   margin-bottom:12px;
 }
 
@@ -1197,55 +1206,64 @@ async function deleteExam(id:number) {
   font-size:17px;
   font-weight:600;
   margin-bottom:18px;
+  color:#0f172a;
 }
 
 .option{
   border:1px solid #e2e8f0;
-  border-radius:9px;
-  padding:13px;
-  margin-bottom:10px;
+  border-radius:8px;
+  padding:13px 16px;
+  margin-bottom:9px;
+  font-size:14px;
+  color:#334155;
 }
 
 .preview-footer{
-  margin-top:25px;
+  margin-top:26px;
+  padding-top:20px;
+  border-top:1px solid #f1f5f9;
   display:flex;
   justify-content:space-between;
   align-items:center;
 }
 
-.preview-footer button,
-.start-btn{
-  border:none;
-  background:#16a34a;
-  color:white;
-  padding:12px 20px;
+.preview-footer span{
+  font-size:13px;
+  color:#64748b;
+  font-weight:500;
+}
+
+.nav-btn{
+  border:1px solid #e2e8f0;
+  background:white;
+  color:#334155;
+  padding:10px 18px;
   border-radius:8px;
-  font-weight:700;
+  font-weight:600;
+  font-size:13px;
   cursor:pointer;
 }
 
+.nav-btn:hover{
+  background:#f8fafc;
+}
+
 .dialog{
-  width:500px;
+  width:480px;
   max-width:95%;
   padding:32px;
   text-align:center;
 }
 
-.dialog-icon{
-  width:72px;
-  height:72px;
-  margin:0 auto 18px;
-  border-radius:50%;
-  background:#16a34a;
-  color:white;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:28px;
+.dialog h2{
+  font-size:19px;
+  font-weight:700;
+  color:#0f172a;
 }
 
 .dialog p{
   color:#64748b;
+  font-size:13px;
   line-height:1.6;
   margin:14px 0 22px;
 }
@@ -1253,27 +1271,37 @@ async function deleteExam(id:number) {
 .dialog-info{
   display:grid;
   grid-template-columns:repeat(2,1fr);
-  gap:12px;
+  gap:10px;
   margin-bottom:24px;
 }
 
 .dialog-buttons{
   display:flex;
-  gap:12px;
+  gap:10px;
 }
 
 .cancel-btn,
 .start-btn{
   flex:1;
+  height:44px;
+  border-radius:8px;
+  font-weight:600;
+  font-size:14px;
+  cursor:pointer;
 }
 
 .cancel-btn{
+  border:1px solid #e2e8f0;
+  background:white;
+  color:#334155;
+}
+
+.cancel-btn:hover{
+  background:#f8fafc;
+}
+
+.dialog .start-btn{
   border:none;
-  background:#e5e7eb;
-  padding:12px;
-  border-radius:8px;
-  font-weight:700;
-  cursor:pointer;
 }
 
 /* RESPONSIVE */
@@ -1297,6 +1325,10 @@ async function deleteExam(id:number) {
   .exam-title{
     flex-direction:column;
     align-items:flex-start;
+  }
+
+  .new-exam-btn{
+    width:100%;
   }
 
   .filters{

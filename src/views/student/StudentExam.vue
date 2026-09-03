@@ -42,7 +42,6 @@
           <div>
             <p class="portal-label">I-SPAS STUDENT EXAMINATION</p>
             <h1>{{ exam.title }}</h1>
-            <span>{{ exam.course }}</span>
           </div>
         </div>
 
@@ -298,50 +297,6 @@
 
           <div class="sidebar-card">
             <div class="sidebar-title">
-              <h3>Exam Monitoring</h3>
-              <span class="monitoring-badge">Active</span>
-            </div>
-
-            <div class="monitoring-list">
-              <div>
-                <span>Tab switches</span>
-                <strong :class="{ warning: violationCounts.tab_switch > 0 }">
-                  {{ violationCounts.tab_switch }}
-                </strong>
-              </div>
-
-              <div>
-                <span>Copy attempts</span>
-                <strong :class="{ warning: violationCounts.copy_attempt > 0 }">
-                  {{ violationCounts.copy_attempt }}
-                </strong>
-              </div>
-
-              <div>
-                <span>Paste attempts</span>
-                <strong :class="{ warning: violationCounts.paste_attempt > 0 }">
-                  {{ violationCounts.paste_attempt }}
-                </strong>
-              </div>
-
-              <div>
-                <span>Fullscreen exits</span>
-                <strong :class="{ warning: violationCounts.fullscreen_exit > 0 }">
-                  {{ violationCounts.fullscreen_exit }}
-                </strong>
-              </div>
-
-              <div>
-                <span>Idle time</span>
-                <strong :class="{ warning: idleSeconds >= 30 }">
-                  {{ idleSeconds }}s
-                </strong>
-              </div>
-            </div>
-          </div>
-
-          <div class="sidebar-card">
-            <div class="sidebar-title">
               <h3>Question Navigator</h3>
               <span>{{ answeredCount }}/{{ questions.length }}</span>
             </div>
@@ -372,18 +327,30 @@
         </aside>
       </main>
 
-      <transition name="alert">
-        <div v-if="securityWarning" class="security-warning">
-          <div class="warning-icon">⚠</div>
-
-          <div>
-            <strong>Activity Recorded</strong>
-            <p>{{ securityWarning }}</p>
+      <!-- VIOLATION WARNING MODAL -->
+      <div
+        v-if="securityWarning"
+        class="modal-overlay"
+      >
+        <div class="modal-card violation-modal">
+          <div class="modal-icon violation-icon">
+            ⚠
           </div>
-
-          <button type="button" @click="securityWarning = ''">✕</button>
+          <h2>
+            Activity Recorded
+          </h2>
+          <p>
+            {{ securityWarning }}
+          </p>
+          <button
+            class="primary-btn full-btn violation-btn"
+            type="button"
+            @click="closeViolationWarning"
+          >
+            I Understand
+          </button>
         </div>
-      </transition>
+      </div>
 
       <div v-if="showFullscreenPrompt" class="modal-overlay">
         <div class="modal-card">
@@ -522,7 +489,6 @@ interface StoredSession {
 interface StoredExam {
   id: number
   title?: string
-  course?: string
   duration?: number
   passing?: number
 }
@@ -618,7 +584,7 @@ function initializeWarningAudio() {
 
 
   warningAudio =
-    new Audio('/sounds/warning.mp3')
+    new Audio('/ispas/sounds/warning.mp3')
 
 
   warningAudio.volume = 1
@@ -742,8 +708,6 @@ const exam = ref({
 
   title: '',
 
-  course: '',
-
   duration: 0,
 
   passing: 75,
@@ -799,14 +763,18 @@ const violationCounts =
   })
 
 const violationPenalties: Record<string, number> = {
-  tab_switch: 60,
-  copy_attempt: 30,
-  paste_attempt: 30,
-  cut_attempt: 30,
-  right_click: 20,
-  fullscreen_exit: 60,
+  tab_switch: 180,
+  copy_attempt: 180,
+  paste_attempt: 180,
+  cut_attempt: 180,
+  right_click: 180,
+  fullscreen_exit: 180,
 }
-
+function withPenaltyMessage(
+  message: string
+): string {
+  return `${message} 3 minutes have been deducted from your remaining examination time.`
+}
 function applyTimePenalty(
   activity: string
 ) {
@@ -896,6 +864,29 @@ let statusUpdating =
 
 let examStatusChecking =
   false
+
+
+/*
+ * Mobile app-switch / Recent Apps detection.
+ *
+ * Some mobile browsers do not exit the Fullscreen API when the
+ * Android/iOS app switcher is opened. We therefore track the page
+ * becoming hidden, blurred, or page-hidden as one "away" episode.
+ */
+let pageAwayDetected =
+  false
+
+let pageAwayRecorded =
+  false
+
+let pageAwayStartedAt =
+  0
+
+let lastAwayViolationAt =
+  0
+
+const AWAY_EVENT_GUARD_MS =
+  1500
 
 
 /* =====================================================
@@ -1067,11 +1058,6 @@ function readStoredData(): boolean {
       title:
         examData.title ||
         'Untitled Examination',
-
-
-      course:
-        examData.course ||
-        'No Course',
 
 
       duration:
@@ -1346,12 +1332,6 @@ async function loadExam() {
         title:
           returnedExam.title ||
           exam.value.title,
-
-
-        course:
-          returnedExam.course ||
-          exam.value.course,
-
 
         duration:
           Number(
@@ -2342,28 +2322,28 @@ function handleBlockedAction(
   applyTimePenalty(activity)
 
   const messages:
-    Record<
-      BlockedActivity,
-      string
-    > = {
+    Record<BlockedActivity, string> = {
 
       copy_attempt:
-        'Copying is disabled during the examination.',
-
+        withPenaltyMessage(
+          'Copying is not allowed during the examination.'
+        ),
 
       paste_attempt:
-        'Pasting is disabled during the examination.',
-
+        withPenaltyMessage(
+          'Pasting is not allowed during the examination.'
+        ),
 
       cut_attempt:
-        'Cutting text is disabled during the examination.',
-
+        withPenaltyMessage(
+          'Cutting text is not allowed during the examination.'
+        ),
 
       right_click:
-        'Right-click is disabled during the examination.',
-
+        withPenaltyMessage(
+          'Right-click is not allowed during the examination.'
+        ),
     }
-
 
   const message =
     messages[activity]
@@ -2526,7 +2506,9 @@ async function sendMonitoringLog(
 
 }
 
-
+function closeViolationWarning() {
+  securityWarning.value = ''
+}
 /* =====================================================
    SECURITY WARNING
 ===================================================== */
@@ -2534,11 +2516,8 @@ async function sendMonitoringLog(
 function showSecurityWarning(
   message: string
 ) {
-
   securityWarning.value =
     message
-
-
   if (warningTimeout) {
 
     clearTimeout(
@@ -2546,48 +2525,211 @@ function showSecurityWarning(
     )
 
   }
-
-
   warningTimeout =
     setTimeout(() => {
 
       securityWarning.value = ''
 
     }, 4000)
-
 }
 
 
 /* =====================================================
-   TAB SWITCH
+   TAB / APP SWITCH / RECENT APPS
 ===================================================== */
 
-function handleVisibilityChange() {
+/**
+ * Record one violation for one trip away from the exam.
+ *
+ * visibilitychange, blur and pagehide can all fire for the same
+ * action on mobile, so this guard prevents double penalties.
+ */
+function recordAwayViolation() {
 
-if (
-  document.hidden &&
-  !examSubmitted &&
-  !loading.value
-) {
+  if (
+    examSubmitted ||
+    autoSubmitting.value ||
+    loading.value ||
+    !session.value
+  ) {
+    return
+  }
+
+
+  const now =
+    Date.now()
+
+
+  if (
+    pageAwayRecorded ||
+    now - lastAwayViolationAt <
+      AWAY_EVENT_GUARD_MS
+  ) {
+    return
+  }
+
+
+  pageAwayDetected =
+    true
+
+  pageAwayRecorded =
+    true
+
+  pageAwayStartedAt =
+    now
+
+  lastAwayViolationAt =
+    now
+
 
   violationCounts.value
     .tab_switch += 1
 
-  applyTimePenalty('tab_switch')
+
+  applyTimePenalty(
+    'tab_switch'
+  )
+
 
   const message =
-    'You switched tabs or minimized the browser. 60 seconds have been deducted.'
+    withPenaltyMessage(
+      'You left the examination screen or opened Recent Apps.'
+    )
 
+  /*
+   * The browser may block/freeze audio while the page is hidden.
+   * We try now, then play it again when the student returns.
+   */
   playWarningSound()
 
-  showSecurityWarning(message)
 
+  showSecurityWarning(
+    message
+  )
+
+
+  /*
+   * Try to send immediately. If the browser suspends network work
+   * while hidden, handleExamResume() sends the log again on return
+   * only when this immediate request did not complete.
+   */
   sendMonitoringLog(
     'tab_switch',
     message
   )
-}
+
+
   resetActivityTimer()
+
+}
+
+
+/**
+ * document.visibilitychange is the strongest signal for switching
+ * apps/tabs on modern mobile browsers.
+ */
+function handleVisibilityChange() {
+
+  if (
+    document.visibilityState ===
+      'hidden'
+  ) {
+
+    recordAwayViolation()
+
+    return
+  }
+
+
+  handleExamResume()
+
+}
+
+
+/**
+ * window blur catches some Android Recent Apps/browser transitions
+ * where fullscreenchange is not fired.
+ */
+function handleWindowBlur() {
+
+  recordAwayViolation()
+
+}
+
+
+/**
+ * pagehide catches cases where the browser/page is backgrounded.
+ */
+function handlePageHide() {
+
+  recordAwayViolation()
+
+}
+
+
+/**
+ * Called when the student comes back to the exam.
+ */
+function handleExamResume() {
+
+  if (
+    examSubmitted ||
+    loading.value
+  ) {
+    return
+  }
+
+
+  if (
+    pageAwayDetected
+  ) {
+
+    pageAwayDetected =
+      false
+
+    pageAwayRecorded =
+      false
+
+
+    /*
+     * Show the warning and sound after returning because mobile
+     * operating systems may suspend sound while the app is hidden.
+     */
+    const awaySeconds =
+      pageAwayStartedAt
+        ? Math.max(
+            1,
+            Math.floor(
+              (
+                Date.now() -
+                pageAwayStartedAt
+              ) / 1000
+            )
+          )
+        : 0
+
+
+    const message =
+      awaySeconds > 0
+        ? `You left the examination screen for about ${awaySeconds} second${awaySeconds === 1 ? '' : 's'}. This activity was recorded. 3 minutes have been deducted from your remaining examination time.`
+        : 'You left the examination screen. This activity was recorded. 3 minutes have been deducted from your remaining examination time.'
+        showSecurityWarning(
+          message
+        )
+
+
+    playWarningSound()
+
+
+    pageAwayStartedAt =
+      0
+
+  }
+
+
+  resetActivityTimer()
+
+  checkExamStatus()
 
 }
 
@@ -2855,9 +2997,9 @@ function handleFullscreenChange() {
     applyTimePenalty('fullscreen_exit')
 
     const message =
-      'You exited fullscreen mode. 60 seconds have been deducted.'
-
-
+      withPenaltyMessage(
+        'You exited fullscreen mode.'
+      )
     playWarningSound()
 
 
@@ -2937,6 +3079,42 @@ function registerEventListeners() {
     'visibilitychange',
 
     handleVisibilityChange
+
+  )
+
+
+  window.addEventListener(
+
+    'blur',
+
+    handleWindowBlur
+
+  )
+
+
+  window.addEventListener(
+
+    'pagehide',
+
+    handlePageHide
+
+  )
+
+
+  window.addEventListener(
+
+    'focus',
+
+    handleExamResume
+
+  )
+
+
+  window.addEventListener(
+
+    'pageshow',
+
+    handleExamResume
 
   )
 
@@ -3022,6 +3200,42 @@ function removeEventListeners() {
     'visibilitychange',
 
     handleVisibilityChange
+
+  )
+
+
+  window.removeEventListener(
+
+    'blur',
+
+    handleWindowBlur
+
+  )
+
+
+  window.removeEventListener(
+
+    'pagehide',
+
+    handlePageHide
+
+  )
+
+
+  window.removeEventListener(
+
+    'focus',
+
+    handleExamResume
+
+  )
+
+
+  window.removeEventListener(
+
+    'pageshow',
+
+    handleExamResume
 
   )
 
@@ -3234,24 +3448,6 @@ onMounted(
 
     window.addEventListener(
 
-      'pageshow',
-
-      checkStatusAfterResume
-
-    )
-
-
-    window.addEventListener(
-
-      'focus',
-
-      checkStatusAfterResume
-
-    )
-
-
-    window.addEventListener(
-
       'online',
 
       checkStatusAfterResume
@@ -3320,24 +3516,6 @@ onUnmounted(() => {
 
   window.removeEventListener(
 
-    'pageshow',
-
-    checkStatusAfterResume
-
-  )
-
-
-  window.removeEventListener(
-
-    'focus',
-
-    checkStatusAfterResume
-
-  )
-
-
-  window.removeEventListener(
-
     'online',
 
     checkStatusAfterResume
@@ -3372,7 +3550,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
 /* ==========================================
    RESET
@@ -4738,6 +4915,37 @@ button:disabled{
     overflow:visible;
 
 }
+/* ==========================================
+   VIOLATION WARNING MODAL
+========================================== */
 
+.violation-modal {
+  border-top: 5px solid #dc2626;
+}
+
+.violation-icon {
+  background: #dc2626 !important;
+  color: #ffffff;
+}
+
+.violation-modal h2 {
+  color: #991b1b;
+}
+
+.violation-modal p {
+  margin-top: 10px;
+  margin-bottom: 24px;
+  color: #64748b;
+  line-height: 1.7;
+}
+
+.violation-btn {
+  width: 100%;
+  background: #dc2626 !important;
+}
+
+.violation-btn:hover {
+  background: #b91c1c !important;
+}
 
 </style>
