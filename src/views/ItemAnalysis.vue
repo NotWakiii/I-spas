@@ -21,7 +21,6 @@
         </p>
       </div>
       <div class="export-actions">
-
   <button
     class="export-btn"
     type="button"
@@ -29,7 +28,6 @@
   >
     📥 Export Excel
   </button>
-
   <button
     class="pdf-export-btn"
     type="button"
@@ -42,7 +40,6 @@
         : '🖨 Export PDF'
     }}
   </button>
-
 </div>
     </div>
     <!-- ==========================================
@@ -299,179 +296,119 @@
            MASTERY SUMMARY
       =========================================== -->
       <section class="summary-table-card">
-
         <div class="section-heading">
-
           <div>
             <h2>Summary</h2>
-
             <p>
               Test items grouped according to
               mastery level.
             </p>
           </div>
-
         </div>
-
-
         <div class="table-wrapper">
-
           <table class="mastery-summary-table">
-
             <thead>
-
               <tr>
-
                 <th>
                   Mastery Level
                 </th>
-
                 <th>
                   Test Item
                 </th>
-
                 <th>
                   Remarks
                 </th>
-
               </tr>
-
             </thead>
-
-
             <tbody>
-
               <tr
                 v-for="summary in masterySummary"
                 :key="summary.level"
               >
-
                 <td class="mastery-name-cell">
-
                   <span
                     class="mastery-badge"
                     :class="summary.className"
                   >
                     {{ summary.level }}
                   </span>
-
                 </td>
-
-
                 <td class="summary-items">
                   {{ summary.itemNumbers }}
                 </td>
-
-
                 <td class="summary-description">
                   {{ summary.description }}
                 </td>
-
               </tr>
-
             </tbody>
-
           </table>
-
         </div>
-
       </section>
-
-
       <!-- ==========================================
            LEGEND
       =========================================== -->
       <section class="legend-card">
-
         <h3>Legend</h3>
-
         <div class="legend-grid">
-
           <div class="legend-column">
-
             <div class="legend-item">
               <span class="legend-box mastered"></span>
               Mastered
             </div>
-
             <div class="legend-item">
               <span class="legend-box approximating"></span>
               Approximating Mastery
             </div>
-
             <div class="legend-item">
               <span class="legend-box moving"></span>
               Moving Towards Mastery
             </div>
-
             <div class="legend-item">
               <span class="legend-box average"></span>
               Average Mastery
             </div>
-
             <div class="legend-item">
               <span class="legend-box low"></span>
               Low Mastery
             </div>
-
           </div>
-
-
           <div class="legend-column">
-
             <div class="legend-item">
               <span class="legend-box retain-revise"></span>
               Retain or Revise
             </div>
-
             <div class="legend-item">
               <span class="legend-box retain"></span>
               Retain
             </div>
-
             <div class="legend-item">
               <span class="legend-box revise"></span>
               Revise
             </div>
-
             <div class="legend-item">
               <span class="legend-box reject"></span>
               Reject
             </div>
-
           </div>
-
         </div>
-
       </section>
-
     </template>
-
   </div>
 </template>
-
-
 <script setup lang="ts">
-
 import {
   ref,
   computed,
   onMounted
 } from 'vue'
-
 import {
   useRoute
 } from 'vue-router'
-
 import api from '../services/api'
-
 import * as XLSX from 'xlsx'
-
-
 /* =====================================================
    TYPES
 ===================================================== */
-
 interface ExamData {
   id: number
   title: string
@@ -480,8 +417,6 @@ interface ExamData {
   grade: string
   section: string
 }
-
-
 interface StatisticsData {
   total_items: number
   total_examinees: number
@@ -490,218 +425,126 @@ interface StatisticsData {
   sd: number | string
   pl: number | string
 }
-
-
 interface RawItem {
   id?: number
-
   number?: number
-
   question?: string
-
   type?: string
-
   correct?: number
-
   wrong?: number
-
   total?: number
-
   successRate?: number
-
   percentage?: number
-
   competency?: string
-
   discrimination?: number | string | null
-
   commonWrongAnswer?: string
-
   interpretation?: string
-
   remarks?: string
-
   [key: string]: any
 }
-
-
 interface AnalyzedItem
   extends RawItem {
-
   number: number
-
   correct: number
-
   total: number
-
   percentage: number
-
   competency: string
-
   masteryLevel: string
-
   masteryClass: string
-
   remarks: string
-
   remarksClass: string
 }
-
-
 /* =====================================================
    ROUTE
 ===================================================== */
-
 const route =
   useRoute()
-
-
 /* =====================================================
    STATE
 ===================================================== */
-
 const loading =
   ref(true)
-
-
 const errorMessage =
   ref('')
-
-
 const exportingPdf =
   ref(false)
-
-
 const search =
   ref('')
-
-
 const selectedFilter =
   ref('All Items')
-
-
 const sortBy =
   ref('number')
-
-
 const exam =
   ref<ExamData>({
-
     id: 0,
-
     title: '',
-
     class_id: null,
-
     course: '',
-
     grade: '',
-
     section: ''
-
   })
-
-
 const items =
   ref<RawItem[]>([])
-
-
 const statistics =
   ref<StatisticsData>({
-
     total_items: 0,
-
     total_examinees: 0,
-
     mean: '0.00',
-
     mps: '0.00',
-
     sd: '0.0000',
-
     pl: '0.00'
-
   })
-
-
 /* =====================================================
    FILTER OPTIONS
 ===================================================== */
-
 const filters = [
-
   'All Items',
-
   'Mastered',
-
   'Approximating Mastery',
-
   'Moving Towards Mastery',
-
   'Average Mastery',
-
   'Low Mastery'
-
 ]
-
-
 /* =====================================================
    FETCH ITEM ANALYSIS
 ===================================================== */
-
 async function fetchItemAnalysis() {
-
   loading.value =
     true
-
   errorMessage.value =
     ''
-
-
   try {
-
     const examId =
       route.params.id
-
-
     /*
     |--------------------------------------------------------------------------
     | LOAD EXAM INFORMATION
     |--------------------------------------------------------------------------
     */
-
     const examResponse =
       await api.get(
         `/exams/${examId}`
       )
-
-
     const examData =
       examResponse
         .data
         ?.data
       || {}
-
-
     exam.value = {
-
       id:
         Number(
           examData.id ||
           examId
         ),
-
       title:
         examData.title ||
         'Examination',
-
       class_id:
         examData.class_id
           ? Number(
               examData.class_id
             )
           : null,
-
       /*
        * Keep "course" property in Vue
        * for compatibility with your
@@ -713,49 +556,36 @@ async function fetchItemAnalysis() {
         examData.subject ||
         examData.course ||
         '',
-
       grade:
         examData.grade ||
         examData.grade_level ||
         '',
-
       section:
         examData.section ||
         ''
-
     }
-
-
     /*
     |--------------------------------------------------------------------------
     | LOAD ITEM ANALYSIS
     |--------------------------------------------------------------------------
     */
-
     const response =
       await api.get(
         `/exams/${examId}/item-analysis`
       )
-
-
     const responseBody =
       response.data || {}
-
-
     /*
     |--------------------------------------------------------------------------
     | ANALYSIS ITEMS
     |--------------------------------------------------------------------------
     */
-
     items.value =
       Array.isArray(
         responseBody.data
       )
         ? responseBody.data
         : []
-
-
     /*
     |--------------------------------------------------------------------------
     | OFFICIAL BACKEND STATISTICS
@@ -774,14 +604,10 @@ async function fetchItemAnalysis() {
     | Vue only displays these values.
     |
     */
-
     const backendStatistics =
       responseBody.statistics
       || {}
-
-
     statistics.value = {
-
       total_items:
         Number(
           backendStatistics
@@ -789,7 +615,6 @@ async function fetchItemAnalysis() {
           ??
           0
         ),
-
       total_examinees:
         Number(
           backendStatistics
@@ -797,44 +622,33 @@ async function fetchItemAnalysis() {
           ??
           0
         ),
-
       mean:
         backendStatistics.mean
         ??
         '0.00',
-
       mps:
         backendStatistics.mps
         ??
         '0.00',
-
       sd:
         backendStatistics.sd
         ??
         '0.0000',
-
       pl:
         backendStatistics.pl
         ??
         '0.00'
-
     }
-
-
     /*
     |--------------------------------------------------------------------------
     | USE EXAM INFORMATION RETURNED BY ITEM ANALYSIS
     |--------------------------------------------------------------------------
     */
-
     if (
       responseBody.exam
     ) {
-
       exam.value = {
-
         ...exam.value,
-
         id:
           Number(
             responseBody
@@ -843,14 +657,12 @@ async function fetchItemAnalysis() {
             ??
             exam.value.id
           ),
-
         title:
           responseBody
             .exam
             .title
           ??
           exam.value.title,
-
         class_id:
           responseBody
             .exam
@@ -862,21 +674,18 @@ async function fetchItemAnalysis() {
               )
             : exam.value
                 .class_id,
-
         grade:
           responseBody
             .exam
             .grade
           ??
           exam.value.grade,
-
         section:
           responseBody
             .exam
             .section
           ??
           exam.value.section,
-
         course:
           responseBody
             .exam
@@ -887,38 +696,23 @@ async function fetchItemAnalysis() {
             .course
           ??
           exam.value.course
-
       }
-
     }
-
-
   } catch (
     error: unknown
   ) {
-
     console.error(
       'ITEM ANALYSIS ERROR:',
       error
     )
-
-
     const apiError =
       error as {
-
         response?: {
-
           data?: {
-
             message?: string
-
           }
-
         }
-
       }
-
-
     errorMessage.value =
       apiError
         .response
@@ -926,56 +720,40 @@ async function fetchItemAnalysis() {
         ?.message
       ||
       'Failed to load the item analysis.'
-
-
   } finally {
-
     loading.value =
       false
-
   }
-
 }
-
-
 /* =====================================================
    ANALYZE ITEMS
 ===================================================== */
-
 const analyzedItems =
   computed<AnalyzedItem[]>(
     () => {
-
       return items.value.map(
         (
           item,
           index
         ) => {
-
           /*
           |--------------------------------------------------------------------------
           | TOTAL EXAMINEES FOR ITEM
           |--------------------------------------------------------------------------
           */
-
           const total =
             Number(
               item.total || 0
             )
-
-
           /*
           |--------------------------------------------------------------------------
           | CORRECT RESPONSES
           |--------------------------------------------------------------------------
           */
-
           const correct =
             Number(
               item.correct || 0
             )
-
-
           /*
           |--------------------------------------------------------------------------
           | ITEM PERCENTAGE
@@ -985,7 +763,6 @@ const analyzedItems =
           | calculated by Laravel.
           |
           */
-
           let percentage =
             Number(
               item.successRate
@@ -994,13 +771,10 @@ const analyzedItems =
               ??
               0
             )
-
-
           /*
            * Fallback only when backend
            * percentage is unavailable.
            */
-
           if (
             item.successRate ===
               undefined
@@ -1010,7 +784,6 @@ const analyzedItems =
             &&
             total > 0
           ) {
-
             percentage =
               (
                 correct
@@ -1019,10 +792,7 @@ const analyzedItems =
               )
               *
               100
-
           }
-
-
           percentage =
             Math.round(
               percentage
@@ -1031,152 +801,103 @@ const analyzedItems =
             )
             /
             100
-
-
           /*
           |--------------------------------------------------------------------------
           | MASTERY CLASSIFICATION
           |--------------------------------------------------------------------------
           */
-
           let masteryLevel =
             ''
-
           let masteryClass =
             ''
-
           let remarks =
             ''
-
           let remarksClass =
             ''
-
-
           /*
            * 96 - 100
            */
           if (
             percentage >= 96
           ) {
-
             masteryLevel =
               'Mastered'
-
             masteryClass =
               'mastered'
-
             remarks =
               'Retain or Revise'
-
             remarksClass =
               'retain-revise'
-
           }
-
-
           /*
            * 86 - 95
            */
           else if (
             percentage >= 86
           ) {
-
             masteryLevel =
               'Approximating Mastery'
-
             masteryClass =
               'approximating'
-
             remarks =
               'Retain'
-
             remarksClass =
               'retain'
-
           }
-
-
           /*
            * 66 - 85
            */
           else if (
             percentage >= 66
           ) {
-
             masteryLevel =
               'Moving Towards Mastery'
-
             masteryClass =
               'moving'
-
             remarks =
               'Retain'
-
             remarksClass =
               'retain'
-
           }
-
-
           /*
            * 35 - 65
            */
           else if (
             percentage >= 35
           ) {
-
             masteryLevel =
               'Average Mastery'
-
             masteryClass =
               'average'
-
             remarks =
               'Revise'
-
             remarksClass =
               'revise'
-
           }
-
-
           /*
            * 0 - 34
            */
           else {
-
             masteryLevel =
               'Low Mastery'
-
             masteryClass =
               'low'
-
             remarks =
               'Reject'
-
             remarksClass =
               'reject'
-
           }
-
-
           return {
-
             ...item,
-
             number:
               Number(
                 item.number
               )
               ||
               index + 1,
-
             correct,
-
             total,
-
             percentage,
-
             competency:
               String(
                 item.competency
@@ -1187,33 +908,21 @@ const analyzedItems =
                 ||
                 'Unassigned Competency'
               ),
-
             masteryLevel,
-
             masteryClass,
-
             remarks,
-
             remarksClass
-
           }
-
         }
-
       )
-
     }
   )
-
-
 /* =====================================================
    TOTAL QUESTIONS / TOTAL ITEMS
 ===================================================== */
-
 const totalQuestions =
   computed(
     () => {
-
       return Number(
         statistics
           .value
@@ -1221,19 +930,14 @@ const totalQuestions =
         ||
         0
       )
-
     }
   )
-
-
 /* =====================================================
    TOTAL EXAMINEES
 ===================================================== */
-
 const totalExaminees =
   computed(
     () => {
-
       return Number(
         statistics
           .value
@@ -1241,19 +945,14 @@ const totalExaminees =
         ||
         0
       )
-
     }
   )
-
-
 /* =====================================================
    MEAN
 ===================================================== */
-
 const meanScore =
   computed(
     () => {
-
       const value =
         Number(
           statistics
@@ -1262,32 +961,22 @@ const meanScore =
           ||
           0
         )
-
-
       if (
         Number.isNaN(
           value
         )
       ) {
-
         return '0.00'
-
       }
-
-
       return value
         .toFixed(
           2
         )
-
     }
   )
-
-
 /* =====================================================
    MEAN PERCENTAGE SCORE
 ===================================================== */
-
 /*
  * SCHOOL FORMULA:
  *
@@ -1296,11 +985,9 @@ const meanScore =
  *
  * Formula is calculated by Laravel.
  */
-
 const mps =
   computed(
     () => {
-
       const value =
         Number(
           statistics
@@ -1309,36 +996,25 @@ const mps =
           ||
           0
         )
-
-
       if (
         Number.isNaN(
           value
         )
       ) {
-
         return '0.00'
-
       }
-
-
       return value
         .toFixed(
           2
         )
-
     }
   )
-
-
 /* =====================================================
    STANDARD DEVIATION
 ===================================================== */
-
 const standardDeviation =
   computed(
     () => {
-
       const value =
         Number(
           statistics
@@ -1347,32 +1023,22 @@ const standardDeviation =
           ||
           0
         )
-
-
       if (
         Number.isNaN(
           value
         )
       ) {
-
         return '0.0000'
-
       }
-
-
       return value
         .toFixed(
           4
         )
-
     }
   )
-
-
 /* =====================================================
    PERFORMANCE LEVEL
 ===================================================== */
-
 /*
  * SCHOOL FORMULA:
  *
@@ -1381,11 +1047,9 @@ const standardDeviation =
  *
  * Formula is calculated by Laravel.
  */
-
 const performanceLevel =
   computed(
     () => {
-
       const value =
         Number(
           statistics
@@ -1394,36 +1058,25 @@ const performanceLevel =
           ||
           0
         )
-
-
       if (
         Number.isNaN(
           value
         )
       ) {
-
         return '0.00'
-
       }
-
-
       return value
         .toFixed(
           2
         )
-
     }
   )
-
-
 /* =====================================================
    MASTERY COUNT
 ===================================================== */
-
 function masteryCount(
   mastery: string
 ) {
-
   return analyzedItems
     .value
     .filter(
@@ -1432,18 +1085,13 @@ function masteryCount(
         mastery
     )
     .length
-
 }
-
-
 /* =====================================================
    REVISE COUNT
 ===================================================== */
-
 const reviseCount =
   computed(
     () => {
-
       return analyzedItems
         .value
         .filter(
@@ -1455,19 +1103,14 @@ const reviseCount =
               'Retain or Revise'
         )
         .length
-
     }
   )
-
-
 /* =====================================================
    REJECT COUNT
 ===================================================== */
-
 const rejectCount =
   computed(
     () => {
-
       return analyzedItems
         .value
         .filter(
@@ -1476,125 +1119,92 @@ const rejectCount =
             'Reject'
         )
         .length
-
     }
   )
-
-
 /* =====================================================
    FILTERED ITEMS
 ===================================================== */
-
 const filteredItems =
   computed<AnalyzedItem[]>(
     () => {
-
       let result =
         [
           ...analyzedItems.value
         ]
-
-
       /*
       |--------------------------------------------------------------------------
       | FILTER BY MASTERY
       |--------------------------------------------------------------------------
       */
-
       if (
         selectedFilter.value !==
         'All Items'
       ) {
-
         result =
           result.filter(
             item =>
               item.masteryLevel ===
               selectedFilter.value
           )
-
       }
-
-
       /*
       |--------------------------------------------------------------------------
       | SEARCH
       |--------------------------------------------------------------------------
       */
-
       if (
         search.value.trim()
       ) {
-
         const keyword =
           search
             .value
             .trim()
             .toLowerCase()
-
-
         result =
           result.filter(
             item => {
-
               const competency =
                 String(
                   item.competency ||
                   ''
                 )
                   .toLowerCase()
-
-
               const question =
                 String(
                   item.question ||
                   ''
                 )
                   .toLowerCase()
-
-
               return (
-
                 competency
                   .includes(
                     keyword
                   )
-
                 ||
-
                 question
                   .includes(
                     keyword
                   )
-
                 ||
-
                 String(
                   item.number
                 )
                   .includes(
                     keyword
                   )
-
               )
-
             }
           )
-
       }
-
-
       /*
       |--------------------------------------------------------------------------
       | SORT
       |--------------------------------------------------------------------------
       */
-
       if (
         sortBy.value ===
         'lowest'
       ) {
-
         result.sort(
           (
             a,
@@ -1604,15 +1214,11 @@ const filteredItems =
             -
             b.percentage
         )
-
       }
-
-
       else if (
         sortBy.value ===
         'highest'
       ) {
-
         result.sort(
           (
             a,
@@ -1622,12 +1228,8 @@ const filteredItems =
             -
             a.percentage
         )
-
       }
-
-
       else {
-
         result.sort(
           (
             a,
@@ -1637,70 +1239,50 @@ const filteredItems =
             -
             b.number
         )
-
       }
-
-
       return result
-
     }
   )
-
-
 /* =====================================================
    GROUP BY COMPETENCY
 ===================================================== */
-
 const groupedItems =
   computed(
     () => {
-
       const groups:
         Record<
           string,
           AnalyzedItem[]
         > =
         {}
-
-
       filteredItems
         .value
         .forEach(
           item => {
-
             const competency =
               String(
                 item.competency ||
                 'Unassigned Competency'
               )
                 .trim()
-
-
             if (
               !groups[
                 competency
               ]
             ) {
-
               groups[
                 competency
               ] =
                 []
-
             }
-
-
             groups[
               competency
             ]
               .push(
                 item
               )
-
           }
         )
-
-
       return Object
         .entries(
           groups
@@ -1712,9 +1294,7 @@ const groupedItems =
               groupItems
             ]
           ) => ({
-
             competency,
-
             items:
               groupItems
                 .sort(
@@ -1726,95 +1306,60 @@ const groupedItems =
                     -
                     b.number
                 )
-
           })
         )
-
     }
   )
-
-
 /* =====================================================
    MASTERY SUMMARY
 ===================================================== */
-
 const masterySummary =
   computed(
     () => {
-
       const definitions = [
-
         {
-
           level:
             'Mastered',
-
           className:
             'mastered',
-
           description:
             'Students have demonstrated a thorough understanding of the competency and can consistently apply the required knowledge and skills with little or no assistance.'
-
         },
-
         {
-
           level:
             'Approximating Mastery',
-
           className:
             'approximating',
-
           description:
             'Students have achieved a high level of understanding of the competency, with only minor misconceptions or errors that can be addressed through brief reinforcement.'
-
         },
-
         {
-
           level:
             'Moving Towards Mastery',
-
           className:
             'moving',
-
           description:
             'Students show a satisfactory understanding of the competency but still require additional practice and reinforcement to attain full mastery.'
-
         },
-
         {
-
           level:
             'Average Mastery',
-
           className:
             'average',
-
           description:
             'Students have only a partial understanding of the competency. Significant gaps in knowledge and skills are evident, requiring re-teaching and targeted interventions.'
-
         },
-
         {
-
           level:
             'Low Mastery',
-
           className:
             'low',
-
           description:
             'Students have not yet developed the essential knowledge and skills related to the competency. Intensive remediation and focused instructional support are needed before progressing to more advanced learning.'
-
         }
-
       ]
-
-
       return definitions.map(
         definition => {
-
           const matches =
             analyzedItems
               .value
@@ -1832,18 +1377,12 @@ const masterySummary =
                   -
                   b.number
               )
-
-
           return {
-
             ...definition,
-
             count:
               matches.length,
-
             itemNumbers:
               matches.length
-
                 ? matches
                     .map(
                       item =>
@@ -1852,50 +1391,34 @@ const masterySummary =
                     .join(
                       ', '
                     )
-
                 : '—'
-
           }
-
         }
       )
-
     }
   )
-
-
 /* =====================================================
    EXPORT EXCEL
 ===================================================== */
-
 function exportExcel() {
-
   if (
     analyzedItems
       .value
       .length === 0
   ) {
-
     alert(
       'There is no item analysis to export.'
     )
-
     return
-
   }
-
-
   /*
   |--------------------------------------------------------------------------
   | ITEM ANALYSIS SHEET
   |--------------------------------------------------------------------------
   */
-
   const analysisRows:
     any[][] =
     []
-
-
   /*
    * Report title.
    */
@@ -1904,167 +1427,99 @@ function exportExcel() {
       'COMPETENCY BASED ITEM ANALYSIS'
     ]
   )
-
-
   analysisRows.push(
     [
       exam.value.title
     ]
   )
-
-
   analysisRows.push(
     []
   )
-
-
   /*
   |--------------------------------------------------------------------------
   | EXAM INFORMATION + OFFICIAL STATISTICS
   |--------------------------------------------------------------------------
   */
-
   analysisRows.push(
     [
-
       'GRADE:',
-
       exam.value.grade ||
       '—',
-
       '',
-
       'TOTAL ITEMS:',
-
       totalQuestions.value
-
     ]
   )
-
-
   analysisRows.push(
     [
-
       'SECTION:',
-
       exam.value.section ||
       '—',
-
       '',
-
       'MEAN:',
-
       meanScore.value
-
     ]
   )
-
-
   analysisRows.push(
     [
-
       'SUBJECT:',
-
       exam.value.course ||
       '—',
-
       '',
-
       'SD:',
-
       standardDeviation.value
-
     ]
   )
-
-
   analysisRows.push(
     [
-
       '',
-
       '',
-
       '',
-
       'MPS:',
-
       `${mps.value}%`
-
     ]
   )
-
-
   analysisRows.push(
     [
-
       '',
-
       '',
-
       '',
-
       'PL:',
-
       performanceLevel.value
-
     ]
   )
-
-
   analysisRows.push(
     [
-
       '',
-
       '',
-
       '',
-
       'TOTAL ENROLLMENT:',
-
       totalExaminees.value
-
     ]
   )
-
-
   analysisRows.push(
     []
   )
-
-
   /*
   |--------------------------------------------------------------------------
   | TABLE HEADERS
   |--------------------------------------------------------------------------
   */
-
   analysisRows.push(
     [
-
       'COMPETENCIES',
-
       'ITEM NO.',
-
       'NO. OF CORRECT RESPONSE',
-
       'PERCENTAGE',
-
       'INTERPRETATION',
-
       'REMARKS'
-
     ]
   )
-
-
   /*
   |--------------------------------------------------------------------------
   | ITEM ANALYSIS ROWS
   |--------------------------------------------------------------------------
   */
-
   analyzedItems
     .value
     .slice()
@@ -2079,252 +1534,167 @@ function exportExcel() {
     )
     .forEach(
       item => {
-
         analysisRows.push(
           [
-
             item.competency,
-
             item.number,
-
             item.correct,
-
             item.percentage,
-
             item.masteryLevel,
-
             item.remarks
-
           ]
         )
-
       }
     )
-
-
   const analysisSheet =
     XLSX
       .utils
       .aoa_to_sheet(
         analysisRows
       )
-
-
   analysisSheet[
     '!cols'
   ] = [
-
     {
       wch: 50
     },
-
     {
       wch: 12
     },
-
     {
       wch: 24
     },
-
     {
       wch: 15
     },
-
     {
       wch: 30
     },
-
     {
       wch: 20
     }
-
   ]
-
-
   analysisSheet[
     '!merges'
   ] = [
-
     {
-
       s: {
         r: 0,
         c: 0
       },
-
       e: {
         r: 0,
         c: 5
       }
-
     },
-
     {
-
       s: {
         r: 1,
         c: 0
       },
-
       e: {
         r: 1,
         c: 5
       }
-
     }
-
   ]
-
-
   /*
   |--------------------------------------------------------------------------
   | SUMMARY SHEET
   |--------------------------------------------------------------------------
   */
-
   const summaryRows:
     any[][] =
     []
-
-
   summaryRows.push(
     [
       'SUMMARY'
     ]
   )
-
-
   summaryRows.push(
     []
   )
-
-
   summaryRows.push(
     [
-
       'MASTERY LEVEL',
-
       'TEST ITEM',
-
       'REMARKS'
-
     ]
   )
-
-
   masterySummary
     .value
     .forEach(
       summary => {
-
         summaryRows.push(
           [
-
             summary.level,
-
             summary.itemNumbers,
-
             summary.description
-
           ]
         )
-
       }
     )
-
-
   const summarySheet =
     XLSX
       .utils
       .aoa_to_sheet(
         summaryRows
       )
-
-
   summarySheet[
     '!cols'
   ] = [
-
     {
       wch: 30
     },
-
     {
       wch: 55
     },
-
     {
       wch: 90
     }
-
   ]
-
-
   summarySheet[
     '!merges'
   ] = [
-
     {
-
       s: {
         r: 0,
         c: 0
       },
-
       e: {
         r: 0,
         c: 2
       }
-
     }
-
   ]
-
-
   /*
   |--------------------------------------------------------------------------
   | CREATE WORKBOOK
   |--------------------------------------------------------------------------
   */
-
   const workbook =
     XLSX
       .utils
       .book_new()
-
-
   XLSX
     .utils
     .book_append_sheet(
-
       workbook,
-
       analysisSheet,
-
       'Item Analysis'
-
     )
-
-
   XLSX
     .utils
     .book_append_sheet(
-
       workbook,
-
       summarySheet,
-
       'Summary'
-
     )
-
-
   /*
   |--------------------------------------------------------------------------
   | SAFE FILENAME
   |--------------------------------------------------------------------------
   */
-
   const filename =
     (
       exam.value.title ||
@@ -2334,85 +1704,54 @@ function exportExcel() {
         /[\\/:*?"<>|]/g,
         '-'
       )
-
-
   XLSX.writeFile(
-
     workbook,
-
     `${filename}-Competency-Based-Item-Analysis.xlsx`
-
   )
-
 }
-
-
 /* =====================================================
    EXPORT PDF
 ===================================================== */
-
 async function exportPdf() {
-
   if (
     exportingPdf.value
   ) {
-
     return
-
   }
-
-
   exportingPdf.value =
     true
-
-
   try {
-
     const examId =
       route.params.id
-
-
     const response =
       await api.get(
         `/exams/${examId}/item-analysis/pdf`,
         {
-
           responseType:
             'blob'
-
         }
       )
-
-
     const blob =
       new Blob(
         [
           response.data
         ],
         {
-
           type:
             'application/pdf'
-
         }
       )
-
-
     const url =
       window
         .URL
         .createObjectURL(
           blob
         )
-
-
     const link =
       document
         .createElement(
           'a'
         )
-
-
     const safeTitle =
       (
         exam.value.title ||
@@ -2422,1408 +1761,796 @@ async function exportPdf() {
           /[\\/:*?"<>|]/g,
           '-'
         )
-
-
     link.href =
       url
-
-
     link.download =
       `${safeTitle}-Item-Analysis.pdf`
-
-
     document
       .body
       .appendChild(
         link
       )
-
-
     link.click()
-
-
     link.remove()
-
-
     window
       .URL
       .revokeObjectURL(
         url
       )
-
-
   } catch (
     error
   ) {
-
     console.error(
       'PDF EXPORT ERROR:',
       error
     )
-
-
     alert(
       'Unable to generate Item Analysis PDF.'
     )
-
-
   } finally {
-
     exportingPdf.value =
       false
-
   }
-
 }
-
-
 /* =====================================================
    MOUNT
 ===================================================== */
-
 onMounted(
   () => {
-
     fetchItemAnalysis()
-
   }
 )
-
 </script>
-
 <style scoped>
-
 /* ==========================================
    GLOBAL
 ========================================== */
-
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
-
-
 .analysis-page {
-
   min-height: 100vh;
-
   padding: 30px;
-
   background: #f3f6f4;
-
   font-family:
     'Poppins',
     Arial,
     sans-serif;
-
   color: #172033;
-
 }
-
-
 /* ==========================================
    PAGE HEADER
 ========================================== */
-
 .page-header {
-
   display: flex;
-
   justify-content: space-between;
-
   align-items: flex-start;
-
   gap: 20px;
-
   margin-bottom: 28px;
-
 }
-
-
 .page-header h1 {
-
   margin-bottom: 6px;
-
   font-size: 34px;
-
   color: #112244;
-
 }
-
-
 .page-header p {
-
   color: #64748b;
-
   font-size: 14px;
-
 }
-
-
 .back-btn {
-
   margin-bottom: 14px;
-
   padding: 9px 16px;
-
   border: none;
-
   border-radius: 9px;
-
   background: #e8f3ec;
-
   color: #166534;
-
   cursor: pointer;
-
   font-weight: 700;
-
 }
-
-
 .back-btn:hover {
-
   background: #d5eadc;
-
 }
-
-
 .export-btn {
-
   padding: 13px 20px;
-
   border: none;
-
   border-radius: 11px;
-
   background: #16a34a;
-
   color: white;
-
   font-weight: 700;
-
   cursor: pointer;
-
   box-shadow:
     0 8px 20px
     rgba(22, 163, 74, .20);
-
 }
-
-
 .export-btn:hover {
-
   background: #15803d;
-
 }
-
-
 /* ==========================================
    STATE
 ========================================== */
-
 .state-card {
-
   width: min(
     100%,
     500px
   );
-
   margin:
     80px
     auto;
-
   padding: 40px;
-
   text-align: center;
-
   background: white;
-
   border-radius: 18px;
-
   box-shadow:
     0 10px 30px
     rgba(0,0,0,.08);
-
 }
-
-
 .state-card h2 {
-
   margin-bottom: 8px;
-
   color: #112244;
-
 }
-
-
 .state-card p {
-
   color: #64748b;
-
 }
-
-
 .state-icon {
-
   margin-bottom: 12px;
-
   font-size: 40px;
-
 }
-
-
 .loader {
-
   width: 46px;
-
   height: 46px;
-
   margin:
     0 auto
     18px;
-
   border:
     4px solid
     #dcfce7;
-
   border-top-color:
     #16a34a;
-
   border-radius:
     50%;
-
   animation:
     spin .7s
     linear
     infinite;
-
 }
-
-
 @keyframes spin {
-
   to {
-
     transform:
       rotate(
         360deg
       );
-
   }
-
 }
-
-
 .retry-btn {
-
   margin-top: 18px;
-
   padding: 11px 20px;
-
   border: none;
-
   border-radius: 9px;
-
   background: #16a34a;
-
   color: white;
-
   cursor: pointer;
-
   font-weight: 700;
-
 }
-
-
 /* ==========================================
    REPORT INFORMATION
 ========================================== */
-
 .report-information {
-
   margin-bottom: 25px;
-
   padding: 28px;
-
   background: #ffffff;
-
   border:
     1px solid
     #d9e2dc;
-
   border-radius: 16px;
-
   box-shadow:
     0 8px 25px
     rgba(0,0,0,.05);
-
 }
-
-
 .school-header {
-
   margin-bottom: 25px;
-
   text-align: center;
-
 }
-
-
 .school-header h2 {
-
   margin-bottom: 5px;
-
   color: #10261a;
-
   font-size: 24px;
-
 }
-
-
 .school-header strong {
-
   color: #475569;
-
   font-size: 13px;
-
 }
-
-
 .exam-information {
-
   display: grid;
-
   grid-template-columns:
     1fr
     320px;
-
   gap: 30px;
-
 }
-
-
 .exam-details {
-
   display: grid;
-
   grid-template-columns:
     repeat(
       3,
       minmax(0,1fr)
     );
-
   gap: 15px;
-
 }
-
-
 .exam-details div {
-
   padding: 14px;
-
   border-radius: 10px;
-
   background: #f8fafc;
-
 }
-
-
 .exam-details small {
-
   display: block;
-
   margin-bottom: 5px;
-
   color: #64748b;
-
 }
-
-
 .exam-details strong {
-
   color: #172033;
-
 }
-
-
 .exam-statistics {
-
   border-left:
     2px solid
     #e2e8f0;
-
   padding-left: 25px;
-
 }
-
-
 .exam-statistics div {
-
   display: flex;
-
   justify-content: space-between;
-
   gap: 20px;
-
   padding:
     4px
     0;
-
   font-size: 13px;
-
 }
-
-
 .exam-statistics span {
-
   color: #475569;
-
   font-weight: 600;
-
 }
-
-
 .exam-statistics strong {
-
   color: #111827;
-
 }
-
-
 /* ==========================================
    SUMMARY CARDS
 ========================================== */
-
 .summary-grid {
-
   display: grid;
-
   grid-template-columns:
     repeat(
       4,
       1fr
     );
-
   gap: 18px;
-
   margin-bottom: 25px;
-
 }
-
-
 .summary-card {
-
   padding: 21px;
-
   background: white;
-
   border-radius: 15px;
-
   border:
     1px solid
     #e3e9e5;
-
   box-shadow:
     0 7px 20px
     rgba(0,0,0,.04);
-
 }
-
-
 .summary-card small {
-
   color: #64748b;
-
 }
-
-
 .summary-card h2 {
-
   margin-top: 8px;
-
   color: #112244;
-
   font-size: 31px;
-
 }
-
-
 /* ==========================================
    FILTERS
 ========================================== */
-
 .filter-panel {
-
   margin-bottom: 25px;
-
   padding: 20px;
-
   background: white;
-
   border-radius: 15px;
-
   border:
     1px solid
     #e3e9e5;
-
 }
-
-
 .filter-buttons {
-
   display: flex;
-
   flex-wrap: wrap;
-
   gap: 9px;
-
   margin-bottom: 18px;
-
 }
-
-
 .filter-buttons button {
-
   padding:
     9px
     15px;
-
   border: none;
-
   border-radius:
     999px;
-
   background:
     #edf2ef;
-
   color:
     #475569;
-
   cursor: pointer;
-
   font-size:
     12px;
-
   font-weight:
     700;
-
 }
-
-
 .filter-buttons button.active {
-
   background:
     #166534;
-
   color:
     #ffffff;
-
 }
-
-
 .filter-controls {
-
   display: flex;
-
   gap: 12px;
-
 }
-
-
 .filter-controls input {
-
   flex: 1;
-
 }
-
-
 .filter-controls input,
 .filter-controls select {
-
   min-height: 44px;
-
   padding:
     0
     13px;
-
   border:
     1px solid
     #cbd5e1;
-
   border-radius:
     9px;
-
   background:
     #f8fafc;
-
   outline:
     none;
-
 }
-
-
 .filter-controls input:focus,
 .filter-controls select:focus {
-
   border-color:
     #16a34a;
-
   box-shadow:
     0 0 0 3px
     rgba(22,163,74,.10);
-
 }
-
-
 /* ==========================================
    TABLE CARDS
 ========================================== */
-
 .table-card,
 .summary-table-card,
 .legend-card {
-
   margin-bottom:
     25px;
-
   padding:
     24px;
-
   background:
     #ffffff;
-
   border:
     1px solid
     #dfe6e1;
-
   border-radius:
     16px;
-
   box-shadow:
     0 8px 25px
     rgba(0,0,0,.05);
-
 }
-
-
 .section-heading {
-
   margin-bottom:
     20px;
-
 }
-
-
 .section-heading h2 {
-
   margin-bottom:
     4px;
-
   color:
     #112244;
-
 }
-
-
 .section-heading p {
-
   color:
     #64748b;
-
   font-size:
     12px;
-
 }
-
-
 /* ==========================================
    TABLE
 ========================================== */
-
 .table-wrapper {
-
   width:
     100%;
-
   overflow-x:
     auto;
-
 }
-
-
 .analysis-table,
 .mastery-summary-table {
-
   width:
     100%;
-
   border-collapse:
     collapse;
-
 }
-
-
 .analysis-table th,
 .analysis-table td,
 .mastery-summary-table th,
 .mastery-summary-table td {
-
   border:
     1px solid
     #94a3a0;
-
   padding:
     10px 11px;
-
   vertical-align:
     middle;
-
   font-size:
     12px;
-
 }
-
-
 .analysis-table thead th,
 .mastery-summary-table thead th {
-
   background:
     #6b8e23;
-
   color:
     #ffffff;
-
   text-align:
     center;
-
   font-size:
     11px;
-
   font-weight:
     800;
-
   text-transform:
     uppercase;
-
 }
-
-
 .competency-heading {
-
   min-width:
     260px;
-
 }
-
-
 .competency-cell {
-
   min-width:
     260px;
-
   max-width:
     360px;
-
   background:
     #fbfdfb;
-
   text-align:
     center;
-
   line-height:
     1.55;
-
   font-weight:
     600;
-
 }
-
-
 .center-cell {
-
   text-align:
     center;
-
 }
-
-
 .item-number {
-
   font-weight:
     700;
-
 }
-
-
 .empty-table {
-
   padding:
     35px !important;
-
   text-align:
     center;
-
   color:
     #64748b;
-
 }
-
-
 /* ==========================================
    MASTERY BADGES
 ========================================== */
-
 .mastery-badge {
-
   display:
     inline-block;
-
   padding:
     5px
     8px;
-
   border-radius:
     5px;
-
   font-size:
     10px;
-
   font-weight:
     700;
-
   white-space:
     nowrap;
-
 }
-
-
 .mastery-badge.mastered {
-
   background:
     #23452b;
-
   color:
     #ffffff;
-
 }
-
-
 .mastery-badge.approximating {
-
   background:
     #30475f;
-
   color:
     #ffffff;
-
 }
-
-
 .mastery-badge.moving {
-
   background:
     #7c4a3a;
-
   color:
     #ffffff;
-
 }
-
-
 .mastery-badge.average {
-
   background:
     #8c4055;
-
   color:
     #ffffff;
-
 }
-
-
 .mastery-badge.low {
-
   background:
     #7a253a;
-
   color:
     #ffffff;
-
 }
-
-
 /* ==========================================
    REMARK BADGES
 ========================================== */
-
 .remarks-badge {
-
   display:
     inline-block;
-
   min-width:
     74px;
-
   padding:
     5px
     8px;
-
   border-radius:
     5px;
-
   font-size:
     10px;
-
   font-weight:
     700;
-
 }
-
-
 .remarks-badge.retain-revise {
-
   background:
     #6b8e23;
-
   color:
     white;
-
 }
-
-
 .remarks-badge.retain {
-
   background:
     #7a6042;
-
   color:
     white;
-
 }
-
-
 .remarks-badge.revise {
-
   background:
     #7a4939;
-
   color:
     white;
-
 }
-
-
 .remarks-badge.reject {
-
   background:
     #a53645;
-
   color:
     white;
-
 }
-
-
 /* ==========================================
    SUMMARY TABLE
 ========================================== */
-
 .mastery-name-cell {
-
   width:
     220px;
-
   text-align:
     center;
-
 }
-
-
 .summary-items {
-
   width:
     320px;
-
   text-align:
     center;
-
   line-height:
     1.7;
-
 }
-
-
 .summary-description {
-
   min-width:
     450px;
-
   line-height:
     1.55;
-
   color:
     #334155;
-
 }
-
-
 /* ==========================================
    LEGEND
 ========================================== */
-
 .legend-card h3 {
-
   margin-bottom:
     15px;
-
   color:
     #112244;
-
 }
-
-
 .legend-grid {
-
   display:
     grid;
-
   grid-template-columns:
     repeat(
       2,
       minmax(0,1fr)
     );
-
   gap:
     25px;
-
 }
-
-
 .legend-column {
-
   display:
     flex;
-
   flex-direction:
     column;
-
   gap:
     8px;
-
 }
-
-
 .legend-item {
-
   display:
     flex;
-
   align-items:
     center;
-
   gap:
     9px;
-
   font-size:
     12px;
-
   color:
     #334155;
-
 }
-
-
 .legend-box {
-
   width:
     18px;
-
   height:
     18px;
-
   border-radius:
     3px;
-
 }
-
-
 .legend-box.mastered {
-
   background:
     #23452b;
-
 }
-
-
 .legend-box.approximating {
-
   background:
     #30475f;
-
 }
-
-
 .legend-box.moving {
-
   background:
     #7c4a3a;
-
 }
-
-
 .legend-box.average {
-
   background:
     #8c4055;
-
 }
-
-
 .legend-box.low {
-
   background:
     #7a253a;
-
 }
-
-
 .legend-box.retain-revise {
-
   background:
     #6b8e23;
-
 }
-
-
 .legend-box.retain {
-
   background:
     #7a6042;
-
 }
-
-
 .legend-box.revise {
-
   background:
     #7a4939;
-
 }
-
-
 .legend-box.reject {
-
   background:
     #a53645;
-
 }
-
-
 /* ==========================================
    TABLE ROW HOVER
 ========================================== */
-
 .analysis-table tbody tr:hover td {
-
   background:
     #f7faf8;
-
 }
-
-
 .analysis-table tbody tr:hover
 .competency-cell {
-
   background:
     #f3f7f4;
-
 }
-
-
 /* ==========================================
    RESPONSIVE
 ========================================== */
-
 @media(
   max-width: 1100px
 ) {
-
   .summary-grid {
-
     grid-template-columns:
       repeat(
         2,
         1fr
       );
-
   }
     .export-actions {
     width: 100%;
-
     flex-direction: column;
   }
-
   .export-btn,
   .pdf-export-btn {
     width: 100%;
   }
-
-
   .exam-information {
-
     grid-template-columns:
       1fr;
-
   }
-
-
   .exam-statistics {
-
     padding-left:
       0;
-
     padding-top:
       15px;
-
     border-left:
       none;
-
     border-top:
       2px solid
       #e2e8f0;
-
   }
-
 }
-
-
 @media(
   max-width: 768px
 ) {
-
   .analysis-page {
-
     padding:
       18px;
-
   }
-
-
   .page-header {
-
     flex-direction:
       column;
-
   }
-
-
   .export-btn {
-
     width:
       100%;
-
   }
-
-
   .exam-details {
-
     grid-template-columns:
       1fr;
-
   }
-
-
   .filter-controls {
-
     flex-direction:
       column;
-
   }
-
-
   .filter-controls select {
-
     width:
       100%;
-
   }
-
-
   .legend-grid {
-
     grid-template-columns:
       1fr;
-
   }
-
 }
-
-
 @media(
   max-width: 500px
 ) {
-
   .summary-grid {
-
     grid-template-columns:
       1fr;
-
   }
-
-
   .page-header h1 {
-
     font-size:
       27px;
-
   }
-
-
   .report-information,
   .table-card,
   .summary-table-card,
   .legend-card {
-
     padding:
       17px;
-
   }
-
 }
 .export-actions {
   display: flex;
   align-items: center;
   gap: 10px;
 }
-
 .pdf-export-btn {
   border: none;
-
   background: #dc2626;
-
   color: #ffffff;
-
   padding: 14px 22px;
-
   border-radius: 12px;
-
   cursor: pointer;
-
   font-weight: 600;
-
   transition: .25s;
 }
-
 .pdf-export-btn:hover:not(:disabled) {
   background: #b91c1c;
 }
-
 .pdf-export-btn:disabled {
   opacity: .65;
-
   cursor: not-allowed;
 }
-
 </style>

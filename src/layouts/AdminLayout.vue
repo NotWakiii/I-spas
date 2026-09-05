@@ -44,9 +44,11 @@
         <!-- MOBILE CLOSE -->
         <button
           class="mobile-close-btn"
+          title="Close Menu"
+          aria-label="Close Menu"
           @click="closeMobileMenu"
         >
-          ✕
+          <X :size="20" />
         </button>
 
       </div>
@@ -62,10 +64,14 @@
           class="nav-item"
           @click="closeMobileMenu"
         >
+          <LayoutDashboard
+            :size="20"
+            class="nav-icon"
+          />
+
           <span>
             Dashboard
           </span>
-
         </RouterLink>
 
 
@@ -74,6 +80,11 @@
           class="nav-item"
           @click="closeMobileMenu"
         >
+          <Users
+            :size="20"
+            class="nav-icon"
+          />
+
           <span>
             Faculty Management
           </span>
@@ -85,10 +96,14 @@
           class="nav-item"
           @click="closeMobileMenu"
         >
+          <ClipboardList
+            :size="20"
+            class="nav-icon"
+          />
+
           <span>
             Examination Overview
           </span>
-
         </RouterLink>
 
 
@@ -97,16 +112,27 @@
           class="nav-item"
           @click="closeMobileMenu"
         >
+          <ChartNoAxesColumnIncreasing
+            :size="20"
+            class="nav-icon"
+          />
+
           <span>
             Results Overview
           </span>
-
         </RouterLink>
+
+
         <RouterLink
           to="/admin/audit-logs"
           class="nav-item"
           @click="closeMobileMenu"
         >
+          <ScrollText
+            :size="20"
+            class="nav-icon"
+          />
+
           <span>
             Audit Logs
           </span>
@@ -120,21 +146,21 @@
       ========================================= -->
       <div class="sidebar-footer">
 
-        <button
-          class="logout-btn"
-          :disabled="loggingOut"
-          @click="logout"
-        >
+      <button
+        class="logout-btn"
+        :disabled="loggingOut"
+        @click="logout"
+      >
+        <LogOut :size="19" />
 
-          <span>
-            {{
-              loggingOut
-                ? 'Logging out...'
-                : 'Logout'
-            }}
-          </span>
-
-        </button>
+        <span>
+          {{
+            loggingOut
+              ? 'Logging out...'
+              : 'Logout'
+          }}
+        </span>
+      </button>
 
       </div>
 
@@ -154,9 +180,11 @@
         <!-- MOBILE BURGER ONLY -->
         <button
           class="menu-btn"
+          title="Open Menu"
+          aria-label="Open Menu"
           @click="toggleMobileMenu"
         >
-          ☰
+          <Menu :size="22" />
         </button>
 
 
@@ -213,6 +241,9 @@
     >
 
       <div class="dialog">
+        <div class="dialog-icon">
+          <LogOut :size="28" />
+        </div>
         <h2>
           Logout?
         </h2>
@@ -236,17 +267,23 @@
             Cancel
           </button>
 
-
           <button
             class="confirm-btn"
             :disabled="loggingOut"
             @click="confirmLogout"
           >
-            {{
-              loggingOut
-                ? 'Logging out...'
-                : 'Logout'
-            }}
+            <LogOut
+              v-if="!loggingOut"
+              :size="17"
+            />
+
+            <span>
+              {{
+                loggingOut
+                  ? 'Logging out...'
+                  : 'Logout'
+              }}
+            </span>
           </button>
 
         </div>
@@ -271,7 +308,16 @@ import {
 } from 'vue-router'
 
 import api from '../services/api'
-
+import {
+  LayoutDashboard,
+  Users,
+  ClipboardList,
+  ChartNoAxesColumnIncreasing,
+  ScrollText,
+  LogOut,
+  Menu,
+  X
+} from '@lucide/vue'
 
 const router =
   useRouter()
@@ -716,13 +762,12 @@ async function confirmLogout() {
 
 
 .nav-icon {
-  width: 26px;
+  width: 20px;
+  height: 20px;
 
-  min-width: 26px;
+  min-width: 20px;
 
-  text-align: center;
-
-  font-size: 19px;
+  flex-shrink: 0;
 }
 
 
@@ -1315,5 +1360,26 @@ async function confirmLogout() {
     flex-direction: column;
   }
 
+}
+/* ==========================================
+   LUCIDE ICON ALIGNMENT
+========================================== */
+
+.logout-btn svg,
+.menu-btn svg,
+.mobile-close-btn svg,
+.confirm-btn svg {
+  flex-shrink: 0;
+}
+
+.confirm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.dialog-icon {
+  color: #dc2626;
 }
 </style>

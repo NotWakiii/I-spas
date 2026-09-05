@@ -34,8 +34,10 @@
     <!-- No Results -->
     <div
       v-else-if="exams.length === 0"
-      class="results-card"
+      class="results-card empty-state"
     >
+      <FileSearch :size="38" />
+
       <h2>No exam results yet</h2>
 
       <p>
@@ -82,53 +84,97 @@
         <div class="stats">
 
           <div class="stat-box">
-            <span class="stat-label">
-              Examinees
-            </span>
 
-            <strong>
-              {{ exam.students_count }}
-            </strong>
+            <div class="stat-icon">
+              <Users :size="20" />
+            </div>
+
+            <div>
+              <span class="stat-label">
+                Examinees
+              </span>
+
+              <strong>
+                {{ exam.students_count }}
+              </strong>
+            </div>
+
           </div>
 
-          <div class="stat-box">
-            <span class="stat-label">
-              Average Score
-            </span>
 
-            <strong>
-              {{ exam.average_score }}
-            </strong>
+          <div class="stat-box">
+
+            <div class="stat-icon">
+              <ChartNoAxesColumnIncreasing :size="20" />
+            </div>
+
+            <div>
+              <span class="stat-label">
+                Average Score
+              </span>
+
+              <strong>
+                {{ exam.average_score }}
+              </strong>
+            </div>
+
           </div>
 
-          <div class="stat-box">
-            <span class="stat-label">
-              Average %
-            </span>
 
-            <strong>
-              {{ exam.average_percentage }}%
-            </strong>
+          <div class="stat-box">
+
+            <div class="stat-icon">
+              <Percent :size="20" />
+            </div>
+
+            <div>
+              <span class="stat-label">
+                Average %
+              </span>
+
+              <strong>
+                {{ exam.average_percentage }}%
+              </strong>
+            </div>
+
           </div>
 
-          <div class="stat-box">
-            <span class="stat-label">
-              Highest Score
-            </span>
 
-            <strong>
-              {{ exam.highest_score }}
-            </strong>
+          <div class="stat-box">
+
+            <div class="stat-icon">
+              <Trophy :size="20" />
+            </div>
+
+            <div>
+              <span class="stat-label">
+                Highest Score
+              </span>
+
+              <strong>
+                {{ exam.highest_score }}
+              </strong>
+            </div>
+
           </div>
 
-          <div class="stat-box">
-            <span class="stat-label">
-              Lowest Score
-            </span>
 
-            <strong>
-              {{ exam.lowest_score }}
-            </strong>
+          <div class="stat-box">
+
+            <div class="stat-icon">
+              <TrendingDown :size="20" />
+            </div>
+
+            <div>
+              <span class="stat-label">
+                Lowest Score
+              </span>
+
+              <strong>
+                {{ exam.lowest_score }}
+              </strong>
+            </div>
+
           </div>
 
         </div>
@@ -136,15 +182,20 @@
         <div class="exam-footer">
 
           <span class="exam-date">
-            Created:
-            {{ formatDate(exam.created_at) }}
+            <CalendarDays :size="15" />
+
+            <span>
+              Created:
+              {{ formatDate(exam.created_at) }}
+            </span>
           </span>
 
           <button
             class="view-btn"
             @click="viewResults(exam.id)"
           >
-            View Results
+            <Eye :size="17" />
+            <span>View Results</span>
           </button>
 
         </div>
@@ -159,6 +210,18 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '../services/api'
+
+import {
+  Users,
+  ChartNoAxesColumnIncreasing,
+  Percent,
+  Trophy,
+  TrendingDown,
+  CalendarDays,
+  Eye,
+  FileSearch
+} from '@lucide/vue'
+import Results from '@/views/Results.vue'
 
 const router = useRouter()
 
@@ -456,5 +519,93 @@ function formatDate(date: string) {
   .view-btn {
     width: 100%;
   }
+}
+/* ==========================================
+   RESULT STAT ICONS
+========================================== */
+
+.stat-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background: #ecfdf3;
+  color: #00a844;
+}
+
+
+/* ==========================================
+   DATE
+========================================== */
+
+.exam-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.exam-date svg {
+  flex-shrink: 0;
+  color: #64748b;
+}
+
+
+/* ==========================================
+   VIEW BUTTON
+========================================== */
+
+.view-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 7px;
+}
+
+.view-btn svg {
+  flex-shrink: 0;
+}
+
+
+/* ==========================================
+   EMPTY STATE
+========================================== */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  text-align: center;
+
+  gap: 8px;
+
+  padding: 55px 30px;
+}
+
+.empty-state svg {
+  margin-bottom: 6px;
+
+  color: #00a844;
+}
+
+.empty-state h2,
+.empty-state p {
+  margin: 0;
 }
 </style>
