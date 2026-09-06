@@ -4,14 +4,9 @@
     <div class="dashboard-header">
       <div>
         <h1>Faculty Dashboard</h1>
-        <p>
-          Welcome back! Manage your examinations and quizzes.
-        </p>
+        <p>Welcome back! Manage your examinations and quizzes.</p>
       </div>
-      <button
-        class="new-exam-btn"
-        @click="goToCreateExam"
-      >
+      <button class="new-exam-btn" @click="goToCreateExam">
         <Plus :size="18" />
         <span>New Exam</span>
       </button>
@@ -59,14 +54,9 @@
     <div class="exam-section">
       <div class="exam-header">
         <div>
-          <h2>
-            Examinations
-          </h2>
-          <p>
-            View and manage all examinations.
-          </p>
+          <h2>Examinations</h2>
+          <p>View and manage all examinations.</p>
         </div>
-        <!-- ================= FILTERS ================= -->
         <div class="filters">
           <div class="search-box">
             <Search :size="17" />
@@ -97,12 +87,9 @@
           :key="exam.id"
           class="exam-card"
         >
-          <!-- ================= TITLE ================= -->
           <div class="exam-title">
             <div>
-              <h3>
-                {{ exam.title }}
-              </h3>
+              <h3>{{ exam.title }}</h3>
               <span
                 class="badge"
                 :class="{
@@ -115,7 +102,6 @@
                 {{ exam.status }}
               </span>
             </div>
-            <!-- ================= ACTION BUTTONS ================= -->
             <div class="buttons">
               <button
                 class="edit"
@@ -157,7 +143,7 @@
               </button>
               <button
                 class="delete"
-                @click="deleteExam(exam.id)"
+                @click="deleteExam(exam)"
               >
                 <Trash2 :size="15" />
                 <span>Delete</span>
@@ -167,128 +153,57 @@
           <!-- ================= EXAM INFO ================= -->
           <div class="exam-info">
             <div>
-              <GraduationCap
-                :size="18"
-                class="info-icon"
-              />
-              <small>
-                Grade
-              </small>
-              <strong>
-                {{ exam.grade }}
-              </strong>
+              <GraduationCap :size="18" class="info-icon" />
+              <small>Grade</small>
+              <strong>{{ exam.grade }}</strong>
             </div>
             <div>
-              <Layers3
-                :size="18"
-                class="info-icon"
-              />
-              <small>
-                Section
-              </small>
-              <strong>
-                {{ exam.section }}
-              </strong>
+              <Layers3 :size="18" class="info-icon" />
+              <small>Section</small>
+              <strong>{{ exam.section }}</strong>
             </div>
             <div>
-              <BookOpen
-                :size="18"
-                class="info-icon"
-              />
-              <small>
-                Subject
-              </small>
-              <strong>
-                {{ exam.subject }}
-              </strong>
+              <BookOpen :size="18" class="info-icon" />
+              <small>Subject</small>
+              <strong>{{ exam.subject }}</strong>
             </div>
             <div>
-              <Clock3
-                :size="18"
-                class="info-icon"
-              />
-              <small>
-                Duration
-              </small>
-              <strong>
-                {{ exam.duration }} mins
-              </strong>
+              <Clock3 :size="18" class="info-icon" />
+              <small>Duration</small>
+              <strong>{{ exam.duration }} mins</strong>
             </div>
             <div>
-              <ListChecks
-                :size="18"
-                class="info-icon"
-              />
-              <small>
-                Questions
-              </small>
-              <strong>
-                {{ exam.items }}
-              </strong>
+              <ListChecks :size="18" class="info-icon" />
+              <small>Questions</small>
+              <strong>{{ exam.items }}</strong>
             </div>
             <div>
-              <Target
-                :size="18"
-                class="info-icon"
-              />
-              <small>
-                Points
-              </small>
-              <strong>
-                {{ exam.points }}
-              </strong>
+              <Target :size="18" class="info-icon" />
+              <small>Points</small>
+              <strong>{{ exam.points }}</strong>
             </div>
             <div>
-              <CircleCheckBig
-                :size="18"
-                class="info-icon"
-              />
-              <small>
-                Passing
-              </small>
-              <strong>
-                {{ exam.passing }}%
-              </strong>
+              <CircleCheckBig :size="18" class="info-icon" />
+              <small>Passing</small>
+              <strong>{{ exam.passing }}%</strong>
             </div>
             <div>
-              <Users
-                :size="18"
-                class="info-icon"
-              />
-              <small>
-                Students
-              </small>
-              <strong>
-                {{ exam.students }}
-              </strong>
+              <Users :size="18" class="info-icon" />
+              <small>Students</small>
+              <strong>{{ exam.students }}</strong>
             </div>
             <div>
-              <CalendarDays
-                :size="18"
-                class="info-icon"
-              />
-              <small>
-                Created
-              </small>
-              <strong>
-                {{ exam.created }}
-              </strong>
+              <CalendarDays :size="18" class="info-icon" />
+              <small>Created</small>
+              <strong>{{ exam.created }}</strong>
             </div>
           </div>
         </div>
       </div>
-      <!-- ================= EMPTY ================= -->
-      <div
-        v-else
-        class="empty"
-      >
+      <div v-else class="empty">
         <FileSearch :size="45" />
-        <h2>
-          No examinations found
-        </h2>
-        <p>
-          Try another search or subject.
-        </p>
+        <h2>No examinations found</h2>
+        <p>Try another search or subject.</p>
       </div>
     </div>
     <!-- ================= PREVIEW POPUP ================= -->
@@ -300,95 +215,55 @@
       <div class="preview-modal">
         <div class="preview-header">
           <div>
-            <h2>
-              {{ selectedExam.title }}
-            </h2>
-            <p>
-              Student Preview
-            </p>
+            <h2>{{ selectedExam.title }}</h2>
+            <p>Student Preview</p>
           </div>
-          <button
-            class="close-btn"
-            @click="closePreview"
-          >
+          <button class="close-btn" @click="closePreview">
             <X :size="16" />
             <span>Close</span>
           </button>
         </div>
-        <!-- ================= PREVIEW INFO ================= -->
         <div class="preview-info">
           <div>
-            <Clock3
-              :size="18"
-              class="info-icon"
-            />
-            <small>
-              Duration
-            </small>
-            <strong>
-              {{ selectedExam.duration }} mins
-            </strong>
+            <Clock3 :size="18" class="info-icon" />
+            <small>Duration</small>
+            <strong>{{ selectedExam.duration }} mins</strong>
           </div>
           <div>
-            <ListChecks
-              :size="18"
-              class="info-icon"
-            />
-            <small>
-              Questions
-            </small>
-            <strong>
-              {{ selectedExam.questions.length }}
-            </strong>
+            <ListChecks :size="18" class="info-icon" />
+            <small>Questions</small>
+            <strong>{{ selectedExam.questions.length }}</strong>
           </div>
           <div>
-            <Target
-              :size="18"
-              class="info-icon"
-            />
-            <small>
-              Passing
-            </small>
-            <strong>
-              {{ selectedExam.passing }}%
-            </strong>
+            <Target :size="18" class="info-icon" />
+            <small>Passing</small>
+            <strong>{{ selectedExam.passing }}%</strong>
           </div>
         </div>
-        <!-- ================= QUESTIONS ================= -->
         <div
-          v-for="(question, index) in selectedExam.questions"
-          :key="question.id"
+          v-for="(questionItem, index) in selectedExam.questions"
+          :key="questionItem.id"
           v-show="previewQuestion === index + 1"
           class="question-preview"
         >
-          <h3>
-            Question {{ index + 1 }}
-          </h3>
-          <p>
-            {{ question.question }}
-          </p>
-          <!-- MULTIPLE CHOICE -->
+          <h3>Question {{ index + 1 }}</h3>
+          <p>{{ questionItem.question }}</p>
           <div
-            v-if="question.question_type === 'multiple_choice'"
+            v-if="questionItem.question_type === 'multiple_choice'"
           >
             <div
-              v-for="option in question.options"
+              v-for="option in questionItem.options"
               :key="option.id"
               class="option"
             >
               {{ option.option_text }}
             </div>
           </div>
-          <!-- OTHER QUESTION TYPES -->
-          <div
-            v-else
-            class="option"
-          >
+          <div v-else class="option">
             Answer:
-            {{ question.answer || 'No answer provided' }}
+            {{ questionItem.answer || 'No answer provided' }}
           </div>
         </div>
-        <!-- ================= PREVIEW FOOTER ================= -->
         <div class="preview-footer">
           <button
             class="nav-btn"
@@ -400,8 +275,7 @@
           </button>
           <span>
             Question {{ previewQuestion }}
-            of
-            {{ selectedExam.items }}
+            of {{ selectedExam.items }}
           </span>
           <button
             class="nav-btn"
@@ -426,9 +300,7 @@
         <div class="dialog-icon">
           <Play :size="45" />
         </div>
-        <h2>
-          Start Examination?
-        </h2>
+        <h2>Start Examination?</h2>
         <p>
           Are you sure you want to start this examination?
           <br><br>
@@ -440,76 +312,34 @@
           class="dialog-info"
         >
           <div>
-            <FileText
-              :size="18"
-              class="info-icon"
-            />
-            <small>
-              Examination
-            </small>
-            <strong>
-              {{ selectedStartExam.title }}
-            </strong>
+            <FileText :size="18" class="info-icon" />
+            <small>Examination</small>
+            <strong>{{ selectedStartExam.title }}</strong>
           </div>
           <div>
-            <GraduationCap
-              :size="18"
-              class="info-icon"
-            />
-            <small>
-              Grade
-            </small>
-            <strong>
-              {{ selectedStartExam.grade }}
-            </strong>
+            <GraduationCap :size="18" class="info-icon" />
+            <small>Grade</small>
+            <strong>{{ selectedStartExam.grade }}</strong>
           </div>
           <div>
-            <Layers3
-              :size="18"
-              class="info-icon"
-            />
-            <small>
-              Section
-            </small>
-            <strong>
-              {{ selectedStartExam.section }}
-            </strong>
+            <Layers3 :size="18" class="info-icon" />
+            <small>Section</small>
+            <strong>{{ selectedStartExam.section }}</strong>
           </div>
           <div>
-            <BookOpen
-              :size="18"
-              class="info-icon"
-            />
-            <small>
-              Subject
-            </small>
-            <strong>
-              {{ selectedStartExam.subject }}
-            </strong>
+            <BookOpen :size="18" class="info-icon" />
+            <small>Subject</small>
+            <strong>{{ selectedStartExam.subject }}</strong>
           </div>
           <div>
-            <Clock3
-              :size="18"
-              class="info-icon"
-            />
-            <small>
-              Duration
-            </small>
-            <strong>
-              {{ selectedStartExam.duration }} mins
-            </strong>
+            <Clock3 :size="18" class="info-icon" />
+            <small>Duration</small>
+            <strong>{{ selectedStartExam.duration }} mins</strong>
           </div>
           <div>
-            <ListChecks
-              :size="18"
-              class="info-icon"
-            />
-            <small>
-              Questions
-            </small>
-            <strong>
-              {{ selectedStartExam.items }}
-            </strong>
+            <ListChecks :size="18" class="info-icon" />
+            <small>Questions</small>
+            <strong>{{ selectedStartExam.items }}</strong>
           </div>
         </div>
         <div class="dialog-buttons">
@@ -530,15 +360,132 @@
         </div>
       </div>
     </div>
+    <!-- ================= ACTION CONFIRMATION ================= -->
+    <div
+      v-if="showActionDialog"
+      class="dialog-overlay"
+      @click.self="closeActionDialog"
+    >
+      <div class="dialog action-dialog">
+        <div
+          class="action-dialog-icon"
+          :class="actionDialogType"
+        >
+          <Send
+            v-if="actionDialogType === 'publish'"
+            :size="34"
+          />
+          <RotateCcw
+            v-else-if="actionDialogType === 'restart'"
+            :size="34"
+          />
+          <Trash2
+            v-else
+            :size="34"
+          />
+        </div>
+        <h2>{{ actionDialogTitle }}</h2>
+        <p>{{ actionDialogMessage }}</p>
+        <div
+          v-if="selectedActionExam"
+          class="action-exam-info"
+        >
+          <strong>{{ selectedActionExam.title }}</strong>
+          <span>
+            Grade {{ selectedActionExam.grade }}
+            • {{ selectedActionExam.section }}
+            • {{ selectedActionExam.subject }}
+          </span>
+        </div>
+        <div class="dialog-buttons">
+          <button
+            class="cancel-btn"
+            :disabled="processingAction"
+            @click="closeActionDialog"
+          >
+            <X :size="17" />
+            <span>Cancel</span>
+          </button>
+          <button
+            class="action-confirm-btn"
+            :class="actionDialogType"
+            :disabled="processingAction"
+            @click="confirmAction"
+          >
+            <LoaderCircle
+              v-if="processingAction"
+              :size="17"
+              class="spin"
+            />
+            <Send
+              v-else-if="actionDialogType === 'publish'"
+              :size="17"
+            />
+            <RotateCcw
+              v-else-if="actionDialogType === 'restart'"
+              :size="17"
+            />
+            <Trash2
+              v-else
+              :size="17"
+            />
+            <span>
+              {{
+                processingAction
+                  ? 'Processing...'
+                  : actionConfirmText
+              }}
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- ================= SYSTEM NOTIFICATION ================= -->
+    <Transition name="notification">
+      <div
+        v-if="notification.show"
+        class="notification-container"
+        :class="notification.type"
+      >
+        <div class="notification-icon">
+          <CircleCheckBig
+            v-if="notification.type === 'success'"
+            :size="20"
+          />
+          <CircleAlert
+            v-else-if="notification.type === 'error'"
+            :size="20"
+          />
+          <Info
+            v-else
+            :size="20"
+          />
+        </div>
+        <div class="notification-content">
+          <strong>{{ notification.title }}</strong>
+          <p>{{ notification.message }}</p>
+        </div>
+        <button
+          type="button"
+          class="notification-close"
+          @click="closeNotification"
+        >
+          <X :size="17" />
+        </button>
+      </div>
+    </Transition>
   </div>
 </template>
+
 <script setup lang="ts">
 import {
   ref,
   computed,
   onMounted
 } from 'vue'
-import { useRouter } from 'vue-router'
+import {
+  useRouter
+} from 'vue-router'
 import api from '../services/api'
 import {
   Plus,
@@ -563,63 +510,268 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  FileSearch
+  FileSearch,
+  CircleAlert,
+  Info,
+  LoaderCircle
 } from '@lucide/vue'
-const router = useRouter()
+
+const router =
+  useRouter()
+
+// ===========================================
+// TYPES
+// ===========================================
+
+type NotificationType =
+  'success' |
+  'error' |
+  'info'
+
+type ActionDialogType =
+  'publish' |
+  'restart' |
+  'delete'
+
 // ===========================================
 // SEARCH & FILTER
 // ===========================================
-const search = ref('')
-const selectedSubject = ref(
-  'All Subjects'
-)
+
+const search =
+  ref('')
+
+const selectedSubject =
+  ref(
+    'All Subjects'
+  )
+
+// ===========================================
+// NOTIFICATION
+// ===========================================
+
+const notification =
+  ref({
+    show: false,
+    type:
+      'success' as NotificationType,
+    title: '',
+    message: ''
+  })
+
+let notificationTimer:
+  ReturnType<typeof setTimeout> |
+  null =
+  null
+
+function showNotification(
+  type: NotificationType,
+  title: string,
+  message: string
+) {
+  if (notificationTimer) {
+    clearTimeout(
+      notificationTimer
+    )
+  }
+
+  notification.value = {
+    show: true,
+    type,
+    title,
+    message
+  }
+
+  notificationTimer =
+    setTimeout(() => {
+      notification.value.show =
+        false
+    }, 4000)
+}
+
+function closeNotification() {
+  notification.value.show =
+    false
+
+  if (notificationTimer) {
+    clearTimeout(
+      notificationTimer
+    )
+
+    notificationTimer =
+      null
+  }
+}
+
 // ===========================================
 // PREVIEW POPUP
 // ===========================================
-const showPreview = ref(false)
-const previewQuestion = ref(1)
-const selectedExam = ref({
-  id: 0,
-  title: '',
-  grade: '',
-  section: '',
-  subject: '',
-  status: '',
-  duration: 0,
-  items: 0,
-  points: 0,
-  passing: 0,
-  students: '',
-  questions: [] as any[],
-  created: ''
-})
+
+const showPreview =
+  ref(false)
+
+const previewQuestion =
+  ref(1)
+
+const selectedExam =
+  ref({
+    id: 0,
+    title: '',
+    grade: '',
+    section: '',
+    subject: '',
+    status: '',
+    duration: 0,
+    items: 0,
+    points: 0,
+    passing: 0,
+    students: '',
+    questions: [] as any[],
+    created: ''
+  })
+
 // ===========================================
 // START EXAM POPUP
 // ===========================================
+
 const showStartDialog =
   ref(false)
+
 const selectedStartExam =
   ref<any>(null)
+
+// ===========================================
+// ACTION DIALOG
+// ===========================================
+
+const showActionDialog =
+  ref(false)
+
+const selectedActionExam =
+  ref<any>(null)
+
+const actionDialogType =
+  ref<ActionDialogType>(
+    'publish'
+  )
+
+const processingAction =
+  ref(false)
+
+const actionDialogTitle =
+  computed(() => {
+    if (
+      actionDialogType.value ===
+      'publish'
+    ) {
+      return 'Publish Examination?'
+    }
+
+    if (
+      actionDialogType.value ===
+      'restart'
+    ) {
+      return 'Start Examination Again?'
+    }
+
+    return 'Delete Examination?'
+  })
+
+const actionDialogMessage =
+  computed(() => {
+    if (
+      actionDialogType.value ===
+      'publish'
+    ) {
+      return 'Once published, students will be able to access the examination using its access code.'
+    }
+
+    if (
+      actionDialogType.value ===
+      'restart'
+    ) {
+      return 'The examination will become available again and a new access code will be generated for remedial or late students.'
+    }
+
+    return 'Are you sure you want to permanently delete this examination? This action cannot be undone.'
+  })
+
+const actionConfirmText =
+  computed(() => {
+    if (
+      actionDialogType.value ===
+      'publish'
+    ) {
+      return 'Publish'
+    }
+
+    if (
+      actionDialogType.value ===
+      'restart'
+    ) {
+      return 'Start Again'
+    }
+
+    return 'Delete'
+  })
+
+function openActionDialog(
+  type: ActionDialogType,
+  exam: any
+) {
+  actionDialogType.value =
+    type
+
+  selectedActionExam.value =
+    exam
+
+  showActionDialog.value =
+    true
+}
+
+function closeActionDialog() {
+  if (
+    processingAction.value
+  ) {
+    return
+  }
+
+  showActionDialog.value =
+    false
+
+  selectedActionExam.value =
+    null
+}
+
 // ===========================================
 // EXAMS
 // ===========================================
+
 const exams =
   ref<any[]>([])
+
 const loading =
   ref(false)
+
 // ===========================================
 // FETCH EXAMS
 // ===========================================
+
 async function fetchExams() {
-  loading.value = true
+  loading.value =
+    true
+
   try {
     const response =
-      await api.get('/exams')
+      await api.get(
+        '/exams'
+      )
+
     exams.value =
       response.data.data.map(
         (exam: any) => {
           const questions =
             exam.questions || []
+
           return {
             id:
               exam.id,
@@ -635,13 +787,17 @@ async function fetchExams() {
               exam.subject ||
               'No Subject',
             status:
-              exam.status === 'draft'
+              exam.status ===
+                'draft'
                 ? 'Draft'
-                : exam.status === 'published'
+                : exam.status ===
+                    'published'
                   ? 'Published'
-                  : exam.status === 'started'
+                  : exam.status ===
+                      'started'
                     ? 'Started'
-                    : exam.status === 'finished'
+                    : exam.status ===
+                        'finished'
                       ? 'Finished'
                       : exam.status,
             duration:
@@ -652,11 +808,12 @@ async function fetchExams() {
               questions.reduce(
                 (
                   sum: number,
-                  q: any
+                  questionItem: any
                 ) =>
                   sum +
                   Number(
-                    q.points || 0
+                    questionItem.points ||
+                    0
                   ),
                 0
               ),
@@ -673,24 +830,36 @@ async function fetchExams() {
           }
         }
       )
-  } catch (error) {
-    console.error(error)
-    alert(
-      'Failed to load exams.'
+  }
+  catch (error) {
+    console.error(
+      error
     )
-  } finally {
-    loading.value = false
+
+    showNotification(
+      'error',
+      'Unable to Load Exams',
+      'Failed to load examinations. Please try again.'
+    )
+  }
+  finally {
+    loading.value =
+      false
   }
 }
+
 // ===========================================
 // ON MOUNT
 // ===========================================
+
 onMounted(() => {
   fetchExams()
 })
+
 // ===========================================
 // SUBJECTS
 // ===========================================
+
 const subjects =
   computed(() => {
     return [
@@ -704,15 +873,18 @@ const subjects =
       )
     ]
   })
+
 // ===========================================
 // FILTERED EXAMS
 // ===========================================
+
 const filteredExams =
   computed(() => {
     const keyword =
       search.value
         .trim()
         .toLowerCase()
+
     return exams.value.filter(
       exam => {
         const subjectMatch =
@@ -721,6 +893,7 @@ const filteredExams =
           ||
           exam.subject ===
             selectedSubject.value
+
         const searchMatch =
           !keyword
           ||
@@ -747,6 +920,7 @@ const filteredExams =
           )
             .toLowerCase()
             .includes(keyword)
+
         return (
           subjectMatch &&
           searchMatch
@@ -754,13 +928,16 @@ const filteredExams =
       }
     )
   })
+
 // ===========================================
 // STATISTICS
 // ===========================================
+
 const totalExams =
   computed(() =>
     exams.value.length
   )
+
 const totalPublished =
   computed(() =>
     exams.value.filter(
@@ -769,6 +946,7 @@ const totalPublished =
         'Published'
     ).length
   )
+
 const totalDrafts =
   computed(() =>
     exams.value.filter(
@@ -777,6 +955,7 @@ const totalDrafts =
         'Draft'
     ).length
   )
+
 const totalFinished =
   computed(() =>
     exams.value.filter(
@@ -785,17 +964,21 @@ const totalFinished =
         'Finished'
     ).length
   )
+
 // ===========================================
 // CREATE EXAM
 // ===========================================
+
 function goToCreateExam() {
   router.push(
     '/faculty/create-exam'
   )
 }
+
 // ===========================================
 // EDIT EXAM
 // ===========================================
+
 function editExam(
   id: number
 ) {
@@ -803,21 +986,30 @@ function editExam(
     `/faculty/edit-exam/${id}`
   )
 }
+
 // ===========================================
 // PREVIEW EXAM
 // ===========================================
+
 function previewExam(
   exam: any
 ) {
   selectedExam.value = {
     ...exam
   }
-  previewQuestion.value = 1
-  showPreview.value = true
+
+  previewQuestion.value =
+    1
+
+  showPreview.value =
+    true
 }
+
 function closePreview() {
-  showPreview.value = false
+  showPreview.value =
+    false
 }
+
 function nextQuestion() {
   if (
     previewQuestion.value <
@@ -827,135 +1019,246 @@ function nextQuestion() {
     previewQuestion.value++
   }
 }
+
 function previousQuestion() {
   if (
-    previewQuestion.value > 1
+    previewQuestion.value >
+    1
   ) {
     previewQuestion.value--
   }
 }
+
 // ===========================================
 // PUBLISH EXAM
 // ===========================================
-async function publishExam(
+
+function publishExam(
   exam: any
 ) {
-  const confirmed =
-    confirm(
-      'Publish this examination?\n\nStudents will be able to join after publishing.'
-    )
-  if (!confirmed) return
-  try {
-    await api.post(
-      `/exams/${exam.id}/publish`
-    )
-    exam.status =
-      'Published'
-    alert(
-      'Exam published successfully!'
-    )
-  } catch (error) {
-    console.error(error)
-    alert(
-      'Failed to publish examination.'
-    )
-  }
+  openActionDialog(
+    'publish',
+    exam
+  )
 }
+
 // ===========================================
 // START EXAM
 // ===========================================
+
 function startExam(
   exam: any
 ) {
   selectedStartExam.value =
     exam
+
   showStartDialog.value =
     true
 }
+
 function confirmStartExam() {
   if (
     !selectedStartExam.value
   ) {
     return
   }
+
+  const examId =
+    selectedStartExam.value.id
+
   showStartDialog.value =
     false
+
+  selectedStartExam.value =
+    null
+
   router.push(
-    `/faculty/lobby/${selectedStartExam.value.id}`
+    `/faculty/lobby/${examId}`
   )
 }
+
 function cancelStartExam() {
   showStartDialog.value =
     false
+
   selectedStartExam.value =
     null
 }
+
 // ===========================================
-// START EXAM AGAIN
+// START AGAIN
 // ===========================================
-async function startAgain(
+
+function startAgain(
   exam: any
 ) {
-  const confirmed =
-    confirm(
-      'Start this exam again?\n\nA new access code will be generated for remedial or late students.'
-    )
-  if (!confirmed) return
-  try {
-    await api.post(
-      `/exams/${exam.id}/restart`
-    )
-    await fetchExams()
-    alert(
-      'Exam is ready again with a new access code.'
-    )
-  } catch (error) {
-    console.error(error)
-    alert(
-      'Failed to restart exam.'
-    )
-  }
+  openActionDialog(
+    'restart',
+    exam
+  )
 }
+
 // ===========================================
 // DELETE EXAM
 // ===========================================
-async function deleteExam(
-  id: number
+
+function deleteExam(
+  exam: any
 ) {
-  const confirmed =
-    confirm(
-      'Delete this examination?'
-    )
-  if (!confirmed) return
+  openActionDialog(
+    'delete',
+    exam
+  )
+}
+
+// ===========================================
+// CONFIRM ACTION
+// ===========================================
+
+async function confirmAction() {
+  if (
+    !selectedActionExam.value ||
+    processingAction.value
+  ) {
+    return
+  }
+
+  processingAction.value =
+    true
+
+  const exam =
+    selectedActionExam.value
+
+  const action =
+    actionDialogType.value
+
   try {
-    await api.delete(
-      `/exams/${id}`
-    )
-    exams.value =
-      exams.value.filter(
-        exam =>
-          exam.id !== id
+    if (
+      action ===
+      'publish'
+    ) {
+      await api.post(
+        `/exams/${exam.id}/publish`
       )
-  } catch (error) {
-    console.error(error)
-    alert(
-      'Failed to delete exam.'
+
+      exam.status =
+        'Published'
+
+      showActionDialog.value =
+        false
+
+      selectedActionExam.value =
+        null
+
+      showNotification(
+        'success',
+        'Exam Published',
+        'The examination was published successfully.'
+      )
+    }
+    else if (
+      action ===
+      'restart'
+    ) {
+      await api.post(
+        `/exams/${exam.id}/restart`
+      )
+
+      showActionDialog.value =
+        false
+
+      selectedActionExam.value =
+        null
+
+      await fetchExams()
+
+      showNotification(
+        'success',
+        'Exam Ready Again',
+        'The examination is ready again with a new access code.'
+      )
+    }
+    else {
+      await api.delete(
+        `/exams/${exam.id}`
+      )
+
+      exams.value =
+        exams.value.filter(
+          item =>
+            item.id !==
+            exam.id
+        )
+
+      showActionDialog.value =
+        false
+
+      selectedActionExam.value =
+        null
+
+      showNotification(
+        'success',
+        'Exam Deleted',
+        'The examination was deleted successfully.'
+      )
+    }
+  }
+  catch (error: any) {
+    console.error(
+      error
     )
+
+    if (
+      action ===
+      'publish'
+    ) {
+      showNotification(
+        'error',
+        'Publish Failed',
+        error.response
+          ?.data
+          ?.message ||
+        'Failed to publish examination.'
+      )
+    }
+    else if (
+      action ===
+      'restart'
+    ) {
+      showNotification(
+        'error',
+        'Restart Failed',
+        error.response
+          ?.data
+          ?.message ||
+        'Failed to restart examination.'
+      )
+    }
+    else {
+      showNotification(
+        'error',
+        'Delete Failed',
+        error.response
+          ?.data
+          ?.message ||
+        'Failed to delete examination.'
+      )
+    }
+  }
+  finally {
+    processingAction.value =
+      false
   }
 }
 </script>
+
 <style scoped>
-/* ======================
-   GLOBAL
-====================== */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
-/* ======================
-   DASHBOARD
-====================== */
+
 .dashboard {
   padding: 32px 40px;
   background: #f8fafc;
@@ -969,9 +1272,7 @@ async function deleteExam(
   -webkit-font-smoothing:
     antialiased;
 }
-/* ======================
-   HEADER
-====================== */
+
 .dashboard-header {
   display: flex;
   justify-content:
@@ -980,27 +1281,25 @@ async function deleteExam(
   gap: 20px;
   margin-bottom: 28px;
 }
+
 .dashboard-header h1 {
   font-size: 26px;
   font-weight: 700;
-  letter-spacing:
-    -0.02em;
+  letter-spacing: -0.02em;
   color: #0f172a;
 }
+
 .dashboard-header p {
   margin-top: 5px;
   color: #64748b;
   font-size: 14px;
 }
-/* ======================
-   NEW EXAM BUTTON
-====================== */
+
 .new-exam-btn {
   border: none;
   background: #00c853;
   color: white;
-  padding:
-    12px 22px;
+  padding: 12px 22px;
   border-radius: 8px;
   font-weight: 600;
   font-size: 14px;
@@ -1013,14 +1312,13 @@ async function deleteExam(
   justify-content: center;
   gap: 7px;
 }
+
 .new-exam-btn:hover {
   background: #00a845;
   transform:
     translateY(-1px);
 }
-/* ======================
-   TOP CARDS
-====================== */
+
 .stats {
   display: grid;
   grid-template-columns:
@@ -1028,13 +1326,13 @@ async function deleteExam(
   gap: 14px;
   margin-bottom: 28px;
 }
+
 .card {
   background: #ffffff;
   border:
     1px solid #e2e8f0;
   border-radius: 12px;
-  padding:
-    20px 22px;
+  padding: 20px 22px;
   min-height: 90px;
   display: flex;
   align-items: center;
@@ -1043,6 +1341,7 @@ async function deleteExam(
     0 1px 2px
     rgba(15, 23, 42, .03);
 }
+
 .stat-icon {
   width: 44px;
   height: 44px;
@@ -1054,6 +1353,7 @@ async function deleteExam(
   justify-content: center;
   flex-shrink: 0;
 }
+
 .card span {
   display: block;
   color: #64748b;
@@ -1061,17 +1361,14 @@ async function deleteExam(
   font-weight: 500;
   margin-bottom: 8px;
 }
+
 .card h2 {
   color: #0f172a;
   font-size: 26px;
   font-weight: 700;
   line-height: 1;
-  letter-spacing:
-    -0.01em;
 }
-/* ======================
-   EXAM SECTION
-====================== */
+
 .exam-section {
   background: white;
   border:
@@ -1082,6 +1379,7 @@ async function deleteExam(
     0 1px 3px
     rgba(15, 23, 42, .04);
 }
+
 .exam-header {
   display: flex;
   justify-content:
@@ -1093,34 +1391,36 @@ async function deleteExam(
   border-bottom:
     1px solid #f1f5f9;
 }
+
 .exam-header h2 {
   font-size: 18px;
   font-weight: 700;
-  color: #0f172a;
 }
+
 .exam-header p {
   color: #64748b;
   font-size: 13px;
   margin-top: 4px;
 }
-/* ======================
-   FILTERS
-====================== */
+
 .filters {
   display: flex;
   gap: 10px;
 }
+
 .search-box {
   position: relative;
   display: flex;
   align-items: center;
 }
+
 .search-box svg {
   position: absolute;
   left: 12px;
   color: #94a3b8;
   pointer-events: none;
 }
+
 .filters input,
 .filters select {
   height: 38px;
@@ -1128,52 +1428,32 @@ async function deleteExam(
     1px solid #e2e8f0;
   border-radius: 8px;
   background: #f8fafc;
-  padding:
-    0 12px;
+  padding: 0 12px;
   outline: none;
   font-size: 13px;
-  color: #0f172a;
-  transition:
-    border-color .15s ease,
-    background .15s ease;
 }
+
 .search-box input {
   width: 230px;
-  padding-left:
-    38px;
+  padding-left: 38px;
 }
-.filters input:focus,
-.filters select:focus {
-  background: white;
-  border-color:
-    #94a3b8;
-}
-/* ======================
-   EXAM CARD
-====================== */
+
 .exam-card {
-  position: relative;
   background: #fff;
   border:
     1px solid #e2e8f0;
   border-radius: 12px;
-  padding:
-    20px 22px;
+  padding: 20px 22px;
   margin-bottom: 14px;
-  transition:
-    border-color .15s ease,
-    box-shadow .15s ease;
 }
+
 .exam-card:hover {
-  border-color:
-    #cbd5e1;
+  border-color: #cbd5e1;
   box-shadow:
     0 4px 14px
     rgba(15, 23, 42, .06);
 }
-/* ======================
-   EXAM TITLE
-====================== */
+
 .exam-title {
   display: flex;
   justify-content:
@@ -1186,56 +1466,51 @@ async function deleteExam(
   border-bottom:
     1px solid #f1f5f9;
 }
+
 .exam-title h3 {
   font-size: 16px;
   font-weight: 700;
-  color: #0f172a;
   margin-bottom: 8px;
 }
-/* ======================
-   BADGES
-====================== */
+
 .badge {
   display: inline-flex;
-  align-items: center;
-  padding:
-    4px 11px;
+  padding: 4px 11px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing:
-    .02em;
-  text-transform:
-    uppercase;
+  text-transform: uppercase;
 }
+
 .draft {
   background: #fef3e7;
   color: #c2540a;
 }
+
 .published {
   background: #e7f5ec;
   color: #0f7a3d;
 }
+
 .finished {
   background: #e8eefc;
   color: #334ca1;
 }
+
 .started {
   background: #e0f2fe;
   color: #0369a1;
 }
-/* ======================
-   ACTION BUTTONS
-====================== */
+
 .buttons {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
+
 .buttons button {
   height: 34px;
-  padding:
-    0 14px;
+  padding: 0 14px;
   border-radius: 7px;
   border:
     1px solid #e2e8f0;
@@ -1244,19 +1519,11 @@ async function deleteExam(
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition:
-    background .15s ease,
-    border-color .15s ease;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
 }
-.buttons button:hover {
-  background: #f8fafc;
-  border-color:
-    #cbd5e1;
-}
+
 .publish-btn,
 .start-btn {
   background:
@@ -1266,24 +1533,20 @@ async function deleteExam(
   color:
     white !important;
 }
+
 .publish-btn:hover,
 .start-btn:hover {
   background:
     #00a845 !important;
 }
+
 .delete {
   color:
     #b91c1c !important;
   border-color:
     #fecaca !important;
 }
-.delete:hover {
-  background:
-    #fef2f2 !important;
-}
-/* ======================
-   EXAM INFO
-====================== */
+
 .exam-info {
   display: grid;
   grid-template-columns:
@@ -1293,82 +1556,76 @@ async function deleteExam(
     );
   gap: 10px;
 }
-.exam-info div {
+
+.exam-info div,
+.preview-info div,
+.dialog-info div {
   background: #f8fafc;
   border-radius: 8px;
-  padding:
-    12px 10px;
+  padding: 12px 10px;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
 }
+
 .info-icon {
   color: #00b248;
   margin-bottom: 7px;
 }
-.exam-info small {
-  display: block;
+
+.exam-info small,
+.preview-info small,
+.dialog-info small {
   color: #94a3b8;
   font-size: 11px;
-  font-weight: 500;
   margin-bottom: 6px;
-  text-transform:
-    uppercase;
-  letter-spacing:
-    .03em;
+  text-transform: uppercase;
 }
-.exam-info strong {
+
+.exam-info strong,
+.preview-info strong,
+.dialog-info strong {
   color: #0f172a;
   font-size: 13px;
-  font-weight: 700;
 }
-/* ======================
-   EMPTY
-====================== */
+
 .empty {
   text-align: center;
-  padding:
-    70px 20px;
+  padding: 70px 20px;
   color: #94a3b8;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
+
 .empty svg {
   color: #cbd5e1;
   margin-bottom: 15px;
 }
+
 .empty h2 {
   color: #334155;
   font-size: 16px;
-  font-weight: 700;
   margin-bottom: 8px;
 }
-.empty p {
-  font-size: 13px;
-}
-/* ======================
-   MODAL OVERLAYS
-====================== */
+
 .preview-overlay,
-.dialog-overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(15,23,42,.5);
-  backdrop-filter:blur(4px);
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  z-index:9999;
-  padding:20px;
-  overflow-y:auto;
-  overflow-x:hidden;
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background:
+    rgba(15, 23, 42, .5);
+  backdrop-filter:
+    blur(4px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  padding: 20px;
+  overflow-y: auto;
 }
-/* ======================
-   MODALS
-====================== */
+
 .preview-modal,
 .dialog {
   background: white;
@@ -1377,9 +1634,7 @@ async function deleteExam(
     0 20px 50px
     rgba(15, 23, 42, .2);
 }
-/* ======================
-   PREVIEW
-====================== */
+
 .preview-modal {
   width: 900px;
   max-width: 95%;
@@ -1387,6 +1642,7 @@ async function deleteExam(
   overflow-y: auto;
   padding: 28px;
 }
+
 .preview-header {
   display: flex;
   justify-content:
@@ -1398,38 +1654,18 @@ async function deleteExam(
   border-bottom:
     1px solid #f1f5f9;
 }
-.preview-header h2 {
-  font-size: 19px;
-  font-weight: 700;
-  color: #0f172a;
-}
-.preview-header p {
-  color: #64748b;
-  font-size: 13px;
-  margin-top: 4px;
-}
+
 .close-btn {
   border:
     1px solid #e2e8f0;
   background: white;
   border-radius: 7px;
-  padding:
-    8px 14px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #334155;
+  padding: 8px 14px;
   cursor: pointer;
   display: flex;
-  align-items: center;
-  justify-content: center;
   gap: 6px;
 }
-.close-btn:hover {
-  background: #f8fafc;
-}
-/* ======================
-   PREVIEW INFO
-====================== */
+
 .preview-info {
   display: grid;
   grid-template-columns:
@@ -1437,66 +1673,27 @@ async function deleteExam(
   gap: 12px;
   margin-bottom: 26px;
 }
-.preview-info div,
-.dialog-info div {
-  background: #f8fafc;
-  border-radius: 9px;
-  padding: 14px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.preview-info small,
-.dialog-info small {
-  display: block;
-  color: #94a3b8;
-  font-size: 11px;
-  font-weight: 500;
-  margin-bottom: 6px;
-  text-transform:
-    uppercase;
-  letter-spacing:
-    .03em;
-}
-.preview-info strong,
-.dialog-info strong {
-  color: #0f172a;
-  font-size: 13px;
-  font-weight: 700;
-}
-/* ======================
-   QUESTION PREVIEW
-====================== */
+
 .question-preview h3 {
-  color: #0f172a;
   font-size: 14px;
-  font-weight: 700;
-  text-transform:
-    uppercase;
-  letter-spacing:
-    .03em;
   margin-bottom: 12px;
 }
+
 .question-preview p {
   font-size: 17px;
   font-weight: 600;
   margin-bottom: 18px;
-  color: #0f172a;
 }
+
 .option {
   border:
     1px solid #e2e8f0;
   border-radius: 8px;
-  padding:
-    13px 16px;
+  padding: 13px 16px;
   margin-bottom: 9px;
   font-size: 14px;
-  color: #334155;
 }
-/* ======================
-   PREVIEW FOOTER
-====================== */
+
 .preview-footer {
   margin-top: 26px;
   padding-top: 20px;
@@ -1506,47 +1703,32 @@ async function deleteExam(
   justify-content:
     space-between;
   align-items: center;
-  gap: 10px;
 }
-.preview-footer span {
-  font-size: 13px;
-  color: #64748b;
-  font-weight: 500;
-}
+
 .nav-btn {
   border:
     1px solid #e2e8f0;
   background: white;
-  color: #334155;
-  padding:
-    10px 18px;
+  padding: 10px 18px;
   border-radius: 8px;
-  font-weight: 600;
-  font-size: 13px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
 }
-.nav-btn:hover:not(:disabled) {
-  background: #f8fafc;
-}
+
 .nav-btn:disabled {
   opacity: .45;
   cursor: not-allowed;
 }
-/* ======================
-   START DIALOG
-====================== */
-.dialog{
-  width:480px;
-  max-width:95%;
-  padding:32px;
-  text-align:center;
-  max-height:calc(100dvh - 40px);
-  overflow-y:auto;
+
+.dialog {
+  width: 480px;
+  max-width: 95%;
+  padding: 32px;
+  text-align: center;
 }
+
 .dialog-icon {
   width: 70px;
   height: 70px;
@@ -1559,11 +1741,11 @@ async function deleteExam(
   align-items: center;
   justify-content: center;
 }
+
 .dialog h2 {
   font-size: 19px;
-  font-weight: 700;
-  color: #0f172a;
 }
+
 .dialog p {
   color: #64748b;
   font-size: 13px;
@@ -1571,6 +1753,7 @@ async function deleteExam(
   margin:
     14px 0 22px;
 }
+
 .dialog-info {
   display: grid;
   grid-template-columns:
@@ -1578,17 +1761,17 @@ async function deleteExam(
   gap: 10px;
   margin-bottom: 24px;
 }
-/* ======================
-   DIALOG BUTTONS
-====================== */
+
 .dialog-buttons {
   display: flex;
   gap: 10px;
 }
+
 .cancel-btn,
-.dialog .start-btn {
+.dialog .start-btn,
+.action-confirm-btn {
   flex: 1;
-  height: 44px;
+  min-height: 44px;
   border-radius: 8px;
   font-weight: 600;
   font-size: 14px;
@@ -1598,69 +1781,249 @@ async function deleteExam(
   justify-content: center;
   gap: 7px;
 }
+
 .cancel-btn {
   border:
     1px solid #e2e8f0;
   background: white;
   color: #334155;
 }
-.cancel-btn:hover {
-  background: #f8fafc;
-}
+
 .dialog .start-btn {
   border: none;
   background: #00c853;
   color: white;
 }
-.dialog .start-btn:hover {
+
+/* ======================
+   ACTION CONFIRMATION
+====================== */
+
+.action-dialog-icon {
+  width: 70px;
+  height: 70px;
+  margin:
+    0 auto 15px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-dialog-icon.publish,
+.action-dialog-icon.restart {
+  background: #eaf9ef;
+  color: #00b248;
+}
+
+.action-dialog-icon.delete {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.action-exam-info {
+  margin-bottom: 24px;
+  padding: 14px;
+  border:
+    1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.action-exam-info strong {
+  display: block;
+  color: #0f172a;
+  font-size: 14px;
+  margin-bottom: 5px;
+}
+
+.action-exam-info span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.action-confirm-btn {
+  border: none;
+  color: white;
+}
+
+.action-confirm-btn.publish,
+.action-confirm-btn.restart {
+  background: #00c853;
+}
+
+.action-confirm-btn.publish:hover,
+.action-confirm-btn.restart:hover {
   background: #00a845;
 }
+
+.action-confirm-btn.delete {
+  background: #dc2626;
+  color: #ffffff !important;
+}
+
+.action-confirm-btn.delete:hover {
+  background: #b91c1c;
+  color: #ffffff !important;
+}
+
+.action-confirm-btn.delete span,
+.action-confirm-btn.delete svg {
+  color: #ffffff !important;
+  stroke: #ffffff !important;
+}
+
+.action-confirm-btn:disabled,
+.cancel-btn:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+/* ======================
+   NOTIFICATION
+====================== */
+
+.notification-container {
+  position: fixed;
+  top: 25px;
+  right: 25px;
+  z-index: 10000;
+  width: 390px;
+  max-width:
+    calc(100vw - 40px);
+  padding:
+    16px 45px 16px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  border:
+    1px solid #e5e7eb;
+  border-radius: 14px;
+  background: white;
+  box-shadow:
+    0 15px 35px
+    rgba(0, 0, 0, .15);
+}
+
+.notification-icon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.notification-content {
+  flex: 1;
+}
+
+.notification-content strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #1e293b;
+  font-size: 14px;
+}
+
+.notification-content p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.notification-container.success {
+  border-left:
+    5px solid #16a34a;
+}
+
+.notification-container.success
+.notification-icon {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.notification-container.error {
+  border-left:
+    5px solid #dc2626;
+}
+
+.notification-container.error
+.notification-icon {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.notification-container.info {
+  border-left:
+    5px solid #2563eb;
+}
+
+.notification-container.info
+.notification-icon {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.notification-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.notification-enter-active,
+.notification-leave-active {
+  transition:
+    opacity .25s ease,
+    transform .25s ease;
+}
+
+.notification-enter-from,
+.notification-leave-to {
+  opacity: 0;
+  transform:
+    translateX(30px);
+}
+
+.spin {
+  animation:
+    spin .8s linear
+    infinite;
+}
+
+@keyframes spin {
+  to {
+    transform:
+      rotate(360deg);
+  }
+}
+
 /* ======================
    RESPONSIVE
 ====================== */
+
 @media (max-width: 1024px) {
-  .dialog-overlay{
-  align-items:flex-start;
-  padding:12px;
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-  }
-  .dialog{
-    width:100%;
-    max-width:520px;
-    max-height:none;
-    overflow:visible;
-    margin:auto 0;
-    padding:22px 16px;
-  }
-  .dialog-info{
-    grid-template-columns:1fr;
-  }
-  .dialog-buttons{
-    flex-direction:column;
-    position:sticky;
-    bottom:0;
-    background:white;
-    padding-top:10px;
-  }
-  .cancel-btn,
-  .dialog .start-btn{
-    width:100%;
-    flex:none;
-  }
   .stats {
     grid-template-columns:
       repeat(2, 1fr);
   }
+
   .preview-info {
     grid-template-columns:
       repeat(2, 1fr);
   }
 }
+
 @media (max-width: 768px) {
   .dashboard {
     padding: 18px;
   }
+
   .dashboard-header,
   .exam-header,
   .exam-title {
@@ -1668,28 +2031,32 @@ async function deleteExam(
     align-items:
       flex-start;
   }
+
   .new-exam-btn {
     width: 100%;
   }
+
   .filters {
     width: 100%;
     flex-direction:
       column;
   }
-  .search-box {
-    width: 100%;
-  }
+
+  .search-box,
   .search-box input,
   .filters select {
     width: 100%;
   }
+
   .buttons {
     width: 100%;
   }
+
   .buttons button {
     flex: 1;
     min-width: 120px;
   }
+
   .stats,
   .exam-info,
   .preview-info,
@@ -1697,35 +2064,52 @@ async function deleteExam(
     grid-template-columns:
       1fr;
   }
+
   .dialog-buttons {
     flex-direction:
       column;
   }
+
   .preview-footer {
     flex-wrap: wrap;
   }
+
+  .notification-container {
+    top: 15px;
+    right: 15px;
+    left: 15px;
+    width: auto;
+    max-width: none;
+  }
 }
+
 @media (max-width: 480px) {
   .dashboard {
     padding: 12px;
   }
+
   .exam-section {
     padding: 16px;
   }
+
   .stats {
     gap: 10px;
   }
+
   .card {
     padding: 16px;
   }
+
   .buttons button {
     width: 100%;
     min-width: 100%;
   }
+
   .preview-modal,
   .dialog {
     padding: 20px;
   }
+
   .preview-footer {
     justify-content: center;
   }

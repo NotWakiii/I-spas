@@ -227,8 +227,7 @@ async function adminLogin() {
   content: "";
   position: absolute;
   inset: 0;
-  background-image:
-    url("@/assets/backgroundssj.jpg");
+  background-image: url('../../assets/backgroundssj.jpg');
   background-size: cover;
   background-position: center;
   filter: blur(12px);

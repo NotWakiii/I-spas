@@ -192,6 +192,9 @@
                 <th>Percentage</th>
                 <th>Status</th>
                 <th>Tab Switches</th>
+                <th>Copy</th>
+                <th>Paste</th>
+                <th>Fullscreen Exit</th>
                 <th>Idle Time</th>
                 <th>Time Spent</th>
                 <th>Submitted</th>
@@ -241,10 +244,46 @@
                   </span>
                 </td>
                 <td>
-                  <div class="data-with-icon">
+                  <div
+                    class="data-with-icon"
+                    :class="{ 'violation-data': (student.tab_switches ?? 0) > 0 }"
+                  >
                     <MonitorOff :size="14" />
                     <span>
                       {{ student.tab_switches ?? 0 }}
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <div
+                    class="data-with-icon"
+                    :class="{ 'violation-data': (student.copy_attempts ?? 0) > 0 }"
+                  >
+                    <Copy :size="14" />
+                    <span>
+                      {{ student.copy_attempts ?? 0 }}
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <div
+                    class="data-with-icon"
+                    :class="{ 'violation-data': (student.paste_attempts ?? 0) > 0 }"
+                  >
+                    <ClipboardPaste :size="14" />
+                    <span>
+                      {{ student.paste_attempts ?? 0 }}
+                    </span>
+                  </div>
+                </td>
+                <td>
+                  <div
+                    class="data-with-icon"
+                    :class="{ 'violation-data': (student.fullscreen_exits ?? 0) > 0 }"
+                  >
+                    <Minimize2 :size="14" />
+                    <span>
+                      {{ student.fullscreen_exits ?? 0 }}
                     </span>
                   </div>
                 </td>
@@ -290,7 +329,7 @@
                 v-if="filteredStudents.length === 0"
               >
                 <td
-                  colspan="9"
+                  colspan="12"
                   class="no-search-results"
                 >
                   No student found.
@@ -330,6 +369,9 @@ import {
   LoaderCircle,
   CircleAlert,
   MonitorOff,
+  Copy,
+  ClipboardPaste,
+  Minimize2,
   Clock3,
   Timer,
   CalendarDays
@@ -365,6 +407,9 @@ interface StudentResult {
   submitted_at: string | null
   time_spent: number | null
   tab_switches: number | null
+  copy_attempts: number | null
+  paste_attempts: number | null
+  fullscreen_exits: number | null
   idle_seconds: number | null
   status: string
 }
@@ -472,6 +517,12 @@ function exportToExcel() {
               : 'Failed',
           'Tab Switches':
             student.tab_switches ?? 0,
+          'Copy Attempts':
+            student.copy_attempts ?? 0,
+          'Paste Attempts':
+            student.paste_attempts ?? 0,
+          'Fullscreen Exits':
+            student.fullscreen_exits ?? 0,
           'Idle Time':
             formatSeconds(
               student.idle_seconds
@@ -498,33 +549,18 @@ function exportToExcel() {
    * Set Excel column widths
    */
   worksheet['!cols'] = [
-    {
-      wch: 6
-    },
-    {
-      wch: 30
-    },
-    {
-      wch: 12
-    },
-    {
-      wch: 15
-    },
-    {
-      wch: 12
-    },
-    {
-      wch: 15
-    },
-    {
-      wch: 15
-    },
-    {
-      wch: 15
-    },
-    {
-      wch: 28
-    }
+    { wch: 6 },
+    { wch: 30 },
+    { wch: 12 },
+    { wch: 15 },
+    { wch: 12 },
+    { wch: 15 },
+    { wch: 15 },
+    { wch: 15 },
+    { wch: 18 },
+    { wch: 15 },
+    { wch: 15 },
+    { wch: 28 }
   ]
   /*
    * Create Excel workbook
@@ -848,7 +884,7 @@ function formatDate(
 table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1100px;
+  min-width: 1450px;
 }
 th {
   background: #f8faf9;
@@ -1030,5 +1066,12 @@ tbody tr:hover {
   .export-btn {
     width: 100%;
   }
+}
+.violation-data{
+  color:#dc2626;
+  font-weight:700;
+}
+.violation-data svg{
+  color:#dc2626;
 }
 </style>

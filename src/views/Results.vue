@@ -116,6 +116,7 @@
             <th>Correct</th>
             <th>Wrong</th>
             <th>Time Spent</th>
+            <th>Violations</th>
             <th>Performance</th>
             <th>Submitted</th>
           </tr>
@@ -190,11 +191,25 @@
                 </span>
               </div>
             </td>
-            <!-- TIME SPENT -->
             <td>
               {{ student.timeSpent }}
             </td>
-            <!-- PERFORMANCE -->
+            <td>
+              <div class="violation-list">
+                <span :class="{ 'has-violation': student.tabSwitches > 0 }">
+                  Tab Switch: <strong>{{ student.tabSwitches }}</strong>
+                </span>
+                <span :class="{ 'has-violation': student.copyAttempts > 0 }">
+                  Copy: <strong>{{ student.copyAttempts }}</strong>
+                </span>
+                <span :class="{ 'has-violation': student.pasteAttempts > 0 }">
+                  Paste: <strong>{{ student.pasteAttempts }}</strong>
+                </span>
+                <span :class="{ 'has-violation': student.fullscreenExits > 0 }">
+                  Fullscreen Exit: <strong>{{ student.fullscreenExits }}</strong>
+                </span>
+              </div>
+            </td>
             <td>
               <span
                 class="badge"
@@ -376,6 +391,14 @@ async function fetchResults() {
               student.time_spent
                 ? `${student.time_spent} sec`
                 : '-',
+                tabSwitches:
+                  Number(student.tab_switches || 0),
+                copyAttempts:
+                  Number(student.copy_attempts || 0),
+                pasteAttempts:
+                  Number(student.paste_attempts || 0),
+                fullscreenExits:
+                  Number(student.fullscreen_exits || 0),
             submitted:
               student.submitted_at
                 ? new Date(
@@ -506,6 +529,10 @@ function exportCSV() {
     'Correct',
     'Wrong',
     'Time Spent',
+    'Tab Switches',
+    'Copy Attempts',
+    'Paste Attempts',
+    'Fullscreen Exits',
     'Performance',
     'Submitted'
   ]
@@ -521,6 +548,10 @@ function exportCSV() {
         student.correct,
         student.wrong,
         student.timeSpent,
+        student.tabSwitches,
+        student.copyAttempts,
+        student.pasteAttempts,
+        student.fullscreenExits,
         student.performance,
         student.submitted
       ]
@@ -950,5 +981,26 @@ tbody tr:hover{
     font-size:13px;
     padding:14px;
   }
+}
+.violation-list{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:130px;
+}
+.violation-list span{
+  color:#64748b;
+  font-size:12px;
+  white-space:nowrap;
+}
+.violation-list span strong{
+  color:#64748b;
+}
+.violation-list .has-violation{
+  color:#dc2626;
+  font-weight:600;
+}
+.violation-list .has-violation strong{
+  color:#dc2626;
 }
 </style>

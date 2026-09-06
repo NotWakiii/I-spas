@@ -221,7 +221,6 @@ import {
   Eye,
   FileSearch
 } from '@lucide/vue'
-import Results from '@/views/Results.vue'
 
 const router = useRouter()
 

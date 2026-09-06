@@ -273,7 +273,7 @@ async function facultyLogin() {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: url("@/assets/backgroundssj.jpg");
+  background-image: url("../assets/backgroundssj.jpg");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -407,7 +407,7 @@ async function facultyLogin() {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  background-image: url("@/assets/logo.png");
+  background-image: url("../assets/logo.png");
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;

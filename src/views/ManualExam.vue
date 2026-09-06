@@ -5,16 +5,13 @@
       class="back-btn"
       @click="$router.push('/faculty/create-exam')"
     >
-      <ArrowLeft :size="18" /> <span>Back to Selection</span>
+      <ArrowLeft :size="18" />
+      <span>Back to Selection</span>
     </button>
     <!-- PAGE HEADER -->
     <div class="page-header">
-      <h1>
-        Manual Exam Creation
-      </h1>
-      <p>
-        Create your exam manually by adding questions.
-      </p>
+      <h1>Manual Exam Creation</h1>
+      <p>Create your exam manually by adding questions.</p>
     </div>
     <!-- ==========================================
          TOP SECTION
@@ -22,42 +19,44 @@
     <div class="top-grid">
       <!-- EXAM DETAILS -->
       <div class="card">
-        <h2>
-          Exam Details
-        </h2>
-        <!-- TITLE -->
+        <h2>Exam Details</h2>
         <div class="form-group">
-          <label>
-            Exam Title
-          </label>
+          <label>Exam Title</label>
           <input
             v-model="examTitle"
             type="text"
             placeholder="Midterm Examination"
           >
         </div>
-        <!-- DESCRIPTION -->
         <div class="form-group">
-          <label>
-            Description
-          </label>
+          <label>Description</label>
           <textarea
             v-model="description"
             placeholder="Enter description..."
           ></textarea>
         </div>
-        <!-- CLASS -->
         <div class="form-group">
           <label>Assign to Classes</label>
-          <div v-if="loadingClasses" class="class-loading">
+          <div
+            v-if="loadingClasses"
+            class="class-loading"
+          >
             Loading classes...
           </div>
-          <div v-else-if="classes.length > 0" class="class-selection-box">
+          <div
+            v-else-if="classes.length > 0"
+            class="class-selection-box"
+          >
             <label
               v-for="schoolClass in classes"
               :key="schoolClass.id"
               class="class-checkbox-item"
-              :class="{ selected: selectedClassIds.includes(schoolClass.id) }"
+              :class="{
+                selected:
+                  selectedClassIds.includes(
+                    schoolClass.id
+                  )
+              }"
             >
               <input
                 v-model="selectedClassIds"
@@ -65,13 +64,20 @@
                 :value="schoolClass.id"
               >
               <div class="class-checkbox-info">
-                <strong>Grade {{ schoolClass.grade }}</strong>
-                <span>{{ schoolClass.section }}</span>
+                <strong>
+                  Grade {{ schoolClass.grade }}
+                </strong>
+                <span>
+                  {{ schoolClass.section }}
+                </span>
               </div>
             </label>
           </div>
           <p
-            v-if="!loadingClasses && classes.length === 0"
+            v-if="
+              !loadingClasses &&
+              classes.length === 0
+            "
             class="class-warning"
           >
             No classes found. Create a class in Class Management first.
@@ -83,35 +89,27 @@
             {{ selectedClassIds.length }} class(es) selected
           </p>
         </div>
-        <!-- SUBJECT -->
         <div class="form-group">
-          <label>
-            Subject
-          </label>
+          <label>Subject</label>
           <input
             v-model="subject"
             type="text"
             placeholder="Enter subject"
           >
         </div>
-        <!-- DURATION / PASSING -->
         <div class="two-column">
           <div class="form-group">
-            <label>
-              Duration (minutes)
-            </label>
+            <label>Duration (minutes)</label>
             <input
-              v-model="duration"
+              v-model.number="duration"
               type="number"
               min="1"
             >
           </div>
           <div class="form-group">
-            <label>
-              Passing Score (%)
-            </label>
+            <label>Passing Score (%)</label>
             <input
-              v-model="passing"
+              v-model.number="passing"
               type="number"
               min="1"
               max="100"
@@ -121,25 +119,15 @@
       </div>
       <!-- EXAM SUMMARY -->
       <div class="card">
-        <h2>
-          Exam Summary
-        </h2>
+        <h2>Exam Summary</h2>
         <div class="summary-box">
           <div>
-            <span>
-              Total Questions
-            </span>
-            <h1>
-              {{ questions.length }}
-            </h1>
+            <span>Total Questions</span>
+            <h1>{{ questions.length }}</h1>
           </div>
           <div>
-            <span>
-              Total Points
-            </span>
-            <h1>
-              {{ totalPoints }}
-            </h1>
+            <span>Total Points</span>
+            <h1>{{ totalPoints }}</h1>
           </div>
         </div>
         <button
@@ -147,9 +135,22 @@
           :disabled="creatingExam"
           @click="openCreatePopup"
         >
-          <LoaderCircle v-if="creatingExam" :size="18" class="spin" />
-          <CircleCheckBig v-else :size="18" />
-          <span>{{ creatingExam ? 'Creating...' : 'Create Exam' }}</span>
+          <LoaderCircle
+            v-if="creatingExam"
+            :size="18"
+            class="spin"
+          />
+          <CircleCheckBig
+            v-else
+            :size="18"
+          />
+          <span>
+            {{
+              creatingExam
+                ? 'Creating...'
+                : 'Create Exam'
+            }}
+          </span>
         </button>
       </div>
     </div>
@@ -157,56 +158,34 @@
          ADD QUESTION
     =========================================== -->
     <div class="card">
-      <h2>
-        Add Question
-      </h2>
-      <!-- QUESTION TYPE -->
+      <h2>Add Question</h2>
       <div class="form-group">
-        <label>
-          Question Type
-        </label>
+        <label>Question Type</label>
         <select
           v-model="questionType"
           @change="resetAnswerForType"
         >
-          <option>
-            Multiple Choice
-          </option>
-          <option>
-            True or False
-          </option>
-          <option>
-            Identification
-          </option>
-          <option>
-            Essay
-          </option>
+          <option>Multiple Choice</option>
+          <option>True or False</option>
+          <option>Identification</option>
         </select>
       </div>
-      <!-- QUESTION -->
       <div class="form-group">
-        <label>
-          Question
-        </label>
+        <label>Question</label>
         <textarea
           v-model="question"
           placeholder="Enter question..."
         ></textarea>
       </div>
-      <!-- COMPETENCY -->
       <div class="form-group">
-        <label>
-          Competency
-        </label>
+        <label>Competency</label>
         <input
           v-model="competency"
           type="text"
           placeholder="Enter learning competency"
         >
       </div>
-      <!-- ======================================
-           MULTIPLE CHOICE
-      ======================================= -->
+      <!-- MULTIPLE CHOICE -->
       <div
         v-if="
           questionType ===
@@ -217,17 +196,12 @@
           Choices
         </label>
         <div
-          class="option"
-          v-for="(
-            option,
-            index
-          ) in options"
+          v-for="(option, index) in options"
           :key="index"
+          class="option"
         >
           <input
-            v-model="
-              options[index]
-            "
+            v-model="options[index]"
             :placeholder="
               'Option ' +
               (index + 1)
@@ -235,12 +209,8 @@
           >
         </div>
         <div class="form-group">
-          <label>
-            Correct Answer
-          </label>
-          <select
-            v-model="answer"
-          >
+          <label>Correct Answer</label>
+          <select v-model="answer">
             <option
               disabled
               value=""
@@ -248,16 +218,20 @@
               Select Correct Answer
             </option>
             <option
-              v-for="(
-                option,
-                index
-              ) in options"
+              v-for="(option, index) in options"
               :key="index"
-              :value="option"
-              :disabled="
-                !option.trim()
+              :value="
+                String.fromCharCode(
+                  65 + index
+                )
               "
+              :disabled="!option.trim()"
             >
+              {{
+                String.fromCharCode(
+                  65 + index
+                )
+              }}.
               {{
                 option ||
                 'Option ' +
@@ -267,9 +241,7 @@
           </select>
         </div>
       </div>
-      <!-- ======================================
-           TRUE OR FALSE
-      ======================================= -->
+      <!-- TRUE OR FALSE -->
       <div
         v-if="
           questionType ===
@@ -277,12 +249,8 @@
         "
         class="form-group"
       >
-        <label>
-          Correct Answer
-        </label>
-        <select
-          v-model="answer"
-        >
+        <label>Correct Answer</label>
+        <select v-model="answer">
           <option
             disabled
             value=""
@@ -297,9 +265,7 @@
           </option>
         </select>
       </div>
-      <!-- ======================================
-           IDENTIFICATION
-      ======================================= -->
+      <!-- IDENTIFICATION -->
       <div
         v-if="
           questionType ===
@@ -307,26 +273,12 @@
         "
         class="form-group"
       >
-        <label>
-          Correct Answer
-        </label>
+        <label>Correct Answer</label>
         <input
           v-model="answer"
+          type="text"
           placeholder="Correct Answer"
         >
-      </div>
-      <!-- ======================================
-           ESSAY
-      ======================================= -->
-      <div
-        v-if="
-          questionType ===
-          'Essay'
-        "
-        class="essay-note"
-      >
-        Essay questions do not require
-        a predefined correct answer.
       </div>
       <!-- TIME / POINTS -->
       <div class="two-column">
@@ -335,28 +287,26 @@
             Time Limit (seconds)
           </label>
           <input
-            v-model="timeLimit"
+            v-model.number="timeLimit"
             type="number"
             min="1"
           >
         </div>
         <div class="form-group">
-          <label>
-            Points
-          </label>
+          <label>Points</label>
           <input
-            v-model="points"
+            v-model.number="points"
             type="number"
             min="1"
           >
         </div>
       </div>
-      <!-- ADD QUESTION -->
       <button
         class="add-btn"
         @click="addQuestion"
       >
-        <Plus :size="18" /> <span>Add Question</span>
+        <Plus :size="18" />
+        <span>Add Question</span>
       </button>
     </div>
     <!-- ==========================================
@@ -365,30 +315,21 @@
     <div class="card">
       <div class="questions-header">
         <div>
-          <h2>
-            Questions Added
-          </h2>
+          <h2>Questions Added</h2>
           <p>
             Review your questions before
             creating the examination.
           </p>
         </div>
       </div>
-      <!-- EMPTY -->
       <div
-        v-if="
-          questions.length === 0
-        "
+        v-if="questions.length === 0"
         class="empty"
       >
         No questions added yet.
       </div>
-      <!-- QUESTIONS -->
       <div
-        v-for="(
-          item,
-          index
-        ) in questions"
+        v-for="(item, index) in questions"
         :key="index"
         class="question-item"
       >
@@ -399,7 +340,7 @@
           <button
             class="remove-btn"
             @click="
-              removeQuestion(index)
+              openRemovePopup(index)
             "
           >
             <Trash2 :size="16" />
@@ -410,12 +351,9 @@
           {{ item.question }}
         </p>
         <p class="competency-text">
-          <strong>
-            Competency:
-          </strong>
+          <strong>Competency:</strong>
           {{ item.competency }}
         </p>
-        <!-- OPTIONS -->
         <div
           v-if="
             item.type ===
@@ -424,17 +362,20 @@
           class="preview-options"
         >
           <div
-            v-for="(
-              option,
-              optionIndex
-            ) in item.options"
+            v-for="
+              (
+                option,
+                optionIndex
+              ) in item.options
+            "
             :key="optionIndex"
             class="preview-option"
           >
             <span>
               {{
                 String.fromCharCode(
-                  65 + optionIndex
+                  65 +
+                  optionIndex
                 )
               }}.
             </span>
@@ -451,12 +392,7 @@
           <span>
             {{ item.time }} sec
           </span>
-          <span
-            v-if="
-              item.type !==
-              'Essay'
-            "
-          >
+          <span>
             Answer:
             {{ item.answer }}
           </span>
@@ -475,9 +411,7 @@
         <div class="popup-icon">
           <CircleCheckBig :size="38" />
         </div>
-        <h2>
-          Create Examination?
-        </h2>
+        <h2>Create Examination?</h2>
         <p>
           This exam will be saved as a
           draft. You can still edit it later.
@@ -530,8 +464,90 @@
         </div>
       </div>
     </div>
+    <!-- ==========================================
+         REMOVE QUESTION POPUP
+    =========================================== -->
+    <div
+      v-if="showRemovePopup"
+      class="popup-overlay"
+      @click.self="closeRemovePopup"
+    >
+      <div class="popup-card remove-popup-card">
+        <div class="remove-popup-icon">
+          <Trash2 :size="32" />
+        </div>
+        <h2>Remove Question?</h2>
+        <p>
+          Are you sure you want to remove
+          Question {{ pendingRemoveIndex + 1 }}?
+          This action cannot be undone.
+        </p>
+        <div class="popup-buttons">
+          <button
+            class="cancel-btn"
+            @click="closeRemovePopup"
+          >
+            Cancel
+          </button>
+          <button
+            class="delete-confirm-btn"
+            @click="confirmRemoveQuestion"
+          >
+            Remove
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- ==========================================
+         SYSTEM NOTIFICATION
+    =========================================== -->
+    <Transition name="notification">
+      <div
+        v-if="notification.show"
+        class="notification-container"
+        :class="notification.type"
+      >
+        <div class="notification-icon">
+          <span
+            v-if="
+              notification.type ===
+              'success'
+            "
+          >
+            ✓
+          </span>
+          <span
+            v-else-if="
+              notification.type ===
+              'error'
+            "
+          >
+            !
+          </span>
+          <span v-else>
+            i
+          </span>
+        </div>
+        <div class="notification-content">
+          <strong>
+            {{ notification.title }}
+          </strong>
+          <p>
+            {{ notification.message }}
+          </p>
+        </div>
+        <button
+          type="button"
+          class="notification-close"
+          @click="closeNotification"
+        >
+          ×
+        </button>
+      </div>
+    </Transition>
   </div>
 </template>
+
 <script setup lang="ts">
 import {
   computed,
@@ -542,12 +558,21 @@ import {
   useRouter
 } from 'vue-router'
 import api from '../services/api'
-import { ArrowLeft, Plus, Trash2, CircleCheckBig, LoaderCircle } from '@lucide/vue'
+import {
+  ArrowLeft,
+  Plus,
+  Trash2,
+  CircleCheckBig,
+  LoaderCircle
+} from '@lucide/vue'
+
 const router =
   useRouter()
+
 // ==========================================
 // TYPES
 // ==========================================
+
 interface ManualQuestion {
   type: string
   question: string
@@ -557,81 +582,193 @@ interface ManualQuestion {
   points: number
   time: number
 }
-const selectedClassLabel = computed(() => {
-  if (selectedClassIds.value.length === 0) return 'Not selected'
-  return classes.value
-    .filter(item => selectedClassIds.value.includes(item.id))
-    .map(item => `${item.grade} - ${item.section}`)
-    .join(', ')
-})
-// ==========================================
-// EXAM DETAILS
-// ==========================================
-const examTitle =
-  ref('')
-const description =
-  ref('')
+
 interface SchoolClass {
   id: number
   grade: string
   section: string
 }
+
+type NotificationType =
+  'success' |
+  'error' |
+  'info'
+
+// ==========================================
+// EXAM DETAILS
+// ==========================================
+
+const examTitle =
+  ref('')
+
+const description =
+  ref('')
+
 const classes =
   ref<SchoolClass[]>([])
-const selectedClassIds = ref<number[]>([])
+
+const selectedClassIds =
+  ref<number[]>([])
+
 const loadingClasses =
   ref(false)
+
 const subject =
   ref('')
+
 const duration =
   ref(60)
+
 const passing =
   ref(75)
-  // ==========================================
+
+const selectedClassLabel =
+  computed(() => {
+    if (
+      selectedClassIds.value.length ===
+      0
+    ) {
+      return 'Not selected'
+    }
+
+    return classes.value
+      .filter(
+        item =>
+          selectedClassIds.value
+            .includes(
+              item.id
+            )
+      )
+      .map(
+        item =>
+          `${item.grade} - ${item.section}`
+      )
+      .join(', ')
+  })
+
+// ==========================================
+// NOTIFICATION
+// ==========================================
+
+const notification =
+  ref({
+    show: false,
+    type:
+      'success' as NotificationType,
+    title: '',
+    message: ''
+  })
+
+let notificationTimer:
+  ReturnType<typeof setTimeout> |
+  null =
+  null
+
+function showNotification(
+  type: NotificationType,
+  title: string,
+  message: string
+) {
+  if (notificationTimer) {
+    clearTimeout(
+      notificationTimer
+    )
+  }
+
+  notification.value = {
+    show: true,
+    type,
+    title,
+    message
+  }
+
+  notificationTimer =
+    setTimeout(() => {
+      notification.value.show =
+        false
+    }, 4000)
+}
+
+function closeNotification() {
+  notification.value.show =
+    false
+
+  if (notificationTimer) {
+    clearTimeout(
+      notificationTimer
+    )
+
+    notificationTimer =
+      null
+  }
+}
+
+// ==========================================
 // LOAD FACULTY CLASSES
 // ==========================================
+
 async function fetchClasses() {
-  loadingClasses.value = true
+  loadingClasses.value =
+    true
+
   try {
     const response =
       await api.get(
         '/faculty/classes'
       )
+
     classes.value =
       Array.isArray(
         response.data?.data
       )
         ? response.data.data
         : []
-  } catch (error: any) {
+  }
+  catch (error: any) {
     console.error(
       'LOAD CLASSES ERROR:',
       error
     )
+
     classes.value = []
-    alert(
-      error.response?.data?.message ||
+
+    showNotification(
+      'error',
+      'Unable to Load Classes',
+      error.response
+        ?.data
+        ?.message ||
       'Failed to load classes.'
     )
-  } finally {
-    loadingClasses.value = false
+  }
+  finally {
+    loadingClasses.value =
+      false
   }
 }
+
 // ==========================================
 // QUESTION FORM
 // ==========================================
+
 const questionType =
   ref('Multiple Choice')
+
 const question =
   ref('')
+
 const competency =
   ref('')
+
 const answer =
   ref('')
+
 const points =
   ref(1)
+
 const timeLimit =
   ref(30)
+
 const options =
   ref([
     '',
@@ -639,21 +776,38 @@ const options =
     '',
     ''
   ])
+
 // ==========================================
 // QUESTIONS
 // ==========================================
+
 const questions =
   ref<ManualQuestion[]>([])
+
 // ==========================================
 // CREATE STATE
 // ==========================================
+
 const showCreatePopup =
   ref(false)
+
 const creatingExam =
   ref(false)
+
+// ==========================================
+// REMOVE STATE
+// ==========================================
+
+const showRemovePopup =
+  ref(false)
+
+const pendingRemoveIndex =
+  ref(-1)
+
 // ==========================================
 // TOTAL POINTS
 // ==========================================
+
 const totalPoints =
   computed(() => {
     return questions.value.reduce(
@@ -671,11 +825,15 @@ const totalPoints =
       0
     )
   })
+
 // ==========================================
 // RESET ANSWER WHEN TYPE CHANGES
 // ==========================================
+
 function resetAnswerForType() {
-  answer.value = ''
+  answer.value =
+    ''
+
   if (
     questionType.value !==
     'Multiple Choice'
@@ -688,43 +846,60 @@ function resetAnswerForType() {
     ]
   }
 }
+
 // ==========================================
 // ADD QUESTION
 // ==========================================
+
 function addQuestion() {
   if (
     !question.value.trim()
   ) {
-    alert(
+    showNotification(
+      'error',
+      'Question Required',
       'Please enter a question.'
     )
     return
   }
+
   if (
     !competency.value.trim()
   ) {
-    alert(
+    showNotification(
+      'error',
+      'Competency Required',
       'Please enter the competency.'
     )
     return
   }
+
   if (
-    Number(points.value) < 1
+    Number(
+      points.value
+    ) < 1
   ) {
-    alert(
+    showNotification(
+      'error',
+      'Invalid Points',
       'Points must be at least 1.'
     )
     return
   }
+
   if (
-    Number(timeLimit.value) < 1
+    Number(
+      timeLimit.value
+    ) < 1
   ) {
-    alert(
+    showNotification(
+      'error',
+      'Invalid Time Limit',
       'Time limit must be at least 1 second.'
     )
     return
   }
-  // MULTIPLE CHOICE VALIDATION
+
   if (
     questionType.value ===
     'Multiple Choice'
@@ -734,51 +909,56 @@ function addQuestion() {
         option =>
           !option.trim()
       )
+
     if (hasEmptyOption) {
-      alert(
+      showNotification(
+        'error',
+        'Incomplete Choices',
         'Please complete all choices.'
       )
       return
     }
+
+    const normalizedOptions =
+      options.value.map(
+        option =>
+          option
+            .trim()
+            .toLowerCase()
+      )
+
     const duplicateOptions =
       new Set(
-        options.value.map(
-          option =>
-            option
-              .trim()
-              .toLowerCase()
-        )
+        normalizedOptions
       )
+
     if (
       duplicateOptions.size !==
       options.value.length
     ) {
-      alert(
+      showNotification(
+        'error',
+        'Duplicate Choices',
         'Multiple choice options must be unique.'
       )
       return
     }
-    if (
-      !answer.value.trim()
-    ) {
-      alert(
-        'Please select the correct answer.'
-      )
-      return
-    }
   }
-  // TRUE/FALSE + IDENTIFICATION
+
   if (
-    questionType.value !==
-      'Essay'
-    &&
     !answer.value.trim()
   ) {
-    alert(
-      'Please enter/select the correct answer.'
+    showNotification(
+      'error',
+      'Correct Answer Required',
+      questionType.value ===
+        'Multiple Choice'
+        ? 'Please select the correct answer.'
+        : 'Please enter or select the correct answer.'
     )
     return
   }
+
   questions.value.push({
     type:
       questionType.value,
@@ -787,13 +967,10 @@ function addQuestion() {
     competency:
       competency.value.trim(),
     answer:
-      questionType.value ===
-      'Essay'
-        ? ''
-        : answer.value.trim(),
+      answer.value.trim(),
     options:
       questionType.value ===
-      'Multiple Choice'
+        'Multiple Choice'
         ? options.value.map(
             option =>
               option.trim()
@@ -808,125 +985,212 @@ function addQuestion() {
         timeLimit.value
       )
   })
+
   resetQuestionForm()
+
+  showNotification(
+    'success',
+    'Question Added',
+    `Question ${questions.value.length} added successfully.`
+  )
 }
+
 // ==========================================
 // RESET QUESTION FORM
 // ==========================================
+
 function resetQuestionForm() {
-  question.value = ''
-  competency.value = ''
-  answer.value = ''
+  question.value =
+    ''
+
+  competency.value =
+    ''
+
+  answer.value =
+    ''
+
   options.value = [
     '',
     '',
     '',
     ''
   ]
-  points.value = 1
-  timeLimit.value = 30
+
+  points.value =
+    1
+
+  timeLimit.value =
+    30
 }
+
 // ==========================================
 // REMOVE QUESTION
 // ==========================================
-function removeQuestion(
+
+function openRemovePopup(
   index: number
 ) {
-  const confirmed =
-    window.confirm(
-      `Remove Question ${index + 1}?`
-    )
-  if (!confirmed) {
+  pendingRemoveIndex.value =
+    index
+
+  showRemovePopup.value =
+    true
+}
+
+function closeRemovePopup() {
+  showRemovePopup.value =
+    false
+
+  pendingRemoveIndex.value =
+    -1
+}
+
+function confirmRemoveQuestion() {
+  if (
+    pendingRemoveIndex.value < 0
+  ) {
     return
   }
+
+  const removedQuestionNumber =
+    pendingRemoveIndex.value + 1
+
   questions.value.splice(
-    index,
+    pendingRemoveIndex.value,
     1
   )
+
+  closeRemovePopup()
+
+  showNotification(
+    'success',
+    'Question Removed',
+    `Question ${removedQuestionNumber} was removed successfully.`
+  )
 }
+
 // ==========================================
 // OPEN CREATE POPUP
 // ==========================================
+
 function openCreatePopup() {
   if (
     !examTitle.value.trim()
   ) {
-    alert(
-      'Please enter exam title.'
+    showNotification(
+      'error',
+      'Exam Title Required',
+      'Please enter an exam title.'
     )
     return
   }
-  if (selectedClassIds.value.length === 0) {
-    alert('Please select at least one class.')
+
+  if (
+    selectedClassIds.value.length ===
+    0
+  ) {
+    showNotification(
+      'error',
+      'Class Required',
+      'Please select at least one class.'
+    )
     return
   }
+
   if (
     !subject.value.trim()
   ) {
-    alert(
-      'Please enter subject.'
+    showNotification(
+      'error',
+      'Subject Required',
+      'Please enter the subject.'
     )
     return
   }
+
   if (
-    Number(duration.value) < 1
+    Number(
+      duration.value
+    ) < 1
   ) {
-    alert(
+    showNotification(
+      'error',
+      'Invalid Duration',
       'Duration must be at least 1 minute.'
     )
     return
   }
+
   if (
-    Number(passing.value) < 1
+    Number(
+      passing.value
+    ) < 1
     ||
-    Number(passing.value) > 100
+    Number(
+      passing.value
+    ) > 100
   ) {
-    alert(
+    showNotification(
+      'error',
+      'Invalid Passing Score',
       'Passing score must be between 1 and 100.'
     )
     return
   }
+
   if (
-    questions.value.length === 0
+    questions.value.length ===
+    0
   ) {
-    alert(
+    showNotification(
+      'error',
+      'No Questions Available',
       'Please add at least one question.'
     )
     return
   }
+
   showCreatePopup.value =
     true
 }
+
 // ==========================================
 // STILL EDIT
 // ==========================================
+
 function stillEdit() {
   if (
     creatingExam.value
   ) {
     return
   }
+
   showCreatePopup.value =
     false
 }
+
 // ==========================================
 // CREATE EXAM
 // ==========================================
+
 async function confirmCreateExam() {
   if (
     creatingExam.value
   ) {
     return
   }
+
   creatingExam.value =
     true
+
   try {
     const payload = {
       title:
         examTitle.value.trim(),
       description:
         description.value.trim(),
-      class_ids: selectedClassIds.value,
+      class_ids:
+        selectedClassIds.value,
       subject:
         subject.value.trim(),
       duration:
@@ -938,59 +1202,133 @@ async function confirmCreateExam() {
           passing.value
         ),
       questions:
-        questions.value
+        questions.value.map(
+          questionItem => ({
+            type:
+              questionItem.type,
+            competency:
+              questionItem
+                .competency
+                .trim(),
+            question:
+              questionItem
+                .question
+                .trim(),
+            options:
+              questionItem.type ===
+                'Multiple Choice'
+                ? questionItem
+                    .options
+                    .map(
+                      option =>
+                        option.trim()
+                    )
+                : [],
+            answer:
+              questionItem
+                .answer
+                .trim(),
+            points:
+              Number(
+                questionItem.points
+              ),
+            time:
+              Number(
+                questionItem.time
+              )
+          })
+        )
     }
+
     console.log(
       'MANUAL EXAM PAYLOAD:',
       payload
     )
+
     await api.post(
       '/exams',
       payload
     )
+
     showCreatePopup.value =
       false
-    alert(
-      'Exam created successfully!'
+
+    showNotification(
+      'success',
+      'Exam Created',
+      `${selectedClassIds.value.length} exam(s) created successfully!`
     )
+
+    await new Promise(
+      resolve =>
+        setTimeout(
+          resolve,
+          1200
+        )
+    )
+
     await router.push(
       '/faculty/dashboard'
     )
-  } catch (error: any) {
-  console.error(
-    'MANUAL EXAM ERROR:',
-    error
-  )
-  console.error(
-    'SERVER RESPONSE:',
-    error.response?.data
-  )
-  const validationErrors =
-    error.response?.data?.errors
-  if (validationErrors) {
-    const firstError =
-      Object.values(validationErrors)
-        .flat()[0]
-    alert(
-      String(
-        firstError ||
-        'Please check the exam information.'
-      )
-    )
-  } else {
-    alert(
-      error.response?.data?.message ||
-      'Failed to create exam.'
-    )
   }
-} finally {
-  creatingExam.value = false
+  catch (error: any) {
+    console.error(
+      'MANUAL EXAM ERROR:',
+      error
+    )
+
+    console.error(
+      'SERVER RESPONSE:',
+      error.response?.data
+    )
+
+    const validationErrors =
+      error.response
+        ?.data
+        ?.errors
+
+    if (validationErrors) {
+      const firstError =
+        Object.values(
+          validationErrors
+        )
+          .flat()[0]
+
+      showNotification(
+        'error',
+        'Validation Error',
+        String(
+          firstError ||
+          'Please check the exam information.'
+        )
+      )
+    }
+    else {
+      showNotification(
+        'error',
+        'Creation Failed',
+        error.response
+          ?.data
+          ?.message ||
+        'Failed to create exam.'
+      )
+    }
+  }
+  finally {
+    creatingExam.value =
+      false
+  }
 }
-}
+
+// ==========================================
+// MOUNT
+// ==========================================
+
 onMounted(() => {
   fetchClasses()
 })
 </script>
+
 <style scoped>
 * {
   margin: 0;
@@ -1000,31 +1338,39 @@ onMounted(() => {
     'Poppins',
     sans-serif;
 }
+
 /* ==========================================
    PAGE
 ========================================== */
+
 .manual-page {
   padding: 35px;
   background: #f7f9fc;
   min-height: 100vh;
 }
+
 /* ==========================================
    HEADER
 ========================================== */
+
 .page-header {
   margin-bottom: 30px;
 }
+
 .page-header h1 {
   color: #112244;
   font-size: 34px;
   margin-bottom: 8px;
 }
+
 .page-header p {
   color: #6b7280;
 }
+
 /* ==========================================
    BACK BUTTON
 ========================================== */
+
 .back-btn {
   background: white;
   border: none;
@@ -1037,13 +1383,16 @@ onMounted(() => {
     rgba(0, 0, 0, .08);
   transition: .3s;
 }
+
 .back-btn:hover {
   background: #00c853;
   color: white;
 }
+
 /* ==========================================
    TOP GRID
 ========================================== */
+
 .top-grid {
   display: grid;
   grid-template-columns:
@@ -1051,9 +1400,11 @@ onMounted(() => {
   gap: 25px;
   margin-bottom: 25px;
 }
+
 /* ==========================================
    CARD
 ========================================== */
+
 .card {
   background: white;
   border-radius: 18px;
@@ -1063,21 +1414,26 @@ onMounted(() => {
     rgba(0, 0, 0, .08);
   margin-bottom: 25px;
 }
+
 .card h2 {
   color: #112244;
   margin-bottom: 20px;
 }
+
 .class-warning {
   margin-top: 7px;
   color: #dc2626;
   font-size: 12px;
 }
+
 /* ==========================================
    FORM
 ========================================== */
+
 .form-group {
   margin-bottom: 18px;
 }
+
 .form-group label,
 .choices-label {
   display: block;
@@ -1085,6 +1441,7 @@ onMounted(() => {
   margin-bottom: 8px;
   color: #374151;
 }
+
 .form-group input,
 .form-group textarea,
 .form-group select,
@@ -1099,6 +1456,7 @@ onMounted(() => {
   font-size: 15px;
   background: white;
 }
+
 .form-group input:focus,
 .form-group textarea:focus,
 .form-group select:focus,
@@ -1108,39 +1466,48 @@ onMounted(() => {
     0 0 0 3px
     rgba(0, 200, 83, .08);
 }
+
 .form-group textarea {
   resize: vertical;
   min-height: 110px;
 }
+
 /* ==========================================
    TWO COLUMN
 ========================================== */
+
 .two-column {
   display: grid;
   grid-template-columns:
     1fr 1fr;
   gap: 20px;
 }
+
 /* ==========================================
    SUMMARY
 ========================================== */
+
 .summary-box {
   display: flex;
   flex-direction: column;
   gap: 25px;
   margin-bottom: 25px;
 }
+
 .summary-box span {
   color: #6b7280;
   font-size: 14px;
 }
+
 .summary-box h1 {
   color: #00c853;
   font-size: 38px;
 }
+
 /* ==========================================
    BUTTONS
 ========================================== */
+
 .create-btn,
 .add-btn {
   width: 100%;
@@ -1154,37 +1521,30 @@ onMounted(() => {
   font-weight: 600;
   transition: .3s;
 }
+
 .create-btn:hover:not(:disabled),
 .add-btn:hover:not(:disabled) {
   background: #00b34a;
 }
+
 .create-btn:disabled,
 .add-btn:disabled {
   opacity: .6;
   cursor: not-allowed;
 }
+
 /* ==========================================
    OPTIONS
 ========================================== */
+
 .option {
   margin-bottom: 12px;
 }
-/* ==========================================
-   ESSAY NOTE
-========================================== */
-.essay-note {
-  margin-bottom: 18px;
-  padding: 13px 15px;
-  background: #f0fdf4;
-  border:
-    1px solid #bbf7d0;
-  color: #166534;
-  border-radius: 10px;
-  font-size: 13px;
-}
+
 /* ==========================================
    QUESTIONS HEADER
 ========================================== */
+
 .questions-header {
   display: flex;
   justify-content:
@@ -1192,16 +1552,20 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 20px;
 }
+
 .questions-header h2 {
   margin-bottom: 5px;
 }
+
 .questions-header p {
   color: #6b7280;
   font-size: 13px;
 }
+
 /* ==========================================
    QUESTION ITEM
 ========================================== */
+
 .question-item {
   padding: 18px;
   border:
@@ -1210,11 +1574,13 @@ onMounted(() => {
   margin-bottom: 15px;
   transition: .25s;
 }
+
 .question-item:hover {
   border-color: #00c853;
   transform:
     translateY(-2px);
 }
+
 .question-top {
   display: flex;
   justify-content:
@@ -1223,31 +1589,38 @@ onMounted(() => {
   gap: 15px;
   margin-bottom: 10px;
 }
+
 .question-item h3 {
   color: #112244;
 }
+
 .question-text {
   color: #444;
   line-height: 1.6;
   margin-bottom: 8px;
 }
+
 .competency-text {
   color: #4b5563;
   margin-bottom: 10px;
   font-size: 13px;
 }
+
 .competency-text strong {
   color: #166534;
 }
+
 /* ==========================================
    QUESTION META
 ========================================== */
+
 .question-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 12px;
 }
+
 .question-meta span {
   padding: 5px 9px;
   background: #f3f4f6;
@@ -1256,9 +1629,11 @@ onMounted(() => {
   font-size: 11px;
   font-weight: 600;
 }
+
 /* ==========================================
    PREVIEW OPTIONS
 ========================================== */
+
 .preview-options {
   display: grid;
   grid-template-columns:
@@ -1267,6 +1642,7 @@ onMounted(() => {
   margin:
     12px 0;
 }
+
 .preview-option {
   padding:
     8px 10px;
@@ -1277,13 +1653,16 @@ onMounted(() => {
   color: #4b5563;
   font-size: 12px;
 }
+
 .preview-option span {
   font-weight: 700;
   color: #15803d;
 }
+
 /* ==========================================
    REMOVE BUTTON
 ========================================== */
+
 .remove-btn {
   border: none;
   padding:
@@ -1295,20 +1674,25 @@ onMounted(() => {
   font-weight: 700;
   cursor: pointer;
 }
+
 .remove-btn:hover {
   background: #fecaca;
 }
+
 /* ==========================================
    EMPTY
 ========================================== */
+
 .empty {
   text-align: center;
   color: #888;
   padding: 35px;
 }
+
 /* ==========================================
    POPUP
 ========================================== */
+
 .popup-overlay {
   position: fixed;
   inset: 0;
@@ -1322,6 +1706,7 @@ onMounted(() => {
   padding: 20px;
   z-index: 9999;
 }
+
 .popup-card {
   width: 450px;
   max-width: 95%;
@@ -1333,6 +1718,7 @@ onMounted(() => {
     0 20px 45px
     rgba(0, 0, 0, .2);
 }
+
 .popup-icon {
   width: 75px;
   height: 75px;
@@ -1344,20 +1730,54 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 34px;
-  font-weight: 700;
 }
+
 .popup-card h2 {
   color: #112244;
   margin-bottom: 15px;
 }
+
 .popup-card > p {
   color: #666;
   line-height: 1.7;
 }
+
+/* ==========================================
+   REMOVE POPUP
+========================================== */
+
+.remove-popup-icon {
+  width: 70px;
+  height: 70px;
+  margin:
+    0 auto 20px;
+  border-radius: 50%;
+  background: #fee2e2;
+  color: #dc2626;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.delete-confirm-btn {
+  flex: 1;
+  border: none;
+  padding: 14px;
+  border-radius: 10px;
+  background: #dc2626;
+  color: white;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.delete-confirm-btn:hover {
+  background: #b91c1c;
+}
+
 /* ==========================================
    POPUP SUMMARY
 ========================================== */
+
 .popup-summary {
   margin-top: 20px;
   padding: 15px;
@@ -1365,6 +1785,7 @@ onMounted(() => {
   border-radius: 10px;
   text-align: left;
 }
+
 .popup-summary div {
   display: flex;
   justify-content:
@@ -1375,26 +1796,32 @@ onMounted(() => {
   border-bottom:
     1px solid #e5e7eb;
 }
+
 .popup-summary div:last-child {
   border-bottom: none;
 }
+
 .popup-summary span {
   color: #6b7280;
   font-size: 12px;
 }
+
 .popup-summary strong {
   color: #111827;
   font-size: 12px;
   text-align: right;
 }
+
 /* ==========================================
    POPUP BUTTONS
 ========================================== */
+
 .popup-buttons {
   display: flex;
   gap: 15px;
   margin-top: 30px;
 }
+
 .cancel-btn,
 .confirm-btn {
   flex: 1;
@@ -1404,78 +1831,102 @@ onMounted(() => {
   cursor: pointer;
   font-weight: 600;
 }
+
 .cancel-btn {
   background: #e5e7eb;
   color: #374151;
 }
+
 .confirm-btn {
   background: #16a34a;
   color: white;
 }
+
 .cancel-btn:disabled,
 .confirm-btn:disabled {
   opacity: .6;
   cursor: not-allowed;
 }
+
+/* ==========================================
+   CLASS SELECTION
+========================================== */
+
 .class-selection-box {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns:
+    1fr 1fr;
   gap: 10px;
   max-height: 250px;
   overflow-y: auto;
   padding: 12px;
-  border: 1px solid #d9dce2;
+  border:
+    1px solid #d9dce2;
   border-radius: 12px;
   background: #f8fafc;
 }
+
 .class-checkbox-item {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 12px;
-  border: 1px solid #e5e7eb;
+  border:
+    1px solid #e5e7eb;
   border-radius: 10px;
   background: white;
   cursor: pointer;
   transition: .2s;
 }
-.class-checkbox-item:hover { border-color: #00c853; }
+
+.class-checkbox-item:hover {
+  border-color: #00c853;
+}
+
 .class-checkbox-item.selected {
   border-color: #00c853;
   background: #f0fdf4;
 }
+
 .class-checkbox-item input {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
   accent-color: #00c853;
 }
+
 .class-checkbox-info {
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
+
 .class-checkbox-info strong {
   color: #112244;
   font-size: 14px;
 }
+
 .class-checkbox-info span {
   color: #64748b;
   font-size: 12px;
 }
+
 .selected-class-count {
   margin-top: 8px;
   color: #16a34a;
   font-size: 12px;
   font-weight: 600;
 }
+
 .class-loading {
   padding: 14px;
   color: #64748b;
-  border: 1px solid #e5e7eb;
+  border:
+    1px solid #e5e7eb;
   border-radius: 10px;
   background: #f8fafc;
 }
+
 .back-btn,
 .create-btn,
 .add-btn,
@@ -1486,33 +1937,202 @@ onMounted(() => {
   justify-content: center;
   gap: 8px;
 }
-.spin { animation: spin .8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ==========================================
+   SYSTEM NOTIFICATION
+========================================== */
+
+.notification-container {
+  position: fixed;
+  top: 25px;
+  right: 25px;
+  z-index: 10000;
+  width: 390px;
+  max-width:
+    calc(100vw - 40px);
+  padding:
+    16px 45px
+    16px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  border:
+    1px solid #e5e7eb;
+  border-radius: 14px;
+  background: white;
+  box-shadow:
+    0 15px 35px
+    rgba(0, 0, 0, .15);
+}
+
+.notification-icon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.notification-content {
+  flex: 1;
+}
+
+.notification-content strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #1e293b;
+  font-size: 14px;
+}
+
+.notification-content p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.notification-container.success {
+  border-left:
+    5px solid #16a34a;
+}
+
+.notification-container.success
+.notification-icon {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.notification-container.error {
+  border-left:
+    5px solid #dc2626;
+}
+
+.notification-container.error
+.notification-icon {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.notification-container.info {
+  border-left:
+    5px solid #2563eb;
+}
+
+.notification-container.info
+.notification-icon {
+  background: #dbeafe;
+  color: #2563eb;
+}
+
+.notification-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.notification-close:hover {
+  color: #334155;
+}
+
+.notification-enter-active,
+.notification-leave-active {
+  transition:
+    opacity .25s ease,
+    transform .25s ease;
+}
+
+.notification-enter-from,
+.notification-leave-to {
+  opacity: 0;
+  transform:
+    translateX(30px);
+}
+
+/* ==========================================
+   SPINNER
+========================================== */
+
+.spin {
+  animation:
+    spin .8s linear
+    infinite;
+}
+
+@keyframes spin {
+  to {
+    transform:
+      rotate(360deg);
+  }
+}
+
 /* ==========================================
    RESPONSIVE
 ========================================== */
+
 @media(max-width: 900px) {
   .top-grid {
     grid-template-columns:
       1fr;
   }
+
   .two-column {
     grid-template-columns:
       1fr;
   }
+
   .manual-page {
     padding: 20px;
   }
+
   .page-header h1 {
     font-size: 28px;
   }
+
   .popup-buttons {
     flex-direction:
       column;
   }
+
   .preview-options {
     grid-template-columns:
       1fr;
+  }
+}
+
+@media(max-width: 600px) {
+  .manual-page {
+    padding: 15px;
+  }
+
+  .card {
+    padding: 18px;
+  }
+
+  .page-header h1 {
+    font-size: 24px;
+  }
+
+  .popup-card {
+    padding:
+      25px 20px;
+  }
+
+  .notification-container {
+    top: 15px;
+    right: 15px;
+    left: 15px;
+    width: auto;
+    max-width: none;
   }
 }
 </style>

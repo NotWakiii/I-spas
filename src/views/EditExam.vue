@@ -123,7 +123,6 @@
         <option>Multiple Choice</option>
         <option>True or False</option>
         <option>Identification</option>
-        <option>Essay</option>
     </select>
 </div>
 <div
@@ -285,9 +284,6 @@ async function fetchExam() {
             }
             if (q.question_type === 'identification') {
                 type = 'Identification'
-            }
-            if (q.question_type === 'essay') {
-                type = 'Essay'
             }
             const options = ['', '', '', '']
             if (q.options && q.options.length) {

@@ -4,7 +4,7 @@
     @copy.prevent="handleBlockedAction('copy_attempt')"
     @cut.prevent="handleBlockedAction('cut_attempt')"
     @paste.prevent="handleBlockedAction('paste_attempt')"
-    @contextmenu.prevent="handleBlockedAction('right_click')"
+    @contextmenu="handleContextMenu"
   >
     <div v-if="loading" class="state-screen">
       <div class="state-card">
@@ -182,26 +182,6 @@
                   @input="saveAnswersLocally"
                 >
                 <small>Check your spelling before proceeding.</small>
-              </div>
-              <div
-                v-else-if="currentQuestion.question_type === 'essay'"
-                class="text-answer"
-              >
-                <label>Your Answer</label>
-                <textarea
-                  v-model="answers[currentQuestion.id]"
-                  :disabled="autoSubmitting || submitting"
-                  placeholder="Write your answer here..."
-                  @blur="saveCurrentAnswer"
-                  @input="saveAnswersLocally"
-                ></textarea>
-                <div class="essay-footer">
-                  <small>Your response is automatically saved.</small>
-                  <span>
-                    {{ String(answers[currentQuestion.id] || '').length }}
-                    characters
-                  </span>
-                </div>
               </div>
               <div v-else class="unsupported-question">
                 This question type is currently unavailable.
@@ -1014,11 +994,6 @@ function displayQuestionType(
   ) {
     return 'Identification'
   }
-  if (
-    value === 'essay'
-  ) {
-    return 'Essay'
-  }
   return 'Question'
 }
 function optionLetter(
@@ -1456,6 +1431,24 @@ async function handleFacultyEndedExam() {
   )
   router.replace(
     '/student/results'
+  )
+}
+function handleContextMenu(
+  event: MouseEvent
+) {
+  const isTouchDevice =
+    navigator.maxTouchPoints > 0 ||
+    window.matchMedia(
+      '(pointer: coarse)'
+    ).matches
+
+  if (isTouchDevice) {
+    return
+  }
+
+  event.preventDefault()
+  handleBlockedAction(
+    'right_click'
   )
 }
 /* =====================================================
@@ -2643,17 +2636,6 @@ img{
     border-color:#16a34a;
     background:#ffffff;
     box-shadow:0 0 0 4px rgba(22,163,74,.1);
-}
-.text-answer small,
-.essay-footer,
-.saving-status{
-    color:#94a3b8;
-    font-size:9px;
-}
-.essay-footer{
-    display:flex;
-    justify-content:space-between;
-    gap:12px;
 }
 .unsupported-question{
     padding:20px;

@@ -98,6 +98,24 @@
             </strong>
           </div>
           <div>
+            <small>Copy Attempts</small>
+            <strong :class="{ danger: student.copyAttempts > 0 }">
+              {{ student.copyAttempts }}
+            </strong>
+          </div>
+          <div>
+            <small>Paste Attempts</small>
+            <strong :class="{ danger: student.pasteAttempts > 0 }">
+              {{ student.pasteAttempts }}
+            </strong>
+          </div>
+          <div>
+            <small>Fullscreen Exits</small>
+            <strong :class="{ danger: student.fullscreenExits > 0 }">
+              {{ student.fullscreenExits }}
+            </strong>
+          </div>
+          <div>
             <small>Idle Time</small>
             <strong :class="{ danger: student.idleTime >= 30 }">
               {{ student.idleTime }}s
@@ -114,10 +132,6 @@
     </transition>
     <div v-if="showEndPopup" class="popup-overlay">
       <div class="popup-card">
-        <div v-if="alertMessage" class="live-alert">
-          <TriangleAlert :size="20" />
-          <span>{{ alertMessage }}</span>
-        </div>
         <h2>End Examination?</h2>
         <p>
           This will immediately stop the examination for all students.
@@ -159,6 +173,9 @@ interface MonitoringStudent {
   progress: number
   currentQuestion: number
   tabSwitches: number
+  copyAttempts: number
+  pasteAttempts: number
+  fullscreenExits: number
   idleTime: number
   timeRemaining: number
 }
@@ -168,6 +185,9 @@ interface SessionPayload {
   progress?: number
   current_question?: number
   tab_switches?: number
+  copy_attempts?: number
+  paste_attempts?: number
+  fullscreen_exits?: number
   idle_seconds?: number
   time_remaining?: number
   last_seen_at?: string | null
@@ -201,7 +221,11 @@ const idleStudents = computed(() =>
 )
 const suspiciousStudents = computed(() =>
   students.value.filter(
-    (student) => student.tabSwitches > 0
+    (student) =>
+      student.tabSwitches > 0 ||
+      student.copyAttempts > 0 ||
+      student.pasteAttempts > 0 ||
+      student.fullscreenExits > 0
   ).length
 )
 const averageProgress = computed(() => {
@@ -293,12 +317,42 @@ async function fetchMonitoring() {
       const tabSwitches = Number(
         session.tab_switches || 0
       )
+      const copyAttempts = Number(
+        session.copy_attempts || 0
+      )
+      const pasteAttempts = Number(
+        session.paste_attempts || 0
+      )
+      const fullscreenExits = Number(
+        session.fullscreen_exits || 0
+      )
       if (
         oldStudent &&
         tabSwitches > oldStudent.tabSwitches
       ) {
         showAlert(
           `${name} switched tabs. Total: ${tabSwitches}`
+        )
+      } else if (
+        oldStudent &&
+        copyAttempts > oldStudent.copyAttempts
+      ) {
+        showAlert(
+          `${name} attempted to copy. Total: ${copyAttempts}`
+        )
+      } else if (
+        oldStudent &&
+        pasteAttempts > oldStudent.pasteAttempts
+      ) {
+        showAlert(
+          `${name} attempted to paste. Total: ${pasteAttempts}`
+        )
+      } else if (
+        oldStudent &&
+        fullscreenExits > oldStudent.fullscreenExits
+      ) {
+        showAlert(
+          `${name} exited fullscreen. Total: ${fullscreenExits}`
         )
       }
       return {
@@ -312,6 +366,9 @@ async function fetchMonitoring() {
           1
         ),
         tabSwitches,
+        copyAttempts,
+        pasteAttempts,
+        fullscreenExits,
         idleTime: Number(session.idle_seconds || 0),
         timeRemaining: Number(
           session.time_remaining ??
@@ -351,8 +408,6 @@ async function checkAutoEndExam() {
   if (isAutoEnding.value) {
     return
   }
-  // Once any student reports positive remaining time,
-  // we know the examination has actually started.
   if (
     students.value.some(
       (student) => student.timeRemaining > 0
@@ -360,8 +415,6 @@ async function checkAutoEndExam() {
   ) {
     hasExamStarted.value = true
   }
-  // Important:
-  // Don't auto-end newly created sessions with 0 time.
   if (!hasExamStarted.value) {
     return
   }
@@ -627,18 +680,6 @@ onUnmounted(() => {
   border-radius:22px;
   padding:35px;
   text-align:center;
-}
-.popup-icon{
-  width:80px;
-  height:80px;
-  margin:0 auto 20px;
-  border-radius:50%;
-  background:#ef4444;
-  color:white;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  font-size:34px;
 }
 .popup-card p{
   color:#666;
