@@ -37,6 +37,7 @@
       <!-- HEADER ACTION BUTTONS -->
       <div class="header-buttons">
         <button
+          v-if="exam.assessmentType === 'examination'"
           class="analysis-btn"
           @click="goToItemAnalysis"
         >
@@ -199,6 +200,9 @@
                 <span :class="{ 'has-violation': student.tabSwitches > 0 }">
                   Tab Switch: <strong>{{ student.tabSwitches }}</strong>
                 </span>
+                <span :class="{ 'has-violation': student.tabSwitchSeconds > 0 }">
+                  Tab Switch Time: <strong>{{ formatDuration(student.tabSwitchSeconds) }}</strong>
+                </span>
                 <span :class="{ 'has-violation': student.copyAttempts > 0 }">
                   Copy: <strong>{{ student.copyAttempts }}</strong>
                 </span>
@@ -207,6 +211,12 @@
                 </span>
                 <span :class="{ 'has-violation': student.fullscreenExits > 0 }">
                   Fullscreen Exit: <strong>{{ student.fullscreenExits }}</strong>
+                </span>
+                <span :class="{ 'has-violation': student.fullscreenExitSeconds > 0 }">
+                  Fullscreen Exit Time: <strong>{{ formatDuration(student.fullscreenExitSeconds) }}</strong>
+                </span>
+                <span :class="{ 'has-violation': student.totalAwaySeconds > 0 }">
+                  Total Time Away: <strong>{{ formatDuration(student.totalAwaySeconds) }}</strong>
                 </span>
               </div>
             </td>
@@ -275,6 +285,7 @@ const exam = ref({
   grade: '',
   section: '',
   subject: '',
+  assessmentType: '' as 'quiz' | 'examination' | '',
   totalQuestions: 0,
   passingScore: 75
 })
@@ -325,6 +336,9 @@ async function fetchResults() {
         ?? '',
       subject:
         response.data.exam.subject
+        ?? '',
+      assessmentType:
+        response.data.exam.assessment_type
         ?? '',
       totalQuestions:
         response.data.exam.questions_count
@@ -399,6 +413,12 @@ async function fetchResults() {
                   Number(student.paste_attempts || 0),
                 fullscreenExits:
                   Number(student.fullscreen_exits || 0),
+                tabSwitchSeconds:
+                  Number(student.tab_switch_seconds || 0),
+                fullscreenExitSeconds:
+                  Number(student.fullscreen_exit_seconds || 0),
+                totalAwaySeconds:
+                  Number(student.total_away_seconds || 0),
             submitted:
               student.submitted_at
                 ? new Date(
@@ -421,6 +441,19 @@ async function fetchResults() {
     )
   }
 }
+/* ==========================================
+   DURATION FORMAT
+========================================== */
+function formatDuration(seconds: number): string {
+  const total = Math.max(0, Math.floor(Number(seconds || 0)))
+  const hours = Math.floor(total / 3600)
+  const minutes = Math.floor((total % 3600) / 60)
+  const secs = total % 60
+  if (hours > 0) return `${hours}h ${minutes}m ${secs}s`
+  if (minutes > 0) return `${minutes}m ${secs}s`
+  return `${secs}s`
+}
+
 /* ==========================================
    RANK STUDENTS
 ========================================== */
@@ -514,6 +547,10 @@ const passRate =
    ITEM ANALYSIS
 ========================================== */
 function goToItemAnalysis() {
+  if (exam.value.assessmentType !== 'examination') {
+    return
+  }
+
   router.push(
     `/faculty/item-analysis/${exam.value.id}`
   )
@@ -530,9 +567,12 @@ function exportCSV() {
     'Wrong',
     'Time Spent',
     'Tab Switches',
+    'Tab Switch Time',
     'Copy Attempts',
     'Paste Attempts',
     'Fullscreen Exits',
+    'Fullscreen Exit Time',
+    'Total Time Away',
     'Performance',
     'Submitted'
   ]
@@ -549,9 +589,12 @@ function exportCSV() {
         student.wrong,
         student.timeSpent,
         student.tabSwitches,
+        formatDuration(student.tabSwitchSeconds),
         student.copyAttempts,
         student.pasteAttempts,
         student.fullscreenExits,
+        formatDuration(student.fullscreenExitSeconds),
+        formatDuration(student.totalAwaySeconds),
         student.performance,
         student.submitted
       ]
@@ -986,7 +1029,7 @@ tbody tr:hover{
   display:flex;
   flex-direction:column;
   gap:4px;
-  min-width:130px;
+  min-width:180px;
 }
 .violation-list span{
   color:#64748b;

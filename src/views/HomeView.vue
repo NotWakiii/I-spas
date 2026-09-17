@@ -33,7 +33,7 @@
         <div class="right-content">
           <div class="logo-container">
             <img
-              src="@/assets/logo.png"
+              src="../assets/logo.png"
               class="logo"
               alt="I-SPAS Logo"
             />

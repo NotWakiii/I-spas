@@ -4,476 +4,130 @@
     <div class="dashboard-header">
       <div>
         <h1>Faculty Dashboard</h1>
-        <p>Welcome back! Manage your examinations and quizzes.</p>
-      </div>
-      <button class="new-exam-btn" @click="goToCreateExam">
-        <Plus :size="18" />
-        <span>New Exam</span>
-      </button>
-    </div>
-    <!-- ================= STATS ================= -->
-    <div class="stats">
-      <div class="card">
-        <div class="stat-icon">
-          <FileText :size="22" />
-        </div>
-        <div>
-          <span>Total Exams</span>
-          <h2>{{ totalExams }}</h2>
-        </div>
-      </div>
-      <div class="card">
-        <div class="stat-icon">
-          <Send :size="22" />
-        </div>
-        <div>
-          <span>Published</span>
-          <h2>{{ totalPublished }}</h2>
-        </div>
-      </div>
-      <div class="card">
-        <div class="stat-icon">
-          <FilePenLine :size="22" />
-        </div>
-        <div>
-          <span>Drafts</span>
-          <h2>{{ totalDrafts }}</h2>
-        </div>
-      </div>
-      <div class="card">
-        <div class="stat-icon">
-          <CircleCheckBig :size="22" />
-        </div>
-        <div>
-          <span>Exam Finished</span>
-          <h2>{{ totalFinished }}</h2>
-        </div>
+        <p>View student performance for a selected school year, semester, or class.</p>
       </div>
     </div>
-    <!-- ================= EXAM SECTION ================= -->
-    <div class="exam-section">
-      <div class="exam-header">
+    <!-- ================= PERFORMANCE ANALYTICS ================= -->
+    <section class="analytics-section">
+      <div class="analytics-heading">
         <div>
-          <h2>Examinations</h2>
-          <p>View and manage all examinations.</p>
+          <h2>Performance Analytics</h2>
+          <p>Simple descriptive graphs based on submitted assessment results.</p>
         </div>
-        <div class="filters">
-          <div class="search-box">
-            <Search :size="17" />
-            <input
-              v-model="search"
-              type="text"
-              placeholder="Search examination..."
-            >
-          </div>
-          <select v-model="selectedSubject">
-            <option value="All Subjects">
-              All Subjects
-            </option>
-            <option
-              v-for="subject in subjects"
-              :key="subject"
-              :value="subject"
-            >
-              {{ subject }}
+        <div class="analytics-filters">
+          <select v-model="selectedSchoolYear">
+            <option value="All School Years">All School Years</option>
+            <option v-for="year in schoolYears" :key="year" :value="year">{{ year }}</option>
+          </select>
+          <select v-model="selectedSemester">
+            <option value="All Semesters">All Semesters</option>
+            <option value="1st Semester">1st Semester</option>
+            <option value="2nd Semester">2nd Semester</option>
+          </select>
+          <select v-model="selectedClassId">
+            <option value="all">All Classes</option>
+            <option v-for="schoolClass in analyticsClasses" :key="schoolClass.id" :value="String(schoolClass.id)">
+              {{ classLabel(schoolClass) }}
             </option>
           </select>
         </div>
       </div>
-      <!-- ================= EXAM CARDS ================= -->
-      <div v-if="filteredExams.length">
-        <div
-          v-for="exam in filteredExams"
-          :key="exam.id"
-          class="exam-card"
-        >
-          <div class="exam-title">
-            <div>
-              <h3>{{ exam.title }}</h3>
-              <span
-                class="badge"
-                :class="{
-                  published: exam.status === 'Published',
-                  draft: exam.status === 'Draft',
-                  finished: exam.status === 'Finished',
-                  started: exam.status === 'Started'
-                }"
-              >
-                {{ exam.status }}
-              </span>
-            </div>
-            <div class="buttons">
-              <button
-                class="edit"
-                @click="editExam(exam.id)"
-              >
-                <Pencil :size="15" />
-                <span>Edit</span>
-              </button>
-              <button
-                class="preview"
-                @click="previewExam(exam)"
-              >
-                <Eye :size="15" />
-                <span>Preview</span>
-              </button>
-              <button
-                v-if="exam.status === 'Draft'"
-                class="publish-btn"
-                @click="publishExam(exam)"
-              >
-                <Send :size="15" />
-                <span>Publish</span>
-              </button>
-              <button
-                v-else-if="exam.status === 'Published'"
-                class="start-btn"
-                @click="startExam(exam)"
-              >
-                <Play :size="15" />
-                <span>Start Exam</span>
-              </button>
-              <button
-                v-else-if="exam.status === 'Finished'"
-                class="start-btn"
-                @click="startAgain(exam)"
-              >
-                <RotateCcw :size="15" />
-                <span>Start Again</span>
-              </button>
-              <button
-                class="delete"
-                @click="deleteExam(exam)"
-              >
-                <Trash2 :size="15" />
-                <span>Delete</span>
-              </button>
-            </div>
-          </div>
-          <!-- ================= EXAM INFO ================= -->
-          <div class="exam-info">
-            <div>
-              <GraduationCap :size="18" class="info-icon" />
-              <small>Grade</small>
-              <strong>{{ exam.grade }}</strong>
-            </div>
-            <div>
-              <Layers3 :size="18" class="info-icon" />
-              <small>Section</small>
-              <strong>{{ exam.section }}</strong>
-            </div>
-            <div>
-              <BookOpen :size="18" class="info-icon" />
-              <small>Subject</small>
-              <strong>{{ exam.subject }}</strong>
-            </div>
-            <div>
-              <Clock3 :size="18" class="info-icon" />
-              <small>Duration</small>
-              <strong>{{ exam.duration }} mins</strong>
-            </div>
-            <div>
-              <ListChecks :size="18" class="info-icon" />
-              <small>Questions</small>
-              <strong>{{ exam.items }}</strong>
-            </div>
-            <div>
-              <Target :size="18" class="info-icon" />
-              <small>Points</small>
-              <strong>{{ exam.points }}</strong>
-            </div>
-            <div>
-              <CircleCheckBig :size="18" class="info-icon" />
-              <small>Passing</small>
-              <strong>{{ exam.passing }}%</strong>
-            </div>
-            <div>
-              <Users :size="18" class="info-icon" />
-              <small>Students</small>
-              <strong>{{ exam.students }}</strong>
-            </div>
-            <div>
-              <CalendarDays :size="18" class="info-icon" />
-              <small>Created</small>
-              <strong>{{ exam.created }}</strong>
-            </div>
-          </div>
-        </div>
+
+      <div v-if="analyticsLoading" class="analytics-state">
+        <LoaderCircle :size="22" class="spin" />
+        <span>Loading performance data...</span>
       </div>
-      <div v-else class="empty">
-        <FileSearch :size="45" />
-        <h2>No examinations found</h2>
-        <p>Try another search or subject.</p>
+
+      <div v-else-if="analyticsError" class="analytics-state analytics-error">
+        <CircleAlert :size="22" />
+        <span>{{ analyticsError }}</span>
       </div>
-    </div>
-    <!-- ================= PREVIEW POPUP ================= -->
-    <div
-      v-if="showPreview"
-      class="preview-overlay"
-      @click.self="closePreview"
-    >
-      <div class="preview-modal">
-        <div class="preview-header">
-          <div>
-            <h2>{{ selectedExam.title }}</h2>
-            <p>Student Preview</p>
+
+      <template v-else>
+        <div class="stats analytics-stats">
+          <div class="card">
+            <div class="stat-icon"><Users :size="22" /></div>
+            <div><span>Students Assessed</span><h2>{{ analyticsSummary.studentsAssessed }}</h2></div>
           </div>
-          <button class="close-btn" @click="closePreview">
-            <X :size="16" />
-            <span>Close</span>
-          </button>
-        </div>
-        <div class="preview-info">
-          <div>
-            <Clock3 :size="18" class="info-icon" />
-            <small>Duration</small>
-            <strong>{{ selectedExam.duration }} mins</strong>
+          <div class="card">
+            <div class="stat-icon"><FileText :size="22" /></div>
+            <div><span>Assessments With Results</span><h2>{{ analyticsSummary.assessments }}</h2></div>
           </div>
-          <div>
-            <ListChecks :size="18" class="info-icon" />
-            <small>Questions</small>
-            <strong>{{ selectedExam.questions.length }}</strong>
+          <div class="card">
+            <div class="stat-icon"><Target :size="22" /></div>
+            <div><span>Average Score</span><h2>{{ analyticsSummary.averageScore.toFixed(1) }}%</h2></div>
           </div>
-          <div>
-            <Target :size="18" class="info-icon" />
-            <small>Passing</small>
-            <strong>{{ selectedExam.passing }}%</strong>
+          <div class="card">
+            <div class="stat-icon"><CircleCheckBig :size="22" /></div>
+            <div><span>Pass Rate</span><h2>{{ analyticsSummary.passRate.toFixed(1) }}%</h2></div>
           </div>
         </div>
-        <div
-          v-for="(questionItem, index) in selectedExam.questions"
-          :key="questionItem.id"
-          v-show="previewQuestion === index + 1"
-          class="question-preview"
-        >
-          <h3>Question {{ index + 1 }}</h3>
-          <p>{{ questionItem.question }}</p>
-          <div
-            v-if="questionItem.question_type === 'multiple_choice'"
-          >
-            <div
-              v-for="option in questionItem.options"
-              :key="option.id"
-              class="option"
-            >
-              {{ option.option_text }}
+
+        <div v-if="analyticsSummary.assessments === 0" class="analytics-empty">
+          <FileSearch :size="42" />
+          <h3>No submitted results for this filter</h3>
+          <p>Analytics will appear after students submit assessments.</p>
+        </div>
+
+        <div v-else class="analytics-grid">
+          <div class="analytics-card">
+            <div class="chart-header">
+              <div>
+                <h3>Student Performance Distribution</h3>
+                <p>Students grouped by their average score in the selected period.</p>
+              </div>
+            </div>
+            <div class="bar-list">
+              <div v-for="item in performanceDistribution" :key="item.label" class="bar-row">
+                <div class="bar-meta"><span>{{ item.label }}</span><strong>{{ item.count }}</strong></div>
+                <div class="bar-track"><div class="bar-fill" :style="{ width: `${item.width}%` }"></div></div>
+                <small>{{ item.range }}</small>
+              </div>
             </div>
           </div>
-          <div v-else class="option">
-            Answer:
-            {{ questionItem.answer || 'No answer provided' }}
+
+          <div class="analytics-card">
+            <div class="chart-header">
+              <div>
+                <h3>Pass / Fail Distribution</h3>
+                <p>All submitted assessment results in the selected period.</p>
+              </div>
+            </div>
+            <div class="donut-wrap">
+              <div class="donut" :style="donutStyle">
+                <div class="donut-center">
+                  <strong>{{ analyticsSummary.totalSubmissions }}</strong>
+                  <span>Results</span>
+                </div>
+              </div>
+              <div class="legend">
+                <div><span class="legend-dot pass-dot"></span><span>Passed</span><strong>{{ analyticsSummary.passed }}</strong></div>
+                <div><span class="legend-dot fail-dot"></span><span>Failed</span><strong>{{ analyticsSummary.failed }}</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="analytics-card wide-card">
+            <div class="chart-header">
+              <div>
+                <h3>Average Performance per Assessment</h3>
+                <p>Average percentage of each assessment with submitted results.</p>
+              </div>
+            </div>
+            <div class="assessment-bars">
+              <div v-for="item in assessmentPerformance" :key="item.id" class="assessment-row">
+                <div class="assessment-name">
+                  <strong>{{ item.title }}</strong>
+                  <span>{{ item.subject }} • {{ item.section }}</span>
+                </div>
+                <div class="assessment-track"><div class="assessment-fill" :style="{ width: `${item.average}%` }"></div></div>
+                <strong class="assessment-value">{{ item.average.toFixed(1) }}%</strong>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="preview-footer">
-          <button
-            class="nav-btn"
-            :disabled="previewQuestion <= 1"
-            @click="previousQuestion"
-          >
-            <ChevronLeft :size="17" />
-            <span>Previous</span>
-          </button>
-          <span>
-            Question {{ previewQuestion }}
-            of {{ selectedExam.items }}
-          </span>
-          <button
-            class="nav-btn"
-            :disabled="
-              previewQuestion >=
-              selectedExam.questions.length
-            "
-            @click="nextQuestion"
-          >
-            <span>Next</span>
-            <ChevronRight :size="17" />
-          </button>
-        </div>
-      </div>
-    </div>
-    <!-- ================= START EXAM DIALOG ================= -->
-    <div
-      v-if="showStartDialog"
-      class="dialog-overlay"
-    >
-      <div class="dialog">
-        <div class="dialog-icon">
-          <Play :size="45" />
-        </div>
-        <h2>Start Examination?</h2>
-        <p>
-          Are you sure you want to start this examination?
-          <br><br>
-          You will be redirected to the Monitoring Lobby where students
-          can join using the generated access code.
-        </p>
-        <div
-          v-if="selectedStartExam"
-          class="dialog-info"
-        >
-          <div>
-            <FileText :size="18" class="info-icon" />
-            <small>Examination</small>
-            <strong>{{ selectedStartExam.title }}</strong>
-          </div>
-          <div>
-            <GraduationCap :size="18" class="info-icon" />
-            <small>Grade</small>
-            <strong>{{ selectedStartExam.grade }}</strong>
-          </div>
-          <div>
-            <Layers3 :size="18" class="info-icon" />
-            <small>Section</small>
-            <strong>{{ selectedStartExam.section }}</strong>
-          </div>
-          <div>
-            <BookOpen :size="18" class="info-icon" />
-            <small>Subject</small>
-            <strong>{{ selectedStartExam.subject }}</strong>
-          </div>
-          <div>
-            <Clock3 :size="18" class="info-icon" />
-            <small>Duration</small>
-            <strong>{{ selectedStartExam.duration }} mins</strong>
-          </div>
-          <div>
-            <ListChecks :size="18" class="info-icon" />
-            <small>Questions</small>
-            <strong>{{ selectedStartExam.items }}</strong>
-          </div>
-        </div>
-        <div class="dialog-buttons">
-          <button
-            class="cancel-btn"
-            @click="cancelStartExam"
-          >
-            <X :size="17" />
-            <span>Cancel</span>
-          </button>
-          <button
-            class="start-btn"
-            @click="confirmStartExam"
-          >
-            <Play :size="17" />
-            <span>Start Exam</span>
-          </button>
-        </div>
-      </div>
-    </div>
-    <!-- ================= ACTION CONFIRMATION ================= -->
-    <div
-      v-if="showActionDialog"
-      class="dialog-overlay"
-      @click.self="closeActionDialog"
-    >
-      <div class="dialog action-dialog">
-        <div
-          class="action-dialog-icon"
-          :class="actionDialogType"
-        >
-          <Send
-            v-if="actionDialogType === 'publish'"
-            :size="34"
-          />
-          <RotateCcw
-            v-else-if="actionDialogType === 'restart'"
-            :size="34"
-          />
-          <Trash2
-            v-else
-            :size="34"
-          />
-        </div>
-        <h2>{{ actionDialogTitle }}</h2>
-        <p>{{ actionDialogMessage }}</p>
-        <div
-          v-if="selectedActionExam"
-          class="action-exam-info"
-        >
-          <strong>{{ selectedActionExam.title }}</strong>
-          <span>
-            Grade {{ selectedActionExam.grade }}
-            • {{ selectedActionExam.section }}
-            • {{ selectedActionExam.subject }}
-          </span>
-        </div>
-        <div class="dialog-buttons">
-          <button
-            class="cancel-btn"
-            :disabled="processingAction"
-            @click="closeActionDialog"
-          >
-            <X :size="17" />
-            <span>Cancel</span>
-          </button>
-          <button
-            class="action-confirm-btn"
-            :class="actionDialogType"
-            :disabled="processingAction"
-            @click="confirmAction"
-          >
-            <LoaderCircle
-              v-if="processingAction"
-              :size="17"
-              class="spin"
-            />
-            <Send
-              v-else-if="actionDialogType === 'publish'"
-              :size="17"
-            />
-            <RotateCcw
-              v-else-if="actionDialogType === 'restart'"
-              :size="17"
-            />
-            <Trash2
-              v-else
-              :size="17"
-            />
-            <span>
-              {{
-                processingAction
-                  ? 'Processing...'
-                  : actionConfirmText
-              }}
-            </span>
-          </button>
-        </div>
-      </div>
-    </div>
-    <!-- ================= SYSTEM NOTIFICATION ================= -->
-    <Transition name="notification">
-      <div
-        v-if="notification.show"
-        class="notification-container"
-        :class="notification.type"
-      >
-        <div class="notification-icon">
-          <CircleCheckBig
-            v-if="notification.type === 'success'"
-            :size="20"
-          />
-          <CircleAlert
-            v-else-if="notification.type === 'error'"
-            :size="20"
-          />
-          <Info
-            v-else
-            :size="20"
-          />
-        </div>
-        <div class="notification-content">
-          <strong>{{ notification.title }}</strong>
-          <p>{{ notification.message }}</p>
-        </div>
-        <button
-          type="button"
-          class="notification-close"
-          @click="closeNotification"
-        >
-          <X :size="17" />
-        </button>
-      </div>
-    </Transition>
+      </template>
+    </section>
   </div>
 </template>
 
@@ -481,43 +135,19 @@
 import {
   ref,
   computed,
-  onMounted
+  onMounted,
+  watch
 } from 'vue'
-import {
-  useRouter
-} from 'vue-router'
 import api from '../services/api'
 import {
-  Plus,
   FileText,
-  Send,
-  FilePenLine,
   CircleCheckBig,
-  Search,
-  Pencil,
-  Eye,
-  Play,
-  RotateCcw,
-  Trash2,
-  Clock3,
-  ListChecks,
   Target,
   Users,
-  CalendarDays,
-  GraduationCap,
-  BookOpen,
-  Layers3,
-  X,
-  ChevronLeft,
-  ChevronRight,
   FileSearch,
   CircleAlert,
-  Info,
   LoaderCircle
 } from '@lucide/vue'
-
-const router =
-  useRouter()
 
 // ===========================================
 // TYPES
@@ -527,28 +157,6 @@ type NotificationType =
   'success' |
   'error' |
   'info'
-
-type ActionDialogType =
-  'publish' |
-  'restart' |
-  'delete'
-
-// ===========================================
-// SEARCH & FILTER
-// ===========================================
-
-const search =
-  ref('')
-
-const selectedSubject =
-  ref(
-    'All Subjects'
-  )
-
-// ===========================================
-// NOTIFICATION
-// ===========================================
-
 const notification =
   ref({
     show: false,
@@ -587,161 +195,6 @@ function showNotification(
         false
     }, 4000)
 }
-
-function closeNotification() {
-  notification.value.show =
-    false
-
-  if (notificationTimer) {
-    clearTimeout(
-      notificationTimer
-    )
-
-    notificationTimer =
-      null
-  }
-}
-
-// ===========================================
-// PREVIEW POPUP
-// ===========================================
-
-const showPreview =
-  ref(false)
-
-const previewQuestion =
-  ref(1)
-
-const selectedExam =
-  ref({
-    id: 0,
-    title: '',
-    grade: '',
-    section: '',
-    subject: '',
-    status: '',
-    duration: 0,
-    items: 0,
-    points: 0,
-    passing: 0,
-    students: '',
-    questions: [] as any[],
-    created: ''
-  })
-
-// ===========================================
-// START EXAM POPUP
-// ===========================================
-
-const showStartDialog =
-  ref(false)
-
-const selectedStartExam =
-  ref<any>(null)
-
-// ===========================================
-// ACTION DIALOG
-// ===========================================
-
-const showActionDialog =
-  ref(false)
-
-const selectedActionExam =
-  ref<any>(null)
-
-const actionDialogType =
-  ref<ActionDialogType>(
-    'publish'
-  )
-
-const processingAction =
-  ref(false)
-
-const actionDialogTitle =
-  computed(() => {
-    if (
-      actionDialogType.value ===
-      'publish'
-    ) {
-      return 'Publish Examination?'
-    }
-
-    if (
-      actionDialogType.value ===
-      'restart'
-    ) {
-      return 'Start Examination Again?'
-    }
-
-    return 'Delete Examination?'
-  })
-
-const actionDialogMessage =
-  computed(() => {
-    if (
-      actionDialogType.value ===
-      'publish'
-    ) {
-      return 'Once published, students will be able to access the examination using its access code.'
-    }
-
-    if (
-      actionDialogType.value ===
-      'restart'
-    ) {
-      return 'The examination will become available again and a new access code will be generated for remedial or late students.'
-    }
-
-    return 'Are you sure you want to permanently delete this examination? This action cannot be undone.'
-  })
-
-const actionConfirmText =
-  computed(() => {
-    if (
-      actionDialogType.value ===
-      'publish'
-    ) {
-      return 'Publish'
-    }
-
-    if (
-      actionDialogType.value ===
-      'restart'
-    ) {
-      return 'Start Again'
-    }
-
-    return 'Delete'
-  })
-
-function openActionDialog(
-  type: ActionDialogType,
-  exam: any
-) {
-  actionDialogType.value =
-    type
-
-  selectedActionExam.value =
-    exam
-
-  showActionDialog.value =
-    true
-}
-
-function closeActionDialog() {
-  if (
-    processingAction.value
-  ) {
-    return
-  }
-
-  showActionDialog.value =
-    false
-
-  selectedActionExam.value =
-    null
-}
-
 // ===========================================
 // EXAMS
 // ===========================================
@@ -775,6 +228,8 @@ async function fetchExams() {
           return {
             id:
               exam.id,
+            class_id:
+              exam.class_id ?? null,
             title:
               exam.title,
             grade:
@@ -852,404 +307,298 @@ async function fetchExams() {
 // ON MOUNT
 // ===========================================
 
-onMounted(() => {
-  fetchExams()
+onMounted(async () => {
+  await Promise.all([
+    fetchExams(),
+    fetchClasses()
+  ])
+  await loadAnalytics()
 })
 
 // ===========================================
-// SUBJECTS
+// PERFORMANCE ANALYTICS
 // ===========================================
 
-const subjects =
-  computed(() => {
-    return [
-      ...new Set(
-        exams.value
-          .map(
-            exam =>
-              exam.subject
-          )
-          .filter(Boolean)
-      )
-    ]
-  })
-
-// ===========================================
-// FILTERED EXAMS
-// ===========================================
-
-const filteredExams =
-  computed(() => {
-    const keyword =
-      search.value
-        .trim()
-        .toLowerCase()
-
-    return exams.value.filter(
-      exam => {
-        const subjectMatch =
-          selectedSubject.value ===
-            'All Subjects'
-          ||
-          exam.subject ===
-            selectedSubject.value
-
-        const searchMatch =
-          !keyword
-          ||
-          String(
-            exam.title || ''
-          )
-            .toLowerCase()
-            .includes(keyword)
-          ||
-          String(
-            exam.grade || ''
-          )
-            .toLowerCase()
-            .includes(keyword)
-          ||
-          String(
-            exam.section || ''
-          )
-            .toLowerCase()
-            .includes(keyword)
-          ||
-          String(
-            exam.subject || ''
-          )
-            .toLowerCase()
-            .includes(keyword)
-
-        return (
-          subjectMatch &&
-          searchMatch
-        )
-      }
-    )
-  })
-
-// ===========================================
-// STATISTICS
-// ===========================================
-
-const totalExams =
-  computed(() =>
-    exams.value.length
-  )
-
-const totalPublished =
-  computed(() =>
-    exams.value.filter(
-      exam =>
-        exam.status ===
-        'Published'
-    ).length
-  )
-
-const totalDrafts =
-  computed(() =>
-    exams.value.filter(
-      exam =>
-        exam.status ===
-        'Draft'
-    ).length
-  )
-
-const totalFinished =
-  computed(() =>
-    exams.value.filter(
-      exam =>
-        exam.status ===
-        'Finished'
-    ).length
-  )
-
-// ===========================================
-// CREATE EXAM
-// ===========================================
-
-function goToCreateExam() {
-  router.push(
-    '/faculty/create-exam'
-  )
-}
-
-// ===========================================
-// EDIT EXAM
-// ===========================================
-
-function editExam(
+interface SchoolYearInfo {
   id: number
-) {
-  router.push(
-    `/faculty/edit-exam/${id}`
-  )
+  year: string
+  status?: string
 }
 
-// ===========================================
-// PREVIEW EXAM
-// ===========================================
+interface FacultyClass {
+  id: number
+  school_year_id: number
+  semester: string
+  grade: string
+  section?: string
+  school_year?: SchoolYearInfo
+  subject?: { id: number; name: string }
+  section_data?: { id: number; section: string }
+}
 
-function previewExam(
-  exam: any
-) {
-  selectedExam.value = {
-    ...exam
+interface StudentAnalyticsResult {
+  student_name: string
+  percentage: number
+  passed: boolean
+}
+
+interface AssessmentAnalytics {
+  id: number
+  title: string
+  subject: string
+  section: string
+  average: number
+  students: StudentAnalyticsResult[]
+  passed: number
+  failed: number
+}
+
+const facultyClasses = ref<FacultyClass[]>([])
+const selectedSchoolYear = ref('All School Years')
+const selectedSemester = ref('All Semesters')
+const selectedClassId = ref('all')
+const analyticsLoading = ref(false)
+const analyticsError = ref('')
+const assessmentAnalytics = ref<AssessmentAnalytics[]>([])
+
+async function fetchClasses() {
+  try {
+    const response = await api.get('/faculty/classes')
+    facultyClasses.value = Array.isArray(response.data?.data)
+      ? response.data.data
+      : []
+
+    const activeClass = facultyClasses.value.find(
+      item => String(item.school_year?.status || '').toLowerCase() === 'active'
+    )
+
+    if (activeClass?.school_year?.year) {
+      selectedSchoolYear.value = activeClass.school_year.year
+      selectedSemester.value = activeClass.semester || 'All Semesters'
+    }
+  } catch (error) {
+    console.error('FACULTY CLASSES LOAD ERROR:', error)
+  }
+}
+
+const schoolYears = computed(() => {
+  return [...new Set(
+    facultyClasses.value
+      .map(item => item.school_year?.year)
+      .filter((year): year is string => Boolean(year))
+  )]
+})
+
+const analyticsClasses = computed(() => {
+  return facultyClasses.value.filter(item => {
+    const yearMatch =
+      selectedSchoolYear.value === 'All School Years' ||
+      item.school_year?.year === selectedSchoolYear.value
+
+    const semesterMatch =
+      selectedSemester.value === 'All Semesters' ||
+      item.semester === selectedSemester.value
+
+    return yearMatch && semesterMatch
+  })
+})
+
+function classLabel(schoolClass: FacultyClass) {
+  const section =
+    schoolClass.section_data?.section ||
+    schoolClass.section ||
+    'No Section'
+
+  const subject = schoolClass.subject?.name || 'No Subject'
+
+  return `${schoolClass.grade} - ${section} • ${subject}`
+}
+
+const selectedAnalyticsClassIds = computed(() => {
+  if (selectedClassId.value !== 'all') {
+    return [Number(selectedClassId.value)]
   }
 
-  previewQuestion.value =
-    1
+  return analyticsClasses.value.map(item => Number(item.id))
+})
 
-  showPreview.value =
-    true
-}
-
-function closePreview() {
-  showPreview.value =
-    false
-}
-
-function nextQuestion() {
-  if (
-    previewQuestion.value <
-    selectedExam.value
-      .questions.length
-  ) {
-    previewQuestion.value++
-  }
-}
-
-function previousQuestion() {
-  if (
-    previewQuestion.value >
-    1
-  ) {
-    previewQuestion.value--
-  }
-}
-
-// ===========================================
-// PUBLISH EXAM
-// ===========================================
-
-function publishExam(
-  exam: any
-) {
-  openActionDialog(
-    'publish',
-    exam
-  )
-}
-
-// ===========================================
-// START EXAM
-// ===========================================
-
-function startExam(
-  exam: any
-) {
-  selectedStartExam.value =
-    exam
-
-  showStartDialog.value =
-    true
-}
-
-function confirmStartExam() {
-  if (
-    !selectedStartExam.value
-  ) {
-    return
-  }
-
-  const examId =
-    selectedStartExam.value.id
-
-  showStartDialog.value =
-    false
-
-  selectedStartExam.value =
-    null
-
-  router.push(
-    `/faculty/lobby/${examId}`
-  )
-}
-
-function cancelStartExam() {
-  showStartDialog.value =
-    false
-
-  selectedStartExam.value =
-    null
-}
-
-// ===========================================
-// START AGAIN
-// ===========================================
-
-function startAgain(
-  exam: any
-) {
-  openActionDialog(
-    'restart',
-    exam
-  )
-}
-
-// ===========================================
-// DELETE EXAM
-// ===========================================
-
-function deleteExam(
-  exam: any
-) {
-  openActionDialog(
-    'delete',
-    exam
-  )
-}
-
-// ===========================================
-// CONFIRM ACTION
-// ===========================================
-
-async function confirmAction() {
-  if (
-    !selectedActionExam.value ||
-    processingAction.value
-  ) {
-    return
-  }
-
-  processingAction.value =
-    true
-
-  const exam =
-    selectedActionExam.value
-
-  const action =
-    actionDialogType.value
+async function loadAnalytics() {
+  analyticsLoading.value = true
+  analyticsError.value = ''
+  assessmentAnalytics.value = []
 
   try {
-    if (
-      action ===
-      'publish'
-    ) {
-      await api.post(
-        `/exams/${exam.id}/publish`
-      )
+    const classIds = selectedAnalyticsClassIds.value
 
-      exam.status =
-        'Published'
-
-      showActionDialog.value =
-        false
-
-      selectedActionExam.value =
-        null
-
-      showNotification(
-        'success',
-        'Exam Published',
-        'The examination was published successfully.'
-      )
+    if (!classIds.length) {
+      analyticsLoading.value = false
+      return
     }
-    else if (
-      action ===
-      'restart'
-    ) {
-      await api.post(
-        `/exams/${exam.id}/restart`
-      )
 
-      showActionDialog.value =
-        false
-
-      selectedActionExam.value =
-        null
-
-      await fetchExams()
-
-      showNotification(
-        'success',
-        'Exam Ready Again',
-        'The examination is ready again with a new access code.'
-      )
-    }
-    else {
-      await api.delete(
-        `/exams/${exam.id}`
-      )
-
-      exams.value =
-        exams.value.filter(
-          item =>
-            item.id !==
-            exam.id
-        )
-
-      showActionDialog.value =
-        false
-
-      selectedActionExam.value =
-        null
-
-      showNotification(
-        'success',
-        'Exam Deleted',
-        'The examination was deleted successfully.'
-      )
-    }
-  }
-  catch (error: any) {
-    console.error(
-      error
+    const eligibleExams = exams.value.filter(exam =>
+      exam.class_id && classIds.includes(Number(exam.class_id))
     )
 
-    if (
-      action ===
-      'publish'
-    ) {
-      showNotification(
-        'error',
-        'Publish Failed',
-        error.response
-          ?.data
-          ?.message ||
-        'Failed to publish examination.'
-      )
-    }
-    else if (
-      action ===
-      'restart'
-    ) {
-      showNotification(
-        'error',
-        'Restart Failed',
-        error.response
-          ?.data
-          ?.message ||
-        'Failed to restart examination.'
-      )
-    }
-    else {
-      showNotification(
-        'error',
-        'Delete Failed',
-        error.response
-          ?.data
-          ?.message ||
-        'Failed to delete examination.'
-      )
-    }
-  }
-  finally {
-    processingAction.value =
-      false
+    const requests = eligibleExams.map(async exam => {
+      try {
+        const response = await api.get(`/faculty/exam-results/${exam.id}`)
+        const summary = response.data?.summary
+        const students = Array.isArray(response.data?.data)
+          ? response.data.data
+          : []
+
+        if (!summary || students.length === 0) {
+          return null
+        }
+
+        return {
+          id: Number(exam.id),
+          title: String(exam.title || 'Assessment'),
+          subject: String(exam.subject || 'No Subject'),
+          section: String(exam.section || 'No Section'),
+          average: Math.max(0, Math.min(100, Number(summary.average_percentage || 0))),
+          students: students.map((student: any) => ({
+            student_name: String(student.student_name || 'Student'),
+            percentage: Number(student.percentage || 0),
+            passed: Boolean(student.passed)
+          })),
+          passed: Number(summary.passed || 0),
+          failed: Number(summary.failed || 0)
+        } as AssessmentAnalytics
+      } catch (error: any) {
+        if (error.response?.status !== 404) {
+          console.error(`ANALYTICS EXAM ${exam.id} ERROR:`, error)
+        }
+        return null
+      }
+    })
+
+    const results = await Promise.all(requests)
+    assessmentAnalytics.value = results.filter(
+      (item): item is AssessmentAnalytics => item !== null
+    )
+  } catch (error) {
+    console.error('ANALYTICS LOAD ERROR:', error)
+    analyticsError.value = 'Unable to load performance analytics.'
+  } finally {
+    analyticsLoading.value = false
   }
 }
+
+const analyticsSummary = computed(() => {
+  const assessments = assessmentAnalytics.value.length
+  const allResults = assessmentAnalytics.value.flatMap(item => item.students)
+  const totalSubmissions = allResults.length
+
+  const uniqueStudents = new Set(
+    allResults.map(item => item.student_name.trim().toLowerCase())
+  )
+
+  const averageScore = totalSubmissions > 0
+    ? allResults.reduce((sum, item) => sum + Number(item.percentage || 0), 0) / totalSubmissions
+    : 0
+
+  const passed = assessmentAnalytics.value.reduce((sum, item) => sum + item.passed, 0)
+  const failed = assessmentAnalytics.value.reduce((sum, item) => sum + item.failed, 0)
+  const passRate = passed + failed > 0
+    ? (passed / (passed + failed)) * 100
+    : 0
+
+  return {
+    studentsAssessed: uniqueStudents.size,
+    assessments,
+    averageScore,
+    passRate,
+    passed,
+    failed,
+    totalSubmissions
+  }
+})
+
+const studentPeriodAverages = computed(() => {
+  const grouped = new Map<string, { name: string; total: number; count: number }>()
+
+  assessmentAnalytics.value.forEach(assessment => {
+    assessment.students.forEach(student => {
+      const key = student.student_name.trim().toLowerCase()
+      const current = grouped.get(key) || {
+        name: student.student_name,
+        total: 0,
+        count: 0
+      }
+      current.total += Number(student.percentage || 0)
+      current.count += 1
+      grouped.set(key, current)
+    })
+  })
+
+  return [...grouped.values()].map(item => ({
+    name: item.name,
+    average: item.count > 0 ? item.total / item.count : 0
+  }))
+})
+
+const performanceDistribution = computed(() => {
+  const students = studentPeriodAverages.value
+  const groups = [
+    { label: 'Excellent', range: '90–100%', min: 90, max: 100 },
+    { label: 'Very Good', range: '85–89%', min: 85, max: 89.999 },
+    { label: 'Good', range: '80–84%', min: 80, max: 84.999 },
+    { label: 'Satisfactory', range: '75–79%', min: 75, max: 79.999 },
+    { label: 'Below 75', range: '0–74%', min: 0, max: 74.999 }
+  ]
+
+  const counts = groups.map(group => ({
+    ...group,
+    count: students.filter(student =>
+      student.average >= group.min && student.average <= group.max
+    ).length
+  }))
+
+  const highest = Math.max(1, ...counts.map(item => item.count))
+
+  return counts.map(item => ({
+    ...item,
+    width: (item.count / highest) * 100
+  }))
+})
+
+const assessmentPerformance = computed(() => {
+  return [...assessmentAnalytics.value]
+    .sort((a, b) => b.average - a.average)
+})
+
+const donutStyle = computed(() => {
+  const total = analyticsSummary.value.passed + analyticsSummary.value.failed
+  const passedPercent = total > 0
+    ? (analyticsSummary.value.passed / total) * 100
+    : 0
+
+  return {
+    background: total > 0
+      ? `conic-gradient(#16a34a 0 ${passedPercent}%, #dc2626 ${passedPercent}% 100%)`
+      : '#e2e8f0'
+  }
+})
+
+watch(
+  [selectedSchoolYear, selectedSemester],
+  async () => {
+    const validIds = analyticsClasses.value.map(item => String(item.id))
+    if (
+      selectedClassId.value !== 'all' &&
+      !validIds.includes(selectedClassId.value)
+    ) {
+      selectedClassId.value = 'all'
+    }
+    await loadAnalytics()
+  }
+)
+
+watch(selectedClassId, async () => {
+  await loadAnalytics()
+})
+
 </script>
 
 <style scoped>
@@ -1796,6 +1145,263 @@ async function confirmAction() {
 }
 
 /* ======================
+   PERFORMANCE ANALYTICS
+====================== */
+
+.analytics-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 26px;
+  margin-bottom: 28px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .04);
+}
+
+.analytics-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+  padding-bottom: 20px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.analytics-heading h2 {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.analytics-heading p,
+.chart-header p,
+.analytics-empty p {
+  color: #64748b;
+  font-size: 13px;
+  margin-top: 5px;
+}
+
+.analytics-filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.analytics-filters select {
+  min-width: 150px;
+  height: 40px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 0 12px;
+  color: #334155;
+  font-size: 13px;
+  outline: none;
+}
+
+.analytics-stats {
+  margin-bottom: 22px;
+}
+
+.analytics-state,
+.analytics-empty {
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 10px;
+  color: #64748b;
+  text-align: center;
+}
+
+.analytics-error {
+  color: #b91c1c;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(300px, .7fr);
+  gap: 16px;
+}
+
+.analytics-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  background: #fff;
+  min-width: 0;
+}
+
+.wide-card {
+  grid-column: 1 / -1;
+}
+
+.chart-header {
+  margin-bottom: 20px;
+}
+
+.chart-header h3 {
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.bar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 130px minmax(100px, 1fr) 70px;
+  align-items: center;
+  gap: 12px;
+}
+
+.bar-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.bar-meta span {
+  color: #334155;
+  font-weight: 600;
+}
+
+.bar-meta strong {
+  color: #0f172a;
+}
+
+.bar-track,
+.assessment-track {
+  height: 10px;
+  overflow: hidden;
+  background: #eef2f7;
+  border-radius: 999px;
+}
+
+.bar-fill,
+.assessment-fill {
+  height: 100%;
+  background: #00c853;
+  border-radius: inherit;
+  transition: width .25s ease;
+}
+
+.bar-row small {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.donut-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 8px 0;
+}
+
+.donut {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+
+.donut-center {
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 1px #f1f5f9;
+}
+
+.donut-center strong {
+  font-size: 25px;
+}
+
+.donut-center span {
+  color: #64748b;
+  font-size: 12px;
+  margin-top: 3px;
+}
+
+.legend {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.legend > div {
+  display: grid;
+  grid-template-columns: 12px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  color: #475569;
+  font-size: 13px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.pass-dot { background: #16a34a; }
+.fail-dot { background: #dc2626; }
+
+.assessment-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.assessment-row {
+  display: grid;
+  grid-template-columns: minmax(170px, 280px) minmax(160px, 1fr) 64px;
+  align-items: center;
+  gap: 14px;
+}
+
+.assessment-name {
+  min-width: 0;
+}
+
+.assessment-name strong,
+.assessment-name span {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.assessment-name strong {
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.assessment-name span {
+  margin-top: 3px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.assessment-value {
+  font-size: 13px;
+  text-align: right;
+}
+
+/* ======================
    ACTION CONFIRMATION
 ====================== */
 
@@ -2013,6 +1619,14 @@ async function confirmAction() {
       repeat(2, 1fr);
   }
 
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wide-card {
+    grid-column: auto;
+  }
+
   .preview-info {
     grid-template-columns:
       repeat(2, 1fr);
@@ -2025,6 +1639,7 @@ async function confirmAction() {
   }
 
   .dashboard-header,
+  .analytics-heading,
   .exam-header,
   .exam-title {
     flex-direction: column;
@@ -2034,6 +1649,25 @@ async function confirmAction() {
 
   .new-exam-btn {
     width: 100%;
+  }
+
+  .analytics-filters {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .analytics-filters select {
+    width: 100%;
+  }
+
+  .bar-row,
+  .assessment-row {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .assessment-value {
+    text-align: left;
   }
 
   .filters {

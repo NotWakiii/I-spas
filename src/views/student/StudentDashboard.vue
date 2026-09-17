@@ -1,1653 +1,772 @@
 <template>
-  <div class="student-page">
-    <div class="student-card">
-      <!-- ==========================================
-           STEP 1: INTRODUCTION
-      =========================================== -->
-      <section
-        v-if="currentStep === 1"
-        class="intro-panel"
-      >
-        <div class="intro-content">
-          <img
-            src="../../assets/logo.png"
-            alt="I-SPAS Logo"
-            class="logo"
-          >
-          <p class="eyebrow">
-            I-SPAS STUDENT PORTAL
-          </p>
-          <h1>
-            Join Your Examination
-          </h1>
-          <p class="description">
-            Enter the examination code provided by your professor,
-            then select your name from the class list to join the
-            waiting lobby.
-          </p>
-          <div class="feature-list">
-            <div class="feature-item">
-              <span>✓</span>
-              <div>
-                <strong>
-                  Secure Intranet Assessment
-                </strong>
-                <p>
-                  Works through your local school network.
-                </p>
-              </div>
-            </div>
-            <div class="feature-item">
-              <span>✓</span>
-              <div>
-                <strong>
-                  Live Examination Monitoring
-                </strong>
-                <p>
-                  Exam activity is monitored after the test begins.
-                </p>
-              </div>
-            </div>
-            <div class="feature-item">
-              <span>✓</span>
-              <div>
-                <strong>
-                  Automatic Answer Saving
-                </strong>
-                <p>
-                  Your answers will be saved while taking the exam.
-                </p>
-              </div>
-            </div>
-          </div>
-          <button
-            class="continue-btn"
-            type="button"
-            @click="goToForm"
-          >
-            Continue
-            <span>→</span>
-          </button>
-          <button
-            class="home-btn intro-home-btn"
-            type="button"
-            @click="goHome"
-          >
-            ← Back to Portal Selection
-          </button>
+  <div class="page">
+    <header class="topbar">
+      <div class="brand">
+        <img src="../../assets/logo.png" alt="I-SPAS">
+        <div>
+          <strong>I-SPAS</strong>
+          <span>Student Portal</span>
         </div>
-      </section>
-      <!-- ==========================================
-           STEP 2: JOIN FORM
-      =========================================== -->
-      <section
-        v-else
-        class="form-panel"
-      >
-        <div class="form-top">
-          <img
-            src="../../assets/logo.png"
-            alt="I-SPAS Logo"
-            class="small-logo"
-          >
-        </div>
-        <div class="form-header">
-          <span class="step-label">
-            STUDENT ACCESS
-          </span>
-          <h2>
-            Enter Exam Details
-          </h2>
-          <p>
-            Enter the access code first, then select your
-            name from the assigned class.
-          </p>
-        </div>
-        <form @submit.prevent="joinExam">
-          <!-- ACCESS CODE -->
-          <div class="form-group">
-            <label for="access-code">
-              Exam Access Code
-            </label>
-            <input
-              id="access-code"
-              v-model="accessCode"
-              type="text"
-              maxlength="12"
-              autocomplete="off"
-              placeholder="Example: ABC123"
-              @input="handleAccessCodeInput"
-            >
-            <small>
-              Codes are not case-sensitive.
-            </small>
-          </div>
-          <!-- CHECK CODE -->
-          <button
-            v-if="!examLoaded"
-            class="check-code-btn"
-            type="button"
-            :disabled="
-              checkingCode ||
-              !accessCode.trim()
-            "
-            @click="loadExamStudents"
-          >
-            <span
-              v-if="checkingCode"
-              class="spinner"
-            ></span>
-            {{
-              checkingCode
-                ? 'Checking Exam...'
-                : 'Check Exam Code'
-            }}
-          </button>
-          <!-- ==========================================
-               EXAM INFORMATION
-          =========================================== -->
-          <div
-            v-if="examLoaded"
-            class="exam-info-box"
-          >
-            <div>
-              <span>Examination</span>
-              <strong>
-                {{ examInfo?.title }}
-              </strong>
-            </div>
-            <div>
-              <span>Subject</span>
-              <strong>
-                {{ examInfo?.subject || 'Not specified' }}
-              </strong>
-            </div>
-            <div>
-              <span>Class</span>
-              <strong>
-                {{ classLabel }}
-              </strong>
-            </div>
-          </div>
-          <!-- ==========================================
-               STUDENT NAME
-          =========================================== -->
-          <div
-            v-if="examLoaded"
-            class="form-group student-name-group"
-          >
-            <label for="student-name">
-              Full Name
-            </label>
-            <input
-              id="student-name"
-              v-model="studentName"
-              type="text"
-              autocomplete="off"
-              placeholder="Start typing your name..."
-              @input="handleStudentInput"
-              @focus="showSuggestions = true"
-            >
-            <!-- AUTOCOMPLETE -->
-            <div
-              v-if="
-                showSuggestions &&
-                filteredStudents.length > 0
-              "
-              class="student-suggestions"
-            >
-              <button
-                v-for="student in filteredStudents"
-                :key="student.id"
-                type="button"
-                class="student-suggestion"
-                :class="{
-                  'student-already-taken': student.already_taken,
-                  'student-in-lobby': student.in_lobby
-                }"
-                :disabled="student.already_taken || student.in_lobby"
-                @click="selectStudent(student)"
-              >
-                <span class="student-avatar">
-                  {{ getInitials(student.student_name) }}
-                </span>
-                <span class="student-suggestion-info">
-                  <strong>
-                    {{ student.student_name }}
-                  </strong>
-                  <small
-                    v-if="student.already_taken"
-                    class="already-taken-label"
-                  >
-                    ✓ Already Taken
-                  </small>
-                  <small
-                    v-else-if="student.in_lobby"
-                    class="in-lobby-label"
-                  >
-                    ✓ In Lobby
-                  </small>
-                  <small v-else>
-                    Available
-                  </small>
-                </span>
-              </button>
-            </div>
-            <!-- NO MATCH -->
-            <div
-              v-if="
-                studentName.trim() &&
-                filteredStudents.length === 0 &&
-                !selectedStudent
-              "
-              class="no-student-message"
-            >
-              No matching student found in this class.
-            </div>
-            <!-- SELECTED -->
-            <div
-              v-if="selectedStudent"
-              class="selected-student"
-            >
-              ✓
-              {{ selectedStudent.student_name }}
-              selected
-            </div>
-            <small>
-              Select your name from the class list.
-            </small>
-          </div>
-          <!-- ERROR -->
-          <div
-            v-if="errorMessage"
-            class="error-message"
-          >
-            {{ errorMessage }}
-          </div>
-          <!-- JOIN -->
-          <button
-            v-if="examLoaded"
-            class="join-btn"
-            type="submit"
-            :disabled="
-              joining ||
-              !selectedStudent
-            "
-          >
-            <span
-              v-if="joining"
-              class="spinner"
-            ></span>
-            {{
-              joining
-                ? 'Joining Lobby...'
-                : 'Join Examination'
-            }}
-          </button>
-          <!-- CHANGE EXAM -->
-          <button
-            v-if="examLoaded"
-            class="change-exam-btn"
-            type="button"
-            :disabled="joining"
-            @click="resetExam"
-          >
-            Use Different Exam Code
-          </button>
-        </form>
-        <div class="help-box">
-          <strong>
-            Unable to join?
-          </strong>
-          <p>
-            Confirm that the exam is published, the access
-            code is correct, and your name has been added
-            to the assigned class by your professor.
-          </p>
-        </div>
-        <button
-          class="home-btn"
-          type="button"
-          @click="goHome"
-        >
-          ← Back to Portal Selection
+      </div>
+
+      <div class="student-menu">
+        <button class="about-btn" type="button" @click="showAboutDialog = true">
+          About Us
         </button>
-      </section>
+
+        <div class="student-info">
+          <strong>{{ student?.name || 'Student' }}</strong>
+          <span>{{ student?.lrn || '' }}</span>
+        </div>
+
+        <button class="logout-btn" @click="showLogoutDialog = true">
+          Logout
+        </button>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="page-heading">
+        <span class="eyebrow">STUDENT DASHBOARD</span>
+        <h1>Current Classes</h1>
+        <p>Select a class to view its examinations and results.</p>
+      </div>
+
+      <div v-if="loading" class="state-card">
+        <div class="spinner"></div>
+        <p>Loading your classes...</p>
+      </div>
+
+      <div v-else-if="errorMessage" class="state-card error">
+        <strong>Unable to load classes</strong>
+        <p>{{ errorMessage }}</p>
+        <button @click="loadClasses">
+          Try Again
+        </button>
+      </div>
+
+      <div v-else-if="classes.length === 0" class="state-card">
+        <strong>No Current Classes</strong>
+        <p>You are not enrolled in any class for the active school year.</p>
+      </div>
+
+      <div v-else class="class-grid">
+        <button
+          v-for="schoolClass in classes"
+          :key="schoolClass.id"
+          class="class-card"
+          @click="openClass(schoolClass.id)"
+        >
+          <div class="subject-icon">
+            {{ getInitials(schoolClass.subject) }}
+          </div>
+
+          <div class="class-content">
+            <span class="subject-label">SUBJECT</span>
+            <h2>{{ schoolClass.subject || 'Subject' }}</h2>
+
+            <div class="details">
+              <span>
+                {{ schoolClass.grade }}
+                <template v-if="schoolClass.strand">
+                  • {{ schoolClass.strand }}
+                </template>
+                <template v-if="schoolClass.section">
+                  • {{ schoolClass.section }}
+                </template>
+              </span>
+
+              <span v-if="schoolClass.school_year">
+                SY {{ schoolClass.school_year }}
+                <template v-if="schoolClass.semester">
+                  • {{ formatSemester(schoolClass.semester) }}
+                </template>
+              </span>
+
+              <span v-if="schoolClass.faculty">
+                Faculty: {{ schoolClass.faculty }}
+              </span>
+            </div>
+          </div>
+
+          <div class="open-arrow">
+            →
+          </div>
+        </button>
+      </div>
+    </main>
+
+    <div
+      v-if="showAboutDialog"
+      class="dialog-overlay"
+      @click.self="showAboutDialog = false"
+    >
+      <div class="about-dialog">
+        <div class="about-icon">i</div>
+        <h2>About I-SPAS</h2>
+        <p>I-SPAS is an Intranet-Based Student Performance Assessment System.</p>
+
+        <div class="developer-box">
+          <span>Developed by</span>
+          <strong>Renz Cabucana</strong>
+          <strong>Joaquin Vinarao</strong>
+          <strong>Donnajane Chavez</strong>
+          <small>© 2026 I-SPAS</small>
+        </div>
+
+        <button class="about-close-btn" type="button" @click="showAboutDialog = false">
+          Close
+        </button>
+      </div>
+    </div>
+
+    <div
+      v-if="showLogoutDialog"
+      class="dialog-overlay"
+      @click.self="showLogoutDialog = false"
+    >
+      <div class="logout-dialog">
+        <div class="logout-icon">↪</div>
+        <h2>Logout?</h2>
+        <p>Are you sure you want to logout from the Student Portal?</p>
+
+        <div class="logout-actions">
+          <button
+            class="cancel-logout-btn"
+            type="button"
+            :disabled="loggingOut"
+            @click="showLogoutDialog = false"
+          >
+            Cancel
+          </button>
+
+          <button
+            class="confirm-logout-btn"
+            type="button"
+            :disabled="loggingOut"
+            @click="logout"
+          >
+            {{ loggingOut ? 'Logging out...' : 'Logout' }}
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
+
 <script setup lang="ts">
-import {
-  computed,
-  ref
-} from 'vue'
-import {
-  useRouter
-} from 'vue-router'
+import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '../../services/api'
-// ==========================================
-// TYPES
-// ==========================================
+
 interface Student {
   id: number
-  student_name: string
-  already_taken: boolean
-  in_lobby: boolean
+  name: string
+  email: string
+  lrn: string
+  role: string
 }
-interface ExamInfo {
-  id: number
-  title: string
-  subject: string | null
-}
-interface ClassInfo {
+
+interface SchoolClass {
   id: number
   grade: string
-  section: string
+  semester: string
+  subject: string | null
+  strand: string | null
+  section: string | null
+  school_year: string | null
+  faculty: string | null
 }
-// ==========================================
-// ROUTER
-// ==========================================
-const router =
-  useRouter()
-// ==========================================
-// PAGE STATE
-// ==========================================
-const currentStep =
-  ref(1)
-const accessCode =
-  ref('')
-const studentName =
-  ref('')
-// ==========================================
-// EXAM STATE
-// ==========================================
-const examLoaded =
-  ref(false)
-const checkingCode =
-  ref(false)
-const examInfo =
-  ref<ExamInfo | null>(null)
-const classInfo =
-  ref<ClassInfo | null>(null)
-const students =
-  ref<Student[]>([])
-// ==========================================
-// STUDENT SELECTION
-// ==========================================
-const selectedStudent =
-  ref<Student | null>(null)
-const showSuggestions =
-  ref(false)
-// ==========================================
-// JOIN STATE
-// ==========================================
-const joining =
-  ref(false)
-const errorMessage =
-  ref('')
-// ==========================================
-// CLASS LABEL
-// ==========================================
-const classLabel =
-  computed(() => {
-    if (!classInfo.value) {
-      return ''
-    }
-    return (
-      `${classInfo.value.grade} - ` +
-      `${classInfo.value.section}`
-    )
-  })
-// ==========================================
-// FILTER STUDENTS
-// ==========================================
-const filteredStudents =
-  computed(() => {
-    const search =
-      studentName.value
-        .trim()
-        .toLowerCase()
-    if (!search) {
-      return students.value
-        .slice(0, 8)
-    }
-    return students.value
-      .filter(
-        student =>
-          student.student_name
-            .toLowerCase()
-            .includes(search)
-      )
-      .slice(0, 8)
-  })
-// ==========================================
-// GO TO FORM
-// ==========================================
-function goToForm() {
-  currentStep.value =
-    2
-  errorMessage.value =
-    ''
-}
-// ==========================================
-// ACCESS CODE FORMAT
-// ==========================================
-function formatAccessCode() {
-  accessCode.value =
-    accessCode.value
-      .replace(
-        /\s+/g,
-        ''
-      )
-      .toUpperCase()
-}
-// ==========================================
-// ACCESS CODE INPUT
-// ==========================================
-function handleAccessCodeInput() {
-  formatAccessCode()
-  /*
-   * If student changes the access code after
-   * loading an exam, reset the previous exam.
-   */
-  if (examLoaded.value) {
-    examLoaded.value =
-      false
-    examInfo.value =
-      null
-    classInfo.value =
-      null
-    students.value =
-      []
-    studentName.value =
-      ''
-    selectedStudent.value =
-      null
-    showSuggestions.value =
-      false
-  }
-}
-// ==========================================
-// LOAD EXAM + STUDENTS
-// ==========================================
-async function loadExamStudents() {
-  errorMessage.value =
-    ''
-  if (!accessCode.value.trim()) {
-    errorMessage.value =
-      'Please enter the examination access code.'
-    return
-  }
-  checkingCode.value =
-    true
+
+const router = useRouter()
+const student = ref<Student | null>(null)
+const classes = ref<SchoolClass[]>([])
+const loading = ref(true)
+const errorMessage = ref('')
+const showAboutDialog = ref(false)
+const showLogoutDialog = ref(false)
+const loggingOut = ref(false)
+
+onMounted(() => {
+  loadStudent()
+  loadClasses()
+})
+
+function loadStudent() {
+  const storedStudent = localStorage.getItem('student_user')
+  if (!storedStudent) return
+
   try {
-    const response =
-      await api.post(
-        '/exam-students',
-        {
-          access_code:
-            accessCode.value
-              .trim()
-              .toUpperCase()
-        }
-      )
-    examInfo.value =
-      response.data.exam
-    classInfo.value =
-      response.data.class
-    students.value =
-      Array.isArray(
-        response.data.students
-      )
-        ? response.data.students
-        : []
-    examLoaded.value =
-      true
-    studentName.value =
-      ''
-    selectedStudent.value =
-      null
-    showSuggestions.value =
-      false
-  } catch (error: unknown) {
-    console.error(
-      'CHECK EXAM ERROR:',
-      error
-    )
-    const apiError =
-      error as {
-        response?: {
-          data?: {
-            message?: string
-            errors?: Record<
-              string,
-              string[]
-            >
-          }
-        }
-      }
-    const validationErrors =
-      apiError.response
-        ?.data
-        ?.errors
-    if (validationErrors) {
-      const firstError =
-        Object.values(
-          validationErrors
-        )[0]?.[0]
-      errorMessage.value =
-        firstError ||
-        'Please check the examination code.'
-    } else {
-      errorMessage.value =
-        apiError.response
-          ?.data
-          ?.message
-        ||
-        'Unable to find this examination.'
+    student.value = JSON.parse(storedStudent)
+  } catch {
+    student.value = null
+  }
+}
+
+async function loadClasses() {
+  loading.value = true
+  errorMessage.value = ''
+
+  try {
+    const response = await api.get('/student/classes')
+    classes.value = Array.isArray(response.data?.data)
+      ? response.data.data
+      : []
+  } catch (error: any) {
+    console.error('LOAD STUDENT CLASSES ERROR:', error)
+
+    if (error.response?.status === 401) {
+      clearStudentSession()
+      await router.replace('/student/login')
+      return
     }
-    examLoaded.value =
-      false
-  } finally {
-    checkingCode.value =
-      false
-  }
-}
-// ==========================================
-// STUDENT INPUT
-// ==========================================
-function handleStudentInput() {
-  showSuggestions.value =
-    true
-  /*
-   * If the student edits the text after selecting
-   * a name, invalidate the previous selection.
-   */
-  if (
-    selectedStudent.value &&
-    studentName.value !==
-      selectedStudent.value.student_name
-  ) {
-    selectedStudent.value =
-      null
-  }
-}
-// ==========================================
-// SELECT STUDENT
-// ==========================================
-function selectStudent(
-  student: Student
-) {
-  if (
-    student.already_taken ||
-    student.in_lobby
-  ) {
+
     errorMessage.value =
-      student.already_taken
-        ? 'This student has already taken this examination.'
-        : 'This student is already in the examination lobby.'
-    return
+      error.response?.data?.message ||
+      'Unable to load your current classes.'
+  } finally {
+    loading.value = false
   }
-  selectedStudent.value =
-    student
-  studentName.value =
-    student.student_name
-  showSuggestions.value =
-    false
-  errorMessage.value =
-    ''
 }
-// ==========================================
-// INITIALS
-// ==========================================
-function getInitials(
-  name: string
-) {
-  const words =
-    name
-      .trim()
-      .split(/\s+/)
-      .filter(Boolean)
-  if (words.length === 0) {
-    return '?'
-  }
+
+function openClass(id: number) {
+  router.push(`/student/classes/${id}`)
+}
+
+function getInitials(subject: string | null) {
+  if (!subject) return 'C'
+
+  const words = subject
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+
   if (words.length === 1) {
-    return words[0]!
-      .charAt(0)
-      .toUpperCase()
+    return words[0]!.charAt(0).toUpperCase()
   }
+
   return (
-    words[0]!
-      .charAt(0)
-    +
-    words[
-      words.length - 1
-    ]!
-      .charAt(0)
+    words[0]!.charAt(0) +
+    words[words.length - 1]!.charAt(0)
   ).toUpperCase()
 }
-// ==========================================
-// VALIDATE
-// ==========================================
-function validateForm():
-  boolean {
-  errorMessage.value =
-    ''
-  if (
-    !accessCode.value.trim()
-  ) {
-    errorMessage.value =
-      'Please enter the examination access code.'
-    return false
-  }
-  if (
-    !examLoaded.value
-  ) {
-    errorMessage.value =
-      'Please check the examination code first.'
-    return false
-  }
-  if (
-    !selectedStudent.value
-  ) {
-    errorMessage.value =
-      'Please select your name from the class list.'
-    return false
-  }
-  if (
-    selectedStudent.value.already_taken
-  ) {
-    errorMessage.value =
-      'This student has already taken this examination.'
-    selectedStudent.value =
-      null
-    return false
-  }
-  if (
-    selectedStudent.value.in_lobby
-  ) {
-    errorMessage.value =
-      'This student is already in the examination lobby.'
-    selectedStudent.value =
-      null
-    return false
-  }
-  return true
+
+function formatSemester(semester: string) {
+  const value = semester.toLowerCase()
+
+  if (value.includes('1')) return '1st Semester'
+  if (value.includes('2')) return '2nd Semester'
+
+  return semester
 }
-// ==========================================
-// JOIN EXAM
-// ==========================================
-async function joinExam() {
-  if (!validateForm()) {
-    return
-  }
-  joining.value =
-    true
-  errorMessage.value =
-    ''
+
+function clearStudentSession() {
+  localStorage.removeItem('token')
+  localStorage.removeItem('role')
+  localStorage.removeItem('student_user')
+}
+
+async function logout() {
+  if (loggingOut.value) return
+
+  loggingOut.value = true
+
   try {
-    const response =
-      await api.post(
-        '/join-exam',
-        {
-          access_code:
-            accessCode.value
-              .trim()
-              .toUpperCase(),
-          student_name:
-            selectedStudent.value!
-              .student_name
-        }
-      )
-    /*
-    |--------------------------------------------------------------------------
-    | SAVE SESSION
-    |--------------------------------------------------------------------------
-    */
-    localStorage.setItem(
-      'student_session',
-      JSON.stringify(
-        response.data.session
-      )
-    )
-    /*
-    |--------------------------------------------------------------------------
-    | SAVE EXAM
-    |--------------------------------------------------------------------------
-    */
-    localStorage.setItem(
-      'student_exam',
-      JSON.stringify(
-        response.data.exam
-      )
-    )
-    /*
-    |--------------------------------------------------------------------------
-    | SAVE STUDENT
-    |--------------------------------------------------------------------------
-    */
-    localStorage.setItem(
-      'student_name',
-      response.data.student?.name
-      ||
-      selectedStudent.value!
-        .student_name
-    )
-    /*
-    |--------------------------------------------------------------------------
-    | SAVE CLASS
-    |--------------------------------------------------------------------------
-    */
-    localStorage.setItem(
-      'student_section',
-      response.data.student
-        ? (
-            `${response.data.student.grade} - ` +
-            `${response.data.student.section}`
-          )
-        : classLabel.value
-    )
-    localStorage.setItem(
-      'student_class_id',
-      String(
-        response.data.student
-          ?.class_id
-        ||
-        classInfo.value?.id
-        ||
-        ''
-      )
-    )
-    /*
-    |--------------------------------------------------------------------------
-    | SAVE ACCESS CODE
-    |--------------------------------------------------------------------------
-    */
-    localStorage.setItem(
-      'student_access_code',
-      accessCode.value
-        .trim()
-        .toUpperCase()
-    )
-    /*
-    |--------------------------------------------------------------------------
-    | GO TO LOBBY
-    |--------------------------------------------------------------------------
-    */
-    router.push(
-      '/student/lobby'
-    )
-  } catch (error: unknown) {
-    console.error(
-      'JOIN EXAM ERROR:',
-      error
-    )
-    const apiError =
-      error as {
-        response?: {
-          data?: {
-            message?: string
-            errors?: Record<
-              string,
-              string[]
-            >
-          }
-        }
-      }
-    const validationErrors =
-      apiError.response
-        ?.data
-        ?.errors
-    if (validationErrors) {
-      const firstError =
-        Object.values(
-          validationErrors
-        )[0]?.[0]
-      errorMessage.value =
-        firstError ||
-        'Please check the information you entered.'
-    } else {
-      errorMessage.value =
-        apiError.response
-          ?.data
-          ?.message
-        ||
-        'Unable to join the examination.'
-    }
+    await api.post('/student/logout')
+  } catch (error) {
+    console.error('STUDENT LOGOUT ERROR:', error)
   } finally {
-    joining.value =
-      false
+    showLogoutDialog.value = false
+    clearStudentSession()
+    loggingOut.value = false
+    await router.replace('/student/login')
   }
-}
-// ==========================================
-// RESET EXAM
-// ==========================================
-function resetExam() {
-  accessCode.value =
-    ''
-  studentName.value =
-    ''
-  selectedStudent.value =
-    null
-  examInfo.value =
-    null
-  classInfo.value =
-    null
-  students.value =
-    []
-  examLoaded.value =
-    false
-  showSuggestions.value =
-    false
-  errorMessage.value =
-    ''
-}
-// ==========================================
-// HOME
-// ==========================================
-function goHome() {
-  router.push('/')
 }
 </script>
+
 <style scoped>
-/* ==========================================
-   GLOBAL
-========================================== */
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:'Poppins',sans-serif;
-}
-button,
-input{
-    font-family:inherit;
-}
-button{
-    -webkit-tap-highlight-color:transparent;
-}
-/* ==========================================
-   PAGE
-========================================== */
-.student-page{
-    width:100%;
-    min-height:100vh;
-    min-height:100dvh;
-    padding:24px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    overflow-x:hidden;
-    overflow-y:auto;
-    background:#064e3b;
-}
-/* ==========================================
-   MAIN CARD
-========================================== */
-.student-card{
-    width:min(92vw,570px);
-    max-width:570px;
-    max-height:calc(100dvh - 40px);
-    margin:auto;
-    overflow:hidden;
-    border-radius:26px;
-    background:#ffffff;
-    box-shadow:
-        0 24px 60px
-        rgba(0,0,0,.28);
-}
-/* ==========================================
-   INTRO PANEL
-========================================== */
-.intro-panel{
-    width:100%;
-    min-height:620px;
-    max-height:calc(100dvh - 40px);
-    padding:38px 40px;
-    display:flex;
-    align-items:center;
-    overflow-y:auto;
-    color:#ffffff;
-    background:
-        linear-gradient(
-            rgba(3,88,58,.92),
-            rgba(3,88,58,.95)
-        ),
-        url('../../assets/backgroundssj.jpg');
-    background-size:cover;
-    background-position:center;
-}
-.intro-content{
-    width:100%;
-    max-width:500px;
-    margin:0 auto;
-}
-/* ==========================================
-   INTRO LOGO
-========================================== */
-.logo{
-    width:82px;
-    height:82px;
-    margin-bottom:20px;
-    padding:8px;
-    object-fit:contain;
-    border-radius:20px;
-    background:#ffffff;
-    box-shadow:
-        0 12px 26px
-        rgba(0,0,0,.18);
-}
-/* ==========================================
-   INTRO TEXT
-========================================== */
-.eyebrow{
-    margin-bottom:10px;
-    color:#bbf7d0;
-    font-size:11px;
-    font-weight:800;
-    letter-spacing:1.6px;
-}
-.intro-panel h1{
-    margin-bottom:14px;
-    color:#ffffff;
-    font-size:34px;
-    line-height:1.12;
-    font-weight:800;
-}
-.description{
-    color:#dcfce7;
-    font-size:13px;
-    line-height:1.7;
-}
-/* ==========================================
-   FEATURES
-========================================== */
-.feature-list{
-    margin-top:22px;
-    display:grid;
-    grid-template-columns:
-        repeat(
-            2,
-            minmax(0,1fr)
-        );
-    gap:10px;
-}
-.feature-item{
-    min-width:0;
-    padding:11px;
-    display:flex;
-    align-items:flex-start;
-    gap:10px;
-    border:
-        1px solid
-        rgba(255,255,255,.20);
-    border-radius:12px;
-    background:rgba(255,255,255,.10);
-    backdrop-filter:blur(8px);
-    -webkit-backdrop-filter:blur(8px);
-}
-.feature-item > span{
-    flex:0 0 30px;
-    width:30px;
-    height:30px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    border-radius:50%;
-    background:#dcfce7;
-    color:#15803d;
-    font-size:13px;
-    font-weight:800;
-}
-.feature-item > div{
-    min-width:0;
-}
-.feature-item strong{
-    display:block;
-    margin-bottom:2px;
-    color:#ffffff;
-    font-size:11px;
-    font-weight:800;
-}
-.feature-item p{
-    color:#dcfce7;
-    font-size:9px;
-    line-height:1.45;
-}
-/* ==========================================
-   CONTINUE BUTTON
-========================================== */
-.continue-btn{
-    width:100%;
-    min-height:48px;
-    margin-top:20px;
-    padding:10px 16px;
-    border:none;
-    border-radius:11px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:9px;
-    background:#ffffff;
-    color:#166534;
-    font-size:14px;
-    font-weight:800;
-    cursor:pointer;
-    transition:
-        transform .22s ease,
-        box-shadow .22s ease;
-}
-.continue-btn:hover{
-    transform:translateY(-2px);
-    box-shadow:
-        0 14px 28px
-        rgba(0,0,0,.20);
-}
-.continue-btn span{
-    font-size:18px;
-}
-/* ==========================================
-   INTRO HOME BUTTON
-========================================== */
-.intro-home-btn{
-    margin-top:12px;
-    border:none;
-    background:transparent;
-    color:#dcfce7 !important;
-    font-size:9px;
-    font-weight:700;
-    cursor:pointer;
-}
-/* ==========================================
-   FORM PANEL
-========================================== */
-.form-panel{
-    width:100%;
-    min-height:620px;
-    max-height:calc(100dvh - 40px);
-    padding:34px 36px;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    overflow-y:auto;
-    background:#ffffff;
-}
-/* ==========================================
-   FORM TOP
-========================================== */
-.form-top{
-    margin-bottom:18px;
-    display:flex;
-    align-items:center;
-    justify-content:flex-end;
-}
-/* Hide the unwanted top-left Back button */
-.back-step-btn{
-    display:none;
-}
-.small-logo{
-    width:48px;
-    height:48px;
-    padding:5px;
-    object-fit:contain;
-    border:
-        1px solid
-        #dcfce7;
-    border-radius:13px;
-    background:#f0fdf4;
-}
-/* ==========================================
-   FORM HEADER
-========================================== */
-.form-header{
-    margin-bottom:20px;
-}
-.step-label{
-    display:inline-block;
-    margin-bottom:10px;
-    padding:6px 11px;
-    border-radius:999px;
-    background:#dcfce7;
-    color:#15803d;
-    font-size:9px;
-    font-weight:800;
-    letter-spacing:1.2px;
-}
-.form-header h2{
-    margin-bottom:6px;
-    color:#0f172a;
-    font-size:26px;
-    line-height:1.2;
-    font-weight:800;
-}
-.form-header p{
-    color:#64748b;
-    font-size:11px;
-    line-height:1.6;
-}
-/* ==========================================
-   FORM GROUP
-========================================== */
-.form-group{
-    margin-bottom:14px;
-}
-.form-group label{
-    display:block;
-    margin-bottom:6px;
-    color:#334155;
-    font-size:12px;
-    font-weight:700;
-}
-.form-group input,
-.form-group select {
-    width: 100%;
-    min-height: 46px;
-    padding: 0 14px;
-    border: 1px solid #cbd5e1;
-    border-radius: 10px;
-    outline: none;
-    background: #f8fafc;
-    color: #0f172a;
-    font-size: 16px;
-    transition:
-        border-color .22s ease,
-        background .22s ease,
-        box-shadow .22s ease;
-}
-.form-group input:focus,
-.form-group select:focus {
-    border-color: #16a34a;
-    background: #ffffff;
-    box-shadow:
-        0 0 0 4px
-        rgba(22,163,74,.12);
-}
-.form-group small{
-    display:block;
-    margin-top:5px;
-    color:#94a3b8;
-    font-size:9px;
-}
-/* ==========================================
-   ERROR MESSAGE
-========================================== */
-.error-message{
-    margin-bottom:14px;
-    padding:10px 12px;
-    border:
-        1px solid
-        #fecaca;
-    border-radius:9px;
-    background:#fef2f2;
-    color:#b91c1c;
-    font-size:10px;
-    font-weight:600;
-}
-/* ==========================================
-   JOIN BUTTON
-========================================== */
-.join-btn{
-    width:100%;
-    min-height:48px;
-    padding:10px 16px;
-    border:none;
-    border-radius:10px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:9px;
-    background:#16a34a;
-    color:#ffffff;
-    font-size:13px;
-    font-weight:800;
-    cursor:pointer;
-    box-shadow:
-        0 10px 22px
-        rgba(22,163,74,.20);
-    transition:
-        background .22s ease,
-        transform .22s ease;
-}
-.join-btn:hover:not(:disabled){
-    background:#15803d;
-    transform:translateY(-2px);
-}
-.join-btn:disabled{
-    opacity:.68;
-    cursor:not-allowed;
-}
-/* ==========================================
-   SPINNER
-========================================== */
-.spinner{
-    width:18px;
-    height:18px;
-    border:
-        2px solid
-        rgba(255,255,255,.35);
-    border-top-color:#ffffff;
-    border-radius:50%;
-    animation:spin .7s linear infinite;
-}
-/* ==========================================
-   HELP BOX
-========================================== */
-.help-box{
-    margin-top:14px;
-    padding:11px 12px;
-    border-radius:10px;
-    background:#f0fdf4;
-    color:#166534;
-}
-.help-box strong{
-    display:block;
-    margin-bottom:3px;
-    font-size:10px;
-}
-.help-box p{
-    font-size:8px;
-    line-height:1.55;
-}
-/* ==========================================
-   BOTTOM HOME BUTTON
-========================================== */
-.home-btn{
-    margin-top:14px;
-    border:none;
-    background:transparent;
-    color:#64748b;
-    font-size:9px;
-    font-weight:700;
-    cursor:pointer;
-}
-.home-btn:hover{
-    color:#15803d;
-}
-/* ==========================================
-   ANIMATION
-========================================== */
-@keyframes spin{
-    to{
-        transform:rotate(360deg);
-    }
-}
-/* ==========================================
-   SHORT LAPTOP SCREENS
-========================================== */
-@media(
-    min-width:761px
-) and (
-    max-height:750px
-){
-    .student-page{
-        padding:18px;
-    }
-    .student-card{
-        width:min(90vw,550px);
-        max-height:calc(100dvh - 28px);
-    }
-    .intro-panel{
-        min-height:560px;
-        max-height:calc(100dvh - 28px);
-        padding:28px 34px;
-    }
-    .form-panel{
-        min-height:560px;
-        max-height:calc(100dvh - 28px);
-        padding:26px 32px;
-    }
-    .logo{
-        width:72px;
-        height:72px;
-        margin-bottom:16px;
-    }
-    .intro-panel h1{
-        font-size:30px;
-    }
-    .feature-list{
-        margin-top:17px;
-        gap:8px;
-    }
-    .feature-item{
-        padding:9px;
-    }
-    .continue-btn{
-        min-height:44px;
-        margin-top:16px;
-    }
-    .form-header{
-        margin-bottom:15px;
-    }
-    .form-group{
-        margin-bottom:11px;
-    }
-    .form-group input{
-        min-height:43px;
-    }
-}
-/* ==========================================
-   TABLET
-========================================== */
-@media(max-width:760px){
-    .student-page{
-        padding:16px;
-        align-items:flex-start;
-    }
-    .student-card{
-        width:min(100%,600px);
-        max-width:600px;
-        max-height:none;
-    }
-    .intro-panel,
-    .form-panel{
-        min-height:calc(100dvh - 32px);
-        max-height:none;
-    }
-    .feature-list{
-        grid-template-columns:1fr;
-    }
-}
-/* ==========================================
-   MOBILE
-========================================== */
-@media(max-width:520px){
-    .student-page{
-        padding:0;
-        align-items:stretch;
-        background:#ffffff;
-    }
-    .student-card{
-        width:100%;
-        max-width:none;
-        min-height:100dvh;
-        border-radius:0;
-        box-shadow:none;
-    }
-    .intro-panel{
-        min-height:100dvh;
-        max-height:none;
-        padding:
-            max(
-                28px,
-                env(safe-area-inset-top)
-            )
-            22px
-            max(
-                28px,
-                env(safe-area-inset-bottom)
-            );
-    }
-    .form-panel{
-        min-height:100dvh;
-        max-height:none;
-        padding:
-            max(
-                24px,
-                env(safe-area-inset-top)
-            )
-            22px
-            max(
-                28px,
-                env(safe-area-inset-bottom)
-            );
-        justify-content:flex-start;
-    }
-    .logo{
-        width:82px;
-        height:82px;
-    }
-    .intro-panel h1{
-        font-size:32px;
-    }
-    .feature-list{
-        grid-template-columns:1fr;
-    }
-    .form-top{
-        margin-bottom:16px;
-    }
-}
-/* ==========================================
-   VERY SMALL MOBILE
-========================================== */
-@media(max-width:360px){
-    .intro-panel,
-    .form-panel{
-        padding-left:18px;
-        padding-right:18px;
-    }
-    .intro-panel h1{
-        font-size:29px;
-    }
-    .feature-item{
-        padding:10px;
-    }
-}
-/* ==========================================
-   REDUCED MOTION
-========================================== */
-@media(prefers-reduced-motion:reduce){
-    *,
-    *::before,
-    *::after{
-        animation-duration:.01ms !important;
-        animation-iteration-count:1 !important;
-        transition-duration:.01ms !important;
-    }
-}
-/* ==========================================
-   CHECK EXAM BUTTON
-========================================== */
-.check-code-btn {
-    width:100%;
-    min-height:46px;
-    margin-bottom:14px;
-    padding:10px 16px;
-    border:none;
-    border-radius:10px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:9px;
-    background:#0f766e;
-    color:#ffffff;
-    font-size:12px;
-    font-weight:800;
-    cursor:pointer;
-    transition:
-        background .22s ease,
-        transform .22s ease;
-}
-.check-code-btn:hover:not(:disabled) {
-    background:#115e59;
-    transform:translateY(-1px);
-}
-.check-code-btn:disabled {
-    opacity:.6;
-    cursor:not-allowed;
-}
-/* ==========================================
-   EXAM INFORMATION
-========================================== */
-.exam-info-box {
-    margin-bottom:16px;
-    padding:14px;
-    display:grid;
-    gap:10px;
-    border:1px solid #bbf7d0;
-    border-radius:12px;
-    background:#f0fdf4;
-}
-.exam-info-box > div {
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-start;
-    gap:15px;
-}
-.exam-info-box span {
-    color:#64748b;
-    font-size:9px;
-    font-weight:600;
-}
-.exam-info-box strong {
-    color:#166534;
-    font-size:10px;
-    font-weight:800;
-    text-align:right;
-}
-/* ==========================================
-   STUDENT AUTOCOMPLETE
-========================================== */
-.student-name-group {
-    position:relative;
-}
-.student-suggestions {
-    position:absolute;
-    top:73px;
-    left:0;
-    right:0;
-    z-index:50;
-    max-height:230px;
-    overflow-y:auto;
-    border:1px solid #d1d5db;
-    border-radius:10px;
-    background:#ffffff;
-    box-shadow:
-        0 12px 30px
-        rgba(0,0,0,.14);
-}
-.student-suggestion {
-    width:100%;
-    padding:10px 12px;
-    border:none;
-    border-bottom:1px solid #f1f5f9;
-    display:flex;
-    align-items:center;
-    gap:10px;
-    background:#ffffff;
-    text-align:left;
-    cursor:pointer;
-}
-.student-suggestion:last-child {
-    border-bottom:none;
-}
-.student-suggestion:hover {
-    background:#f0fdf4;
-}
-.student-avatar {
-    flex:0 0 34px;
-    width:34px;
-    height:34px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    border-radius:50%;
-    background:#dcfce7;
-    color:#15803d;
-    font-size:10px;
-    font-weight:800;
-}
-.student-suggestion-info {
-    min-width:0;
-}
-.student-suggestion-info strong {
-    display:block;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-    color:#1e293b;
-    font-size:11px;
-}
-.student-suggestion-info small {
-    margin-top:2px;
-    color:#94a3b8;
-    font-size:8px;
-}
-/* ==========================================
-   SELECTED STUDENT
-========================================== */
-.selected-student {
-    margin-top:7px;
-    padding:8px 10px;
-    border-radius:8px;
-    background:#dcfce7;
-    color:#166534;
-    font-size:9px;
-    font-weight:700;
-}
-/* ==========================================
-   NO STUDENT
-========================================== */
-.no-student-message {
-    margin-top:7px;
-    padding:8px 10px;
-    border-radius:8px;
-    background:#fef2f2;
-    color:#b91c1c;
-    font-size:9px;
-    font-weight:600;
-}
-/* ==========================================
-   CHANGE EXAM
-========================================== */
-.change-exam-btn {
-    width:100%;
-    margin-top:9px;
-    padding:9px;
-    border:none;
-    background:transparent;
-    color:#64748b;
-    font-size:9px;
-    font-weight:700;
-    cursor:pointer;
-}
-.change-exam-btn:hover {
-    color:#15803d;
-}
-/* ==========================================
-   ALREADY TAKEN STUDENT
-========================================== */
-.student-suggestion.student-already-taken {
-    background:#f8fafc;
-    cursor:not-allowed;
-    opacity:.72;
-}
-.student-suggestion.student-already-taken:hover {
-    background:#f8fafc;
-}
-.student-already-taken .student-avatar {
-    background:#e2e8f0;
-    color:#64748b;
-}
-.already-taken-label {
-    display:block;
-    margin-top:3px;
-    color:#16a34a !important;
-    font-size:8px;
-    font-weight:800;
-}
-/* ==========================================
-   STUDENT CURRENTLY IN LOBBY
-========================================== */
-.student-suggestion.student-in-lobby {
-    background:#fff7ed;
-    cursor:not-allowed;
-    opacity:.78;
-}
-.student-suggestion.student-in-lobby:hover {
-    background:#fff7ed;
-}
-.student-in-lobby .student-avatar {
-    background:#ffedd5;
-    color:#c2410c;
-}
-.in-lobby-label {
-    display:block;
-    margin-top:3px;
-    color:#c2410c !important;
-    font-size:8px;
-    font-weight:800;
-}
-.student-suggestion:disabled {
-    cursor:not-allowed;
+* {
+  box-sizing: border-box;
+}
+
+.page {
+  min-height: 100vh;
+  background: #f6f8f7;
+  font-family: 'Poppins', sans-serif;
+}
+
+.topbar {
+  min-height: 76px;
+  padding: 0 6%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: #064e3b;
+  color: #fff;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.brand img {
+  width: 43px;
+  height: 43px;
+  padding: 4px;
+  object-fit: contain;
+  border-radius: 11px;
+  background: #fff;
+}
+
+.brand div {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand strong {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.brand span {
+  color: #bbf7d0;
+  font-size: 9px;
+  font-weight: 600;
+}
+
+.student-menu {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.student-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.student-info strong {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.student-info span {
+  color: #bbf7d0;
+  font-size: 8px;
+}
+
+.about-btn,
+.logout-btn {
+  padding: 8px 13px;
+  border: 1px solid rgba(255,255,255,.3);
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.about-btn:hover,
+.logout-btn:hover {
+  background: rgba(255,255,255,.1);
+}
+
+.content {
+  width: min(1100px, 90%);
+  margin: 0 auto;
+  padding: 46px 0;
+}
+
+.page-heading {
+  margin-bottom: 25px;
+}
+
+.eyebrow {
+  color: #16a34a;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+}
+
+.page-heading h1 {
+  margin: 5px 0 5px;
+  color: #0f172a;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.page-heading p {
+  margin: 0;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.class-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.class-card {
+  width: 100%;
+  min-height: 155px;
+  padding: 22px;
+  border: 1px solid #e2e8f0;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  gap: 17px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: 0 5px 18px rgba(15,23,42,.04);
+  transition: .2s ease;
+}
+
+.class-card:hover {
+  border-color: #86efac;
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(15,23,42,.08);
+}
+
+.subject-icon {
+  flex: 0 0 54px;
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.class-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.subject-label {
+  color: #16a34a;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.class-content h2 {
+  margin: 3px 0 9px;
+  overflow: hidden;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.details span {
+  color: #64748b;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.open-arrow {
+  color: #16a34a;
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.state-card {
+  padding: 50px 25px;
+  border: 1px solid #e2e8f0;
+  border-radius: 15px;
+  background: #fff;
+  color: #64748b;
+  text-align: center;
+}
+
+.state-card strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.state-card p {
+  margin: 0;
+  font-size: 10px;
+}
+
+.state-card button {
+  margin-top: 14px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #16a34a;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.state-card.error {
+  border-color: #fecaca;
+  background: #fffafa;
+}
+
+.spinner {
+  width: 25px;
+  height: 25px;
+  margin: 0 auto 12px;
+  border: 3px solid #dcfce7;
+  border-top-color: #16a34a;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15,23,42,.55);
+  backdrop-filter: blur(4px);
+}
+
+.about-dialog {
+  width: 430px;
+  max-width: 100%;
+  padding: 28px;
+  border-radius: 16px;
+  background: #fff;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(15,23,42,.25);
+}
+
+.about-icon {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 25px;
+  font-weight: 800;
+}
+
+.about-dialog h2 {
+  margin: 0 0 8px;
+  color: #0f172a;
+  font-size: 20px;
+}
+
+.about-dialog > p {
+  margin: 0;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.developer-box {
+  margin-top: 18px;
+  padding: 17px;
+  border: 1px solid #bbf7d0;
+  border-radius: 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: #f0fdf4;
+}
+
+.developer-box span {
+  margin-bottom: 4px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.developer-box strong {
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.developer-box small {
+  margin-top: 8px;
+  color: #16a34a;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.about-close-btn {
+  margin-top: 18px;
+  padding: 10px 27px;
+  border: none;
+  border-radius: 8px;
+  background: #16a34a;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.about-close-btn:hover {
+  background: #15803d;
+}
+
+
+.logout-dialog {
+  width: 410px;
+  max-width: 100%;
+  padding: 28px;
+  border-radius: 16px;
+  background: #fff;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(15,23,42,.25);
+}
+
+.logout-icon {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fee2e2;
+  color: #dc2626;
+  font-size: 27px;
+  font-weight: 800;
+}
+
+.logout-dialog h2 {
+  margin: 0 0 8px;
+  color: #0f172a;
+  font-size: 20px;
+}
+
+.logout-dialog p {
+  margin: 0;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.logout-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.cancel-logout-btn,
+.confirm-logout-btn {
+  flex: 1;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cancel-logout-btn {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.cancel-logout-btn:hover:not(:disabled) {
+  background: #cbd5e1;
+}
+
+.confirm-logout-btn {
+  background: #dc2626;
+  color: #fff;
+}
+
+.confirm-logout-btn:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.cancel-logout-btn:disabled,
+.confirm-logout-btn:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    padding: 0 20px;
+  }
+
+  .student-info {
+    display: none;
+  }
+
+  .content {
+    width: calc(100% - 30px);
+    padding: 30px 0;
+  }
+
+  .class-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .student-menu {
+    gap: 7px;
+  }
+
+  .about-btn,
+  .logout-btn {
+    padding: 7px 9px;
+    font-size: 8px;
+  }
+
+  .class-card {
+    padding: 17px;
+  }
+
+  .subject-icon {
+    flex-basis: 46px;
+    width: 46px;
+    height: 46px;
+  }
+
+  .page-heading h1 {
+    font-size: 24px;
+  }
+
+  .about-dialog,
+  .logout-dialog {
+    padding: 22px;
+  }
+
+  .logout-actions {
+    flex-direction: column;
+  }
 }
 </style>

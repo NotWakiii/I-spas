@@ -10,7 +10,6 @@
       @click="closeMobileMenu"
     ></div>
 
-
     <!-- ==========================================
          SIDEBAR
     =========================================== -->
@@ -25,7 +24,7 @@
       <div class="sidebar-header">
 
         <img
-          src="@/assets/logo.png"
+          src="../assets/logo.png"
           alt="I-SPAS"
           class="logo"
         />
@@ -40,7 +39,6 @@
           </small>
         </div>
 
-
         <!-- MOBILE CLOSE -->
         <button
           class="mobile-close-btn"
@@ -52,7 +50,6 @@
         </button>
 
       </div>
-
 
       <!-- ========================================
            NAVIGATION
@@ -73,7 +70,75 @@
             Dashboard
           </span>
         </RouterLink>
-
+        <RouterLink
+          to="/admin/school-years"
+          class="nav-item"
+          @click="closeMobileMenu"
+        >
+          <CalendarDays
+            :size="20"
+            class="nav-icon"
+          />
+          <span>
+            School Year Management
+          </span>
+        </RouterLink>
+        <RouterLink
+          to="/admin/strands"
+          class="nav-item"
+          @click="closeMobileMenu"
+        >
+          <Layers3
+            :size="20"
+            class="nav-icon"
+          />
+          <span>
+            Manage Strand
+          </span>
+        </RouterLink>
+        <RouterLink
+          to="/admin/sections"
+          class="nav-item"
+          @click="closeMobileMenu"
+        >
+          <PanelsTopLeft
+            :size="20"
+            class="nav-icon"
+          />
+          <span>
+            Manage Section
+          </span>
+        </RouterLink>
+        <RouterLink
+          to="/admin/subjects"
+          class="nav-item"
+          @click="closeMobileMenu"
+        >
+          <BookOpenText
+            :size="20"
+            class="nav-icon"
+          />
+          <span>Manage Subjects</span>
+        </RouterLink>
+        <RouterLink
+          to="/admin/curriculum"
+          class="nav-item"
+          @click="closeMobileMenu"
+        >
+          <BookMarked
+            :size="20"
+            class="nav-icon"
+          />
+          <span>Manage Curriculum</span>
+        </RouterLink>
+        <RouterLink
+          to="/admin/students"
+          class="nav-item"
+          @click="closeMobileMenu"
+        >
+          <GraduationCap :size="20" class="nav-icon" />
+          <span>Manage Students</span>
+        </RouterLink>
 
         <RouterLink
           to="/admin/faculty"
@@ -89,39 +154,6 @@
             Faculty Management
           </span>
         </RouterLink>
-
-
-        <RouterLink
-          to="/admin/exams"
-          class="nav-item"
-          @click="closeMobileMenu"
-        >
-          <ClipboardList
-            :size="20"
-            class="nav-icon"
-          />
-
-          <span>
-            Examination Overview
-          </span>
-        </RouterLink>
-
-
-        <RouterLink
-          to="/admin/results"
-          class="nav-item"
-          @click="closeMobileMenu"
-        >
-          <ChartNoAxesColumnIncreasing
-            :size="20"
-            class="nav-icon"
-          />
-
-          <span>
-            Results Overview
-          </span>
-        </RouterLink>
-
 
         <RouterLink
           to="/admin/audit-logs"
@@ -139,7 +171,6 @@
         </RouterLink>
 
       </nav>
-
 
       <!-- ========================================
            LOGOUT
@@ -166,7 +197,6 @@
 
     </aside>
 
-
     <!-- ==========================================
          MAIN AREA
     =========================================== -->
@@ -187,35 +217,22 @@
           <Menu :size="22" />
         </button>
 
-
         <!-- EMPTY SPACE ON DESKTOP -->
         <div class="topbar-spacer"></div>
 
-
-        <!-- ADMIN INFORMATION -->
-        <div class="admin-info">
-
-          <div class="admin-avatar">
-            {{ adminInitial }}
-          </div>
-
-
-          <div class="admin-details">
-
-            <strong>
-              {{ adminName }}
-            </strong>
-
-            <small>
-              Administrator
-            </small>
-
-          </div>
+        <div class="topbar-actions">
+          <button
+            class="about-btn"
+            type="button"
+            @click="showAboutDialog = true"
+          >
+            <Info :size="17" />
+            <span>About Us</span>
+          </button>
 
         </div>
 
       </header>
-
 
       <!-- ========================================
            PAGE CONTENT
@@ -228,6 +245,38 @@
 
     </div>
 
+    <!-- ==========================================
+         ABOUT US
+    =========================================== -->
+    <div
+      v-if="showAboutDialog"
+      class="dialog-overlay"
+      @click.self="showAboutDialog = false"
+    >
+      <div class="dialog about-dialog">
+        <div class="about-dialog-icon">
+          <Info :size="34" />
+        </div>
+        <h2>About I-SPAS</h2>
+        <p>I-SPAS is an Intranet-Based Student Performance Assessment System.</p>
+
+        <div class="developer-box">
+          <span>Developed by</span>
+          <strong>Renz Cabucana</strong>
+          <strong>Joaquin Vinarao</strong>
+          <strong>Donnajane Chavez</strong>
+          <small>© 2026 I-SPAS</small>
+        </div>
+
+        <button
+          class="about-close-btn"
+          type="button"
+          @click="showAboutDialog = false"
+        >
+          Close
+        </button>
+      </div>
+    </div>
 
     <!-- ==========================================
          LOGOUT CONFIRMATION
@@ -248,12 +297,10 @@
           Logout?
         </h2>
 
-
         <p>
           Are you sure you want to log out
           from the administrator account?
         </p>
-
 
         <div class="dialog-actions">
 
@@ -295,11 +342,9 @@
   </div>
 </template>
 
-
 <script setup lang="ts">
 
 import {
-  computed,
   ref
 } from 'vue'
 
@@ -311,17 +356,21 @@ import api from '../services/api'
 import {
   LayoutDashboard,
   Users,
-  ClipboardList,
-  ChartNoAxesColumnIncreasing,
+  GraduationCap,
+  CalendarDays,
+  Layers3,
+  PanelsTopLeft,
+  BookOpenText,
   ScrollText,
   LogOut,
   Menu,
-  X
+  X,
+  BookMarked,
+  Info
 } from '@lucide/vue'
 
 const router =
   useRouter()
-
 
 // ==========================================
 // UI STATE
@@ -333,9 +382,11 @@ const mobileMenuOpen =
 const showLogoutDialog =
   ref(false)
 
-const loggingOut =
+const showAboutDialog =
   ref(false)
 
+const loggingOut =
+  ref(false)
 
 // ==========================================
 // MOBILE MENU
@@ -348,7 +399,6 @@ function toggleMobileMenu() {
 
 }
 
-
 function closeMobileMenu() {
 
   mobileMenuOpen.value =
@@ -356,90 +406,16 @@ function closeMobileMenu() {
 
 }
 
-
 // ==========================================
 // ADMIN DATA
 // ==========================================
 
-interface StoredUser {
-  id?: number
-  name?: string
-  email?: string
-  role?: string
-}
-
-
-const storedUser =
-  localStorage.getItem(
-    'user'
-  )
-
-
-let user:
-  StoredUser | null =
-  null
-
-
-try {
-
-  user =
-    storedUser
-      ? JSON.parse(
-          storedUser
-        ) as StoredUser
-      : null
-
-} catch (error) {
-
-  console.error(
-    'Invalid stored admin user:',
-    error
-  )
-
-  user = null
-
-}
-
-
 // ==========================================
 // ADMIN NAME
 // ==========================================
-
-const adminName =
-  computed(() => {
-
-    return (
-      user?.name ||
-      'Administrator'
-    )
-
-  })
-
-
 // ==========================================
 // ADMIN INITIAL
 // ==========================================
-
-const adminInitial =
-  computed(() => {
-
-    const name =
-      adminName.value
-        .trim()
-
-
-    if (!name) {
-      return 'A'
-    }
-
-
-    return name
-      .charAt(0)
-      .toUpperCase()
-
-  })
-
-
 // ==========================================
 // LOGOUT
 // ==========================================
@@ -451,7 +427,6 @@ function logout() {
 
 }
 
-
 async function confirmLogout() {
 
   if (
@@ -460,10 +435,8 @@ async function confirmLogout() {
     return
   }
 
-
   loggingOut.value =
     true
-
 
   try {
 
@@ -497,7 +470,6 @@ async function confirmLogout() {
       'role'
     )
 
-
     showLogoutDialog.value =
       false
 
@@ -506,7 +478,6 @@ async function confirmLogout() {
 
     loggingOut.value =
       false
-
 
     await router.replace(
       '/admin/login'
@@ -518,13 +489,11 @@ async function confirmLogout() {
 
 </script>
 
-
 <style scoped>
 
 * {
   box-sizing: border-box;
 }
-
 
 /* ==========================================
    ADMIN LAYOUT
@@ -546,7 +515,6 @@ async function confirmLogout() {
   color: #0f172a;
 }
 
-
 /* ==========================================
    MOBILE OVERLAY
 ========================================== */
@@ -554,7 +522,6 @@ async function confirmLogout() {
 .mobile-overlay {
   display: none;
 }
-
 
 /* ==========================================
    SIDEBAR
@@ -590,7 +557,6 @@ async function confirmLogout() {
   z-index: 100;
 }
 
-
 /* ==========================================
    SIDEBAR HEADER
 ========================================== */
@@ -613,7 +579,6 @@ async function confirmLogout() {
     1px solid #f1f5f9;
 }
 
-
 .logo {
   width: 47px;
 
@@ -624,7 +589,6 @@ async function confirmLogout() {
   object-fit: contain;
 }
 
-
 .brand {
   display: flex;
 
@@ -632,7 +596,6 @@ async function confirmLogout() {
 
   white-space: nowrap;
 }
-
 
 .brand strong {
   color: #15803d;
@@ -642,7 +605,6 @@ async function confirmLogout() {
   font-weight: 800;
 }
 
-
 .brand small {
   margin-top: 1px;
 
@@ -650,7 +612,6 @@ async function confirmLogout() {
 
   font-size: 10px;
 }
-
 
 /* ==========================================
    MOBILE CLOSE BUTTON
@@ -687,13 +648,11 @@ async function confirmLogout() {
   cursor: pointer;
 }
 
-
 .mobile-close-btn:hover {
   background: #fee2e2;
 
   color: #dc2626;
 }
-
 
 /* ==========================================
    NAVIGATION
@@ -713,7 +672,6 @@ async function confirmLogout() {
 
   overflow-y: auto;
 }
-
 
 .nav-item {
   min-height: 48px;
@@ -744,13 +702,11 @@ async function confirmLogout() {
     color .2s ease;
 }
 
-
 .nav-item:hover {
   background: #f0fdf4;
 
   color: #15803d;
 }
-
 
 .nav-item.router-link-active {
   background: #dcfce7;
@@ -760,7 +716,6 @@ async function confirmLogout() {
   font-weight: 700;
 }
 
-
 .nav-icon {
   width: 20px;
   height: 20px;
@@ -769,7 +724,6 @@ async function confirmLogout() {
 
   flex-shrink: 0;
 }
-
 
 /* ==========================================
    SIDEBAR FOOTER
@@ -782,7 +736,6 @@ async function confirmLogout() {
   border-top:
     1px solid #f1f5f9;
 }
-
 
 .logout-btn {
   width: 100%;
@@ -816,18 +769,15 @@ async function confirmLogout() {
     background .2s ease;
 }
 
-
 .logout-btn:hover:not(:disabled) {
   background: #fee2e2;
 }
-
 
 .logout-btn:disabled {
   opacity: .6;
 
   cursor: not-allowed;
 }
-
 
 /* ==========================================
    MAIN AREA
@@ -840,7 +790,6 @@ async function confirmLogout() {
 
   margin-left: 255px;
 }
-
 
 /* ==========================================
    TOPBAR
@@ -883,7 +832,6 @@ async function confirmLogout() {
   z-index: 50;
 }
 
-
 /* ==========================================
    BURGER BUTTON
    HIDDEN ON DESKTOP
@@ -913,13 +861,11 @@ async function confirmLogout() {
     color .2s ease;
 }
 
-
 .menu-btn:hover {
   background: #dcfce7;
 
   color: #15803d;
 }
-
 
 /* ==========================================
    TOPBAR SPACER
@@ -928,7 +874,6 @@ async function confirmLogout() {
 .topbar-spacer {
   flex: 1;
 }
-
 
 /* ==========================================
    ADMIN INFORMATION
@@ -941,7 +886,6 @@ async function confirmLogout() {
 
   gap: 10px;
 }
-
 
 .admin-avatar {
   width: 38px;
@@ -967,13 +911,11 @@ async function confirmLogout() {
   flex-shrink: 0;
 }
 
-
 .admin-details {
   display: flex;
 
   flex-direction: column;
 }
-
 
 .admin-details strong {
   color: #0f172a;
@@ -981,13 +923,11 @@ async function confirmLogout() {
   font-size: 12px;
 }
 
-
 .admin-details small {
   color: #64748b;
 
   font-size: 9px;
 }
-
 
 /* ==========================================
    CONTENT
@@ -1002,7 +942,6 @@ async function confirmLogout() {
     );
 }
 
-
 .content :deep(.dashboard),
 .content :deep(.faculty-page),
 .content :deep(.exam-page),
@@ -1014,7 +953,6 @@ async function confirmLogout() {
     );
 
 }
-
 
 /* ==========================================
    LOGOUT DIALOG OVERLAY
@@ -1050,7 +988,6 @@ async function confirmLogout() {
     blur(5px);
 }
 
-
 /* ==========================================
    LOGOUT DIALOG
 ========================================== */
@@ -1078,7 +1015,6 @@ async function confirmLogout() {
     );
 }
 
-
 .dialog-icon {
   width: 65px;
 
@@ -1100,14 +1036,12 @@ async function confirmLogout() {
   font-size: 28px;
 }
 
-
 .dialog h2 {
   margin:
     0 0 8px;
 
   color: #0f172a;
 }
-
 
 .dialog p {
   margin: 0;
@@ -1118,7 +1052,6 @@ async function confirmLogout() {
 
   line-height: 1.6;
 }
-
 
 /* ==========================================
    DIALOG BUTTONS
@@ -1131,7 +1064,6 @@ async function confirmLogout() {
 
   gap: 10px;
 }
-
 
 .cancel-btn,
 .confirm-btn {
@@ -1148,18 +1080,15 @@ async function confirmLogout() {
   cursor: pointer;
 }
 
-
 .cancel-btn {
   background: #e2e8f0;
 
   color: #475569;
 }
 
-
 .cancel-btn:hover:not(:disabled) {
   background: #cbd5e1;
 }
-
 
 .confirm-btn {
   background: #dc2626;
@@ -1167,11 +1096,9 @@ async function confirmLogout() {
   color: white;
 }
 
-
 .confirm-btn:hover:not(:disabled) {
   background: #b91c1c;
 }
-
 
 .cancel-btn:disabled,
 .confirm-btn:disabled {
@@ -1180,6 +1107,93 @@ async function confirmLogout() {
   cursor: not-allowed;
 }
 
+/* ==========================================
+   TOPBAR ACTIONS / ABOUT US
+========================================== */
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.about-btn {
+  border: none;
+  padding: 9px 15px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #eaf9ef;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.about-btn:hover {
+  background: #dcfce7;
+}
+
+.about-dialog {
+  width: 440px;
+}
+
+.about-dialog-icon {
+  width: 62px;
+  height: 62px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eaf9ef;
+  color: #16a34a;
+}
+
+.developer-box {
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid #d1fae5;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: #f0fdf4;
+}
+
+.developer-box span {
+  margin-bottom: 5px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.developer-box strong {
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.developer-box small {
+  margin-top: 9px;
+  color: #16a34a;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.about-close-btn {
+  margin-top: 20px;
+  padding: 10px 28px;
+  border: none;
+  border-radius: 8px;
+  background: #16a34a;
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.about-close-btn:hover {
+  background: #15803d;
+}
 
 /* ==========================================
    MOBILE
@@ -1216,12 +1230,10 @@ async function confirmLogout() {
     z-index: 101;
   }
 
-
   .sidebar.mobile-open {
     transform:
       translateX(0);
   }
-
 
   /* ========================================
      MOBILE CLOSE
@@ -1234,7 +1246,6 @@ async function confirmLogout() {
 
     justify-content: center;
   }
-
 
   /* ========================================
      MOBILE OVERLAY
@@ -1258,7 +1269,6 @@ async function confirmLogout() {
     z-index: 99;
   }
 
-
   /* ========================================
      MAIN TAKES FULL WIDTH
   ========================================= */
@@ -1266,7 +1276,6 @@ async function confirmLogout() {
   .main-area {
     margin-left: 0;
   }
-
 
   /* ========================================
      TOPBAR
@@ -1278,7 +1287,6 @@ async function confirmLogout() {
     padding:
       0 16px;
   }
-
 
   /* ========================================
      SHOW BURGER ON MOBILE ONLY
@@ -1294,11 +1302,9 @@ async function confirmLogout() {
     flex-shrink: 0;
   }
 
-
   .topbar-spacer {
     display: block;
   }
-
 
   /* ========================================
      ADMIN INFO
@@ -1308,6 +1314,17 @@ async function confirmLogout() {
     display: none;
   }
 
+  .topbar-actions {
+    gap: 8px;
+  }
+
+  .about-btn {
+    padding: 8px 10px;
+  }
+
+  .about-btn span {
+    display: none;
+  }
 
   /* ========================================
      CONTENT
@@ -1319,7 +1336,6 @@ async function confirmLogout() {
         100vh - 60px
       );
   }
-
 
   .content :deep(.dashboard),
   .content :deep(.faculty-page),
@@ -1335,7 +1351,6 @@ async function confirmLogout() {
 
 }
 
-
 /* ==========================================
    SMALL MOBILE
 ========================================== */
@@ -1350,11 +1365,9 @@ async function confirmLogout() {
     max-width: 300px;
   }
 
-
   .dialog {
     padding: 22px;
   }
-
 
   .dialog-actions {
     flex-direction: column;

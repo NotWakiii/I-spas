@@ -1,9 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 
 import HomeView from '../views/HomeView.vue'
-
 import FacultyLayout from '../layouts/FacultyLayout.vue'
-
 import DashboardFaculty from '../views/DashboardFaculty.vue'
 import CreateExam from '../views/CreateExam.vue'
 import ManualExam from '../views/ManualExam.vue'
@@ -15,43 +13,40 @@ import Results from '../views/Results.vue'
 import StudentHistory from '../views/StudentHistory.vue'
 import ExamResults from '../views/ExamResults.vue'
 import StudentScores from '../views/StudentScores.vue'
-
-import ClassManagement from '../views/ClassManagement.vue'
-
+import MyClasses from '../views/MyClasses.vue'
+import ClassDetails from '../views/ClassDetails.vue'
 import ItemAnalysisHub from '../views/ItemAnalysisHub.vue'
 import ItemAnalysis from '../views/ItemAnalysis.vue'
+import Feedback from '../views/Feedback.vue'
+import TestBank from '../views/TestBank.vue'
+import TestBankAssessment from '../views/TestBankAssessment.vue'
 
-//student views
+// Student views
+import StudentLogin from '../views/student/StudentLogin.vue'
 import StudentDashboard from '../views/student/StudentDashboard.vue'
 import StudentLobby from '../views/student/StudentLobby.vue'
 import StudentExam from '../views/student/StudentExam.vue'
 import StudentResults from '../views/student/StudentResults.vue'
+import StudentClassDetails from '../views/student/StudentClassDetails.vue'
+import StudentJoinExam from '../views/student/StudentJoinExam.vue'
 
-//admin views
-import AdminLayout
-  from '../layouts/AdminLayout.vue'
-
-import AdminLogin
-  from '../views/admin/AdminLogin.vue'
-
-import DashboardAdmin
-  from '../views/admin/DashboardAdmin.vue'
-
-import FacultyManagement
-  from '../views/admin/FacultyManagement.vue'
-
-import ExaminationOverview
-  from '../views/admin/ExaminationOverview.vue'
-
-import ResultsOverview
-  from '../views/admin/ResultsOverview.vue'
-
-import AuditLogs
-  from '../views/admin/AuditLogs.vue'
+// Admin views
+import AdminLayout from '../layouts/AdminLayout.vue'
+import AdminLogin from '../views/admin/AdminLogin.vue'
+import DashboardAdmin from '../views/admin/DashboardAdmin.vue'
+import FacultyManagement from '../views/admin/FacultyManagement.vue'
+import ExaminationOverview from '../views/admin/ExaminationOverview.vue'
+import ResultsOverview from '../views/admin/ResultsOverview.vue'
+import AuditLogs from '../views/admin/AuditLogs.vue'
+import SchoolYearManagement from '../views/admin/SchoolYearManagement.vue'
+import StrandManagement from '../views/admin/StrandManagement.vue'
+import SectionManagement from '../views/admin/SectionManagement.vue'
+import SubjectManagement from '../views/admin/SubjectManagement.vue'
+import CurriculumManagement from '../views/admin/CurriculumManagement.vue'
+import StudentManagement from '../views/admin/StudentManagement.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-
   routes: [
     {
       path: '/',
@@ -62,35 +57,94 @@ const router = createRouter({
     // STUDENT ROUTES
     {
       path: '/student',
+      redirect: '/student/login',
+    },
+    {
+      path: '/student/login',
+      name: 'StudentLogin',
+      component: StudentLogin,
+      meta: {
+        guestOnly: true,
+        guestRole: 'student',
+      },
+    },
+    {
+      path: '/student/dashboard',
       name: 'StudentDashboard',
       component: StudentDashboard,
+      meta: {
+        requiresAuth: true,
+        role: 'student',
+      },
     },
     {
       path: '/student/lobby',
       name: 'StudentLobby',
       component: StudentLobby,
+      meta: {
+        requiresAuth: true,
+        role: 'student',
+      },
     },
     {
       path: '/student/exam',
       name: 'StudentExam',
       component: StudentExam,
+      meta: {
+        requiresAuth: true,
+        role: 'student',
+      },
     },
     {
       path: '/student/results',
       name: 'StudentResults',
       component: StudentResults,
+      meta: {
+        requiresAuth: true,
+        role: 'student',
+      },
+    },
+    {
+      path: '/student/classes/:id',
+      name: 'StudentClassDetails',
+      component: StudentClassDetails,
+      meta: {
+        requiresAuth: true,
+        role: 'student',
+      },
+    },
+    {
+      path: '/student/classes/:id/join',
+      name: 'StudentJoinExam',
+      component: StudentJoinExam,
+      meta: {
+        requiresAuth: true,
+        role: 'student',
+      },
+    },
+    {
+      path: '/student/results/:examId',
+      name: 'StudentExamResult',
+      component: StudentResults,
+      meta: {
+        requiresAuth: true,
+        role: 'student',
+      },
     },
 
     // FACULTY ROUTES
     {
       path: '/faculty',
       component: FacultyLayout,
-
       meta: {
         requiresAuth: true,
-        role: 'faculty'
+        role: 'faculty',
       },
       children: [
+        {
+          path: '',
+          redirect: '/faculty/dashboard',
+        },
         {
           path: 'dashboard',
           name: 'DashboardFaculty',
@@ -158,128 +212,146 @@ const router = createRouter({
         },
         {
           path: 'classes',
-          name: 'ClassManagement',
-          component: ClassManagement,
+          name: 'MyClasses',
+          component: MyClasses,
         },
+        {
+          path: 'classes/:id',
+          name: 'ClassDetails',
+          component: ClassDetails,
+        },
+        {
+          path: 'feedback',
+          name: 'Feedback',
+          component: Feedback,
+        },
+        {
+          path: 'test-bank',
+          name: 'TestBank',
+          component: TestBank,
+        },
+        {
+          path: 'test-bank-exam',
+          name: 'TestBankAssessment',
+          component: TestBankAssessment,
+        }
       ],
     },
-    //Admin Routes
+
+    // ADMIN ROUTES
     {
       path: '/admin/login',
       name: 'AdminLogin',
       component: AdminLogin,
-
       meta: {
-        guestOnly: true
-      }
+        guestOnly: true,
+        guestRole: 'admin',
+      },
     },
-
     {
       path: '/admin',
       component: AdminLayout,
-
       meta: {
         requiresAuth: true,
-        role: 'admin'
+        role: 'admin',
       },
-
       children: [
-
         {
           path: '',
-          redirect: '/admin/dashboard'
+          redirect: '/admin/dashboard',
         },
-
         {
           path: 'dashboard',
           name: 'AdminDashboard',
-          component: DashboardAdmin
+          component: DashboardAdmin,
         },
-
         {
           path: 'faculty',
           name: 'FacultyManagement',
-          component: FacultyManagement
+          component: FacultyManagement,
         },
-
         {
           path: 'exams',
           name: 'ExaminationOverview',
-          component: ExaminationOverview
+          component: ExaminationOverview,
         },
-
         {
           path: 'results',
           name: 'AdminResultsOverview',
-          component: ResultsOverview
+          component: ResultsOverview,
         },
         {
           path: 'audit-logs',
           name: 'AdminAuditLogs',
-          component: AuditLogs
-        }
-      ]
+          component: AuditLogs,
+        },
+        {
+          path: 'school-years',
+          name: 'SchoolYearManagement',
+          component: SchoolYearManagement,
+        },
+        {
+          path: 'strands',
+          name: 'StrandManagement',
+          component: StrandManagement,
+        },
+        {
+          path: 'sections',
+          name: 'SectionManagement',
+          component: SectionManagement,
+        },
+        {
+          path: 'subjects',
+          name: 'SubjectManagement',
+          component: SubjectManagement,
+        },
+        {
+          path: 'curriculum',
+          name: 'CurriculumManagement',
+          component: CurriculumManagement,
+        },
+        {
+          path: 'students',
+          name: 'StudentManagement',
+          component: StudentManagement,
+        },
+      ],
     },
   ],
 })
+
 router.beforeEach((to) => {
-  const token =
-    localStorage.getItem('token')
+  const token = localStorage.getItem('token')
+  const role = localStorage.getItem('role')
 
-  const role =
-    localStorage.getItem('role')
-
-  // =========================
-  // PROTECTED ROUTES
-  // =========================
-  if (to.meta.requiresAuth) {
-
-    if (!token) {
-
-      if (to.meta.role === 'admin') {
-        return '/admin/login'
-      }
-
-      return '/'
-    }
-
-    // ADMIN ONLY
-    if (
-      to.meta.role === 'admin' &&
-      role !== 'admin'
-    ) {
-
-      if (role === 'faculty') {
-        return '/faculty/dashboard'
-      }
-
-      return '/admin/login'
-    }
-
-    // FACULTY ONLY
-    if (
-      to.meta.role === 'faculty' &&
-      role !== 'faculty'
-    ) {
-
-      if (role === 'admin') {
-        return '/admin/dashboard'
-      }
-
-      return '/'
-    }
+  // Guest-only pages
+  if (to.meta.guestOnly && token) {
+    if (role === 'admin') return '/admin/dashboard'
+    if (role === 'faculty') return '/faculty/dashboard'
+    if (role === 'student') return '/student/dashboard'
   }
 
-  // Already logged-in admin
-  // should not return to admin login
-  if (
-    to.meta.guestOnly &&
-    token &&
-    role === 'admin'
-  ) {
-    return '/admin/dashboard'
+  // Protected pages
+  if (to.meta.requiresAuth) {
+    if (!token) {
+      if (to.meta.role === 'admin') return '/admin/login'
+      if (to.meta.role === 'student') return '/student/login'
+      return '/'
+    }
+
+    // Prevent one role from accessing another role's pages
+    if (to.meta.role && role !== to.meta.role) {
+      if (role === 'admin') return '/admin/dashboard'
+      if (role === 'faculty') return '/faculty/dashboard'
+      if (role === 'student') return '/student/dashboard'
+
+      localStorage.removeItem('token')
+      localStorage.removeItem('role')
+      return '/'
+    }
   }
 
   return true
 })
+
 export default router

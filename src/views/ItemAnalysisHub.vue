@@ -133,6 +133,7 @@ interface BackendExam {
   title: string
   course?: string | null
   status?: string | null
+  assessment_type?: 'quiz' | 'examination' | null
   questions?: unknown[]
   questions_count?: number | string
 }
@@ -181,6 +182,12 @@ function isFinishedExam(exam: BackendExam): boolean {
   return String(exam.status || '')
     .trim()
     .toLowerCase() === 'finished'
+}
+
+function isExamination(exam: BackendExam): boolean {
+  return String(exam.assessment_type || '')
+    .trim()
+    .toLowerCase() === 'examination'
 }
 function getFallbackQuestionCount(exam: BackendExam): number {
   if (Array.isArray(exam.questions)) {
@@ -274,7 +281,9 @@ async function fetchExams() {
       response
     ) as BackendExam[]
     const finishedExams = allExams.filter(
-      isFinishedExam
+      (exam) =>
+        isFinishedExam(exam) &&
+        isExamination(exam)
     )
     const cards = await Promise.all(
       finishedExams.map(

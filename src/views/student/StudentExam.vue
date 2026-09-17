@@ -397,6 +397,7 @@ interface StoredSession {
   exam_id: number
   student_name: string
   status: string
+  penalty_seconds?: number
 }
 interface StoredExam {
   id: number
@@ -561,50 +562,6 @@ const violationCounts =
     fullscreen_exit: 0,
     idle: 0,
   })
-const violationPenalties: Record<string, number> = {
-  tab_switch: 180,
-  copy_attempt: 180,
-  paste_attempt: 180,
-  cut_attempt: 180,
-  right_click: 180,
-  fullscreen_exit: 180,
-}
-function withPenaltyMessage(
-  message: string
-): string {
-  return `${message} 3 minutes have been deducted from your remaining examination time.`
-}
-function applyTimePenalty(
-  activity: string
-) {
-  if (
-    examSubmitted ||
-    autoSubmitting.value
-  ) {
-    return
-  }
-  const penalty =
-    violationPenalties[activity] || 0
-  if (penalty <= 0) {
-    return
-  }
-  remainingSeconds.value =
-    Math.max(
-      remainingSeconds.value - penalty,
-      0
-    )
-  localStorage.setItem(
-    'exam_remaining_seconds',
-    String(remainingSeconds.value)
-  )
-  sendLiveStatus()
-  if (
-    remainingSeconds.value <= 0 &&
-    !examSubmitted
-  ) {
-    autoSubmitExam()
-  }
-}
 /* =====================================================
    INTERVALS
 ===================================================== */
@@ -653,6 +610,9 @@ let lastAwayViolationAt =
   0
 const AWAY_EVENT_GUARD_MS =
   1500
+let fullscreenExitStartedAt = 0
+let fullscreenExitRecorded = false
+let fullscreenCheckTimeout: ReturnType<typeof setTimeout> | null = null
 /* =====================================================
    COMPUTED
 ===================================================== */
@@ -1466,25 +1426,16 @@ function handleBlockedAction(
   violationCounts.value[
     activity
   ] += 1
-  applyTimePenalty(activity)
   const messages:
     Record<BlockedActivity, string> = {
       copy_attempt:
-        withPenaltyMessage(
-          'Copying is not allowed during the examination.'
-        ),
+        'Copying is not allowed during the examination.',
       paste_attempt:
-        withPenaltyMessage(
-          'Pasting is not allowed during the examination.'
-        ),
+        'Pasting is not allowed during the examination.',
       cut_attempt:
-        withPenaltyMessage(
-          'Cutting text is not allowed during the examination.'
-        ),
+        'Cutting text is not allowed during the examination.',
       right_click:
-        withPenaltyMessage(
-          'Right-click is not allowed during the examination.'
-        ),
+        'Right-click is not allowed during the examination.',
     }
   const message =
     messages[activity]
@@ -1545,30 +1496,72 @@ async function sendLiveStatus() {
 ===================================================== */
 async function sendMonitoringLog(
   activity: string,
-  details: string
+  details: string,
+  durationSeconds: number | null = null
 ) {
-  if (!session.value) {
-    return
-  }
+  if (!session.value) return
+
   try {
-    await api.post(
-      '/monitor-log',
-      {
-        exam_session_id:
-          session.value.id,
-        activity,
-        details,
-        idle_seconds:
-          idleSeconds.value,
+    const response = await api.post('/monitor-log', {
+      exam_session_id: session.value.id,
+      activity,
+      details,
+      idle_seconds: idleSeconds.value,
+      duration_seconds: durationSeconds,
+    })
+
+    const penaltySeconds = Number(
+      response.data?.penalty_seconds ??
+      response.data?.data?.penalty_seconds ??
+      0
+    )
+
+    const totalPenaltySeconds = Number(
+      response.data?.total_penalty_seconds ??
+      response.data?.data?.total_penalty_seconds ??
+      0
+    )
+
+    if (session.value) {
+      session.value.penalty_seconds = totalPenaltySeconds
+      localStorage.setItem(
+        'student_session',
+        JSON.stringify(session.value)
+      )
+    }
+
+    if (penaltySeconds > 0) {
+      remainingSeconds.value = Math.max(
+        remainingSeconds.value - penaltySeconds,
+        0
+      )
+
+      localStorage.setItem(
+        'exam_remaining_seconds',
+        String(remainingSeconds.value)
+      )
+
+      const penaltyText =
+        formatActivityDuration(penaltySeconds)
+
+      showSecurityWarning(
+        `${details} ${penaltyText} deducted from your remaining examination time.`
+      )
+
+      if (
+        remainingSeconds.value <= 0 &&
+        !examSubmitted
+      ) {
+        await autoSubmitExam()
+        return
       }
-    )
+    } else {
+      showSecurityWarning(details)
+    }
+
     await sendLiveStatus()
-  }
-  catch (error) {
-    console.error(
-      'MONITOR LOG ERROR:',
-      error
-    )
+  } catch (error) {
+    console.error('MONITOR LOG ERROR:', error)
   }
 }
 function closeViolationWarning() {
@@ -1629,13 +1622,8 @@ function recordAwayViolation() {
     now
   violationCounts.value
     .tab_switch += 1
-  applyTimePenalty(
-    'tab_switch'
-  )
   const message =
-    withPenaltyMessage(
-      'You left the examination screen or opened Recent Apps.'
-    )
+    'You left the examination screen or opened Recent Apps. This activity was recorded.'
   /*
    * The browser may block/freeze audio while the page is hidden.
    * We try now, then play it again when the student returns.
@@ -1649,10 +1637,6 @@ function recordAwayViolation() {
    * while hidden, handleExamResume() sends the log again on return
    * only when this immediate request did not complete.
    */
-  sendMonitoringLog(
-    'tab_switch',
-    message
-  )
   resetActivityTimer()
 }
 /**
@@ -1660,14 +1644,50 @@ function recordAwayViolation() {
  * apps/tabs on modern mobile browsers.
  */
 function handleVisibilityChange() {
-  if (
-    document.visibilityState ===
-      'hidden'
-  ) {
+  if (document.visibilityState === 'hidden') {
     recordAwayViolation()
     return
   }
+
   handleExamResume()
+}
+
+function handleExamResume() {
+  if (examSubmitted || loading.value) return
+
+  if (pageAwayDetected) {
+    pageAwayDetected = false
+    pageAwayRecorded = false
+
+    const awaySeconds = pageAwayStartedAt
+      ? Math.max(
+          1,
+          Math.floor(
+            (Date.now() - pageAwayStartedAt) / 1000
+          )
+        )
+      : 0
+
+    const durationText = formatActivityDuration(awaySeconds)
+
+    const message = awaySeconds > 0
+      ? `You left the examination screen for ${durationText}. This activity was recorded.`
+      : 'You left the examination screen. This activity was recorded.'
+
+    showSecurityWarning(message)
+    playWarningSound()
+
+    sendMonitoringLog(
+      'tab_switch',
+      message,
+      awaySeconds
+    )
+
+    pageAwayStartedAt = 0
+  }
+
+  resetActivityTimer()
+  checkExamStatus()
 }
 /**
  * window blur catches some Android Recent Apps/browser transitions
@@ -1685,49 +1705,19 @@ function handlePageHide() {
 /**
  * Called when the student comes back to the exam.
  */
-function handleExamResume() {
-  if (
-    examSubmitted ||
-    loading.value
-  ) {
-    return
+function formatActivityDuration(seconds: number): string {
+  if (seconds < 60) {
+    return `${seconds} second${seconds === 1 ? '' : 's'}`
   }
-  if (
-    pageAwayDetected
-  ) {
-    pageAwayDetected =
-      false
-    pageAwayRecorded =
-      false
-    /*
-     * Show the warning and sound after returning because mobile
-     * operating systems may suspend sound while the app is hidden.
-     */
-    const awaySeconds =
-      pageAwayStartedAt
-        ? Math.max(
-            1,
-            Math.floor(
-              (
-                Date.now() -
-                pageAwayStartedAt
-              ) / 1000
-            )
-          )
-        : 0
-    const message =
-      awaySeconds > 0
-        ? `You left the examination screen for about ${awaySeconds} second${awaySeconds === 1 ? '' : 's'}. This activity was recorded. 3 minutes have been deducted from your remaining examination time.`
-        : 'You left the examination screen. This activity was recorded. 3 minutes have been deducted from your remaining examination time.'
-        showSecurityWarning(
-          message
-        )
-    playWarningSound()
-    pageAwayStartedAt =
-      0
+
+  const minutes = Math.floor(seconds / 60)
+  const remaining = seconds % 60
+
+  if (remaining === 0) {
+    return `${minutes} minute${minutes === 1 ? '' : 's'}`
   }
-  resetActivityTimer()
-  checkExamStatus()
+
+  return `${minutes}m ${remaining}s`
 }
 /* =====================================================
    IDLE MONITOR
@@ -1782,20 +1772,10 @@ function startIdleMonitor() {
         )
       }
       /*
-       * Log continued inactivity.
+       * Continued inactivity is still reflected by idle_seconds
+       * in live status. Do not create another idle violation every
+       * 30 seconds, otherwise the configured penalty would repeat.
        */
-      if (
-        elapsed > 30
-        &&
-        elapsed % 30 === 0
-        &&
-        !examSubmitted
-      ) {
-        sendMonitoringLog(
-          'idle',
-          `Student has been idle for ${elapsed} seconds.`
-        )
-      }
     }, 1000)
 }
 /* =====================================================
@@ -1860,41 +1840,70 @@ async function enterFullscreen() {
   }
 }
 function handleFullscreenChange() {
-  const fullscreenNow =
-    isFullscreenActive()
+  const fullscreenNow = isFullscreenActive()
+
   if (fullscreenNow) {
-    fullscreenActivated =
-      true
-    showFullscreenPrompt.value =
-      false
+    fullscreenActivated = true
+    showFullscreenPrompt.value = false
+
+    if (fullscreenCheckTimeout) {
+      clearTimeout(fullscreenCheckTimeout)
+      fullscreenCheckTimeout = null
+    }
+
+    if (fullscreenExitRecorded && fullscreenExitStartedAt > 0) {
+      const awaySeconds = Math.max(
+        1,
+        Math.floor((Date.now() - fullscreenExitStartedAt) / 1000)
+      )
+      const durationText = formatActivityDuration(awaySeconds)
+      const message = `You exited fullscreen mode for ${durationText}. This activity was recorded.`
+
+      sendMonitoringLog('fullscreen_exit', message, awaySeconds)
+      fullscreenExitRecorded = false
+      fullscreenExitStartedAt = 0
+    }
+
     return
   }
-  if (
-    fullscreenActivated
-    &&
-    !examSubmitted
-    &&
-    !loading.value
-  ) {
-    violationCounts.value
-      .fullscreen_exit += 1
-    applyTimePenalty('fullscreen_exit')
-    const message =
-      withPenaltyMessage(
-        'You exited fullscreen mode.'
-      )
-    playWarningSound()
-    showSecurityWarning(
-      message
-    )
-    sendMonitoringLog(
-      'fullscreen_exit',
-      message
-    )
-    showFullscreenPrompt.value =
-      true
+
+  if (!fullscreenActivated || examSubmitted || autoSubmitting.value || loading.value) {
+    return
   }
+
+  if (fullscreenCheckTimeout) {
+    clearTimeout(fullscreenCheckTimeout)
+  }
+
+  fullscreenCheckTimeout = setTimeout(() => {
+    fullscreenCheckTimeout = null
+
+    if (isFullscreenActive() || examSubmitted || autoSubmitting.value || loading.value) {
+      return
+    }
+
+    // A tab/app switch can also force fullscreen to close. In that case,
+    // record only the tab-switch episode so the student is not penalized twice.
+    if (document.hidden || pageAwayDetected || pageAwayRecorded) {
+      showFullscreenPrompt.value = true
+      return
+    }
+
+    if (fullscreenExitRecorded) {
+      return
+    }
+
+    fullscreenExitRecorded = true
+    fullscreenExitStartedAt = Date.now()
+    violationCounts.value.fullscreen_exit += 1
+
+    const message = 'You exited fullscreen mode. This activity was recorded.'
+    playWarningSound()
+    showSecurityWarning(message)
+    showFullscreenPrompt.value = true
+  }, 200)
 }
+
 /* =====================================================
    INTERNET STATUS
 ===================================================== */
@@ -2077,6 +2086,10 @@ function cleanupIntervals() {
       warningTimeout
     )
     warningTimeout = null
+  }
+  if (fullscreenCheckTimeout) {
+    clearTimeout(fullscreenCheckTimeout)
+    fullscreenCheckTimeout = null
   }
 }
 /* =====================================================

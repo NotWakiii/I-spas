@@ -95,6 +95,66 @@
               </div>
           </div>
       </div>
+
+      <div class="details-card">
+          <h2>Violation Time Penalties</h2>
+          <p class="penalty-note">
+              Optional. Enter the number of minutes to deduct for each violation. Leave blank or enter 0 for no deduction.
+          </p>
+          <div class="penalty-grid">
+              <div>
+                  <label>Tab Switch (minutes)</label>
+                  <input
+                      v-model.number="exam.tab_switch_penalty_minutes"
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="0"
+                  >
+              </div>
+              <div>
+                  <label>Fullscreen Exit (minutes)</label>
+                  <input
+                      v-model.number="exam.fullscreen_exit_penalty_minutes"
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="0"
+                  >
+              </div>
+              <div>
+                  <label>Copy Attempt (minutes)</label>
+                  <input
+                      v-model.number="exam.copy_attempt_penalty_minutes"
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="0"
+                  >
+              </div>
+              <div>
+                  <label>Paste Attempt (minutes)</label>
+                  <input
+                      v-model.number="exam.paste_attempt_penalty_minutes"
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="0"
+                  >
+              </div>
+              <div>
+                  <label>Idle Violation (minutes)</label>
+                  <input
+                      v-model.number="exam.idle_penalty_minutes"
+                      type="number"
+                      min="0"
+                      step="1"
+                      placeholder="0"
+                  >
+              </div>
+          </div>
+      </div>
+
     <div
         v-for="(question,index) in questions"
         :key="question.id"
@@ -204,12 +264,18 @@ const exam = ref({
     id: 0,
     title: '',
     description: '',
+    assessment_type: 'examination' as 'quiz' | 'examination',
     class_id: null as number | null,
     grade: '',
     section: '',
     subject: '',
     duration: 60,
-    passing: 75
+    passing: 75,
+    tab_switch_penalty_minutes: 0 as number | '',
+    fullscreen_exit_penalty_minutes: 0 as number | '',
+    copy_attempt_penalty_minutes: 0 as number | '',
+    paste_attempt_penalty_minutes: 0 as number | '',
+    idle_penalty_minutes: 0 as number | ''
 })
 const questions = ref<any[]>([])
 async function fetchClasses() {
@@ -265,6 +331,10 @@ async function fetchExam() {
             id: data.id,
             title: data.title,
             description: data.description || '',
+            assessment_type:
+                data.assessment_type === 'quiz'
+                    ? 'quiz'
+                    : 'examination',
             class_id:
                 data.class_id
                     ? Number(data.class_id)
@@ -275,7 +345,17 @@ async function fetchExam() {
             duration:
                 Number(data.duration || 60),
             passing:
-                Number(data.passing || 75)
+                Number(data.passing || 75),
+            tab_switch_penalty_minutes:
+                Number(data.tab_switch_penalty_seconds || 0) / 60,
+            fullscreen_exit_penalty_minutes:
+                Number(data.fullscreen_exit_penalty_seconds || 0) / 60,
+            copy_attempt_penalty_minutes:
+                Number(data.copy_attempt_penalty_seconds || 0) / 60,
+            paste_attempt_penalty_minutes:
+                Number(data.paste_attempt_penalty_seconds || 0) / 60,
+            idle_penalty_minutes:
+                Number(data.idle_penalty_seconds || 0) / 60
         }
         questions.value = (data.questions || []).map((q:any) => {
             let type = 'Multiple Choice'
@@ -357,6 +437,26 @@ async function saveExam() {
         )
         return
     }
+
+    const penaltyValues = [
+        exam.value.tab_switch_penalty_minutes,
+        exam.value.fullscreen_exit_penalty_minutes,
+        exam.value.copy_attempt_penalty_minutes,
+        exam.value.paste_attempt_penalty_minutes,
+        exam.value.idle_penalty_minutes
+    ]
+
+    if (
+        penaltyValues.some(
+            value =>
+                value !== '' &&
+                Number(value) < 0
+        )
+    ) {
+        alert('Violation penalties cannot be negative.')
+        return
+    }
+
     saving.value = true
     try {
         await api.put(
@@ -366,6 +466,8 @@ async function saveExam() {
                     exam.value.title.trim(),
                 description:
                     exam.value.description,
+                assessment_type:
+                    exam.value.assessment_type,
                 class_id:
                     exam.value.class_id,
                 subject:
@@ -374,6 +476,26 @@ async function saveExam() {
                     Number(exam.value.duration),
                 passing:
                     Number(exam.value.passing),
+                tab_switch_penalty_seconds:
+                    Math.round(
+                        Number(exam.value.tab_switch_penalty_minutes || 0) * 60
+                    ),
+                fullscreen_exit_penalty_seconds:
+                    Math.round(
+                        Number(exam.value.fullscreen_exit_penalty_minutes || 0) * 60
+                    ),
+                copy_attempt_penalty_seconds:
+                    Math.round(
+                        Number(exam.value.copy_attempt_penalty_minutes || 0) * 60
+                    ),
+                paste_attempt_penalty_seconds:
+                    Math.round(
+                        Number(exam.value.paste_attempt_penalty_minutes || 0) * 60
+                    ),
+                idle_penalty_seconds:
+                    Math.round(
+                        Number(exam.value.idle_penalty_minutes || 0) * 60
+                    ),
                 questions:
                     questions.value
             }
@@ -457,6 +579,17 @@ onMounted(async () => {
     gap:20px;
     margin-top:20px;
 }
+.penalty-note{
+    color:#6b7280;
+    font-size:13px;
+    line-height:1.6;
+    margin:0 0 20px;
+}
+.penalty-grid{
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:20px;
+}
 label{
     display:block;
     margin-bottom:8px;
@@ -531,7 +664,8 @@ textarea{
    RESPONSIVE
 ========================================== */
 @media(max-width:900px){
-.details-grid{
+.details-grid,
+.penalty-grid{
     grid-template-columns:1fr;
 }
 .options-grid{

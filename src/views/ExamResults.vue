@@ -3,10 +3,10 @@
 
     <div class="page-header">
       <div>
-        <h1>Exam Results</h1>
+        <h1>Assessment Results</h1>
 
         <p>
-          View and export previous examination results.
+          View and export previous assessment results.
         </p>
       </div>
     </div>
@@ -16,7 +16,7 @@
       v-if="loading"
       class="results-card"
     >
-      <h2>Loading exam results...</h2>
+      <h2>Loading assessment results...</h2>
     </div>
 
     <!-- Error -->
@@ -38,10 +38,10 @@
     >
       <FileSearch :size="38" />
 
-      <h2>No exam results yet</h2>
+      <h2>No assessment results yet</h2>
 
       <p>
-        Completed examination results will appear here.
+        Completed assessment results will appear here.
       </p>
     </div>
 
@@ -273,7 +273,7 @@ async function loadExamResults() {
     )
 
     errorMessage.value =
-      'Failed to retrieve examination results.'
+      'Failed to retrieve assessment results.'
 
   } finally {
 

@@ -18,7 +18,7 @@
       <div class="logo-section">
 
         <img
-          src="@/assets/logo.png"
+          src="../assets/logo.png"
           alt="I-SPAS Logo"
           class="logo"
         />
@@ -40,7 +40,6 @@
 
       </div>
 
-
       <!-- ================= NAVIGATION ================= -->
       <nav class="menu">
 
@@ -59,23 +58,6 @@
           </span>
         </RouterLink>
 
-
-        <!-- Create Exam -->
-        <RouterLink
-          to="/faculty/create-exam"
-          @click="closeMobileMenu"
-        >
-          <FilePlus2
-            :size="20"
-            :stroke-width="2"
-          />
-
-          <span>
-            Create Exam
-          </span>
-        </RouterLink>
-
-
         <!-- Class Management -->
         <RouterLink
           to="/faculty/classes"
@@ -87,10 +69,17 @@
           />
 
           <span>
-            Class Management
+            My Classes
           </span>
         </RouterLink>
-
+        <router-link
+          to="/faculty/test-bank"
+          class="nav-item"
+          active-class="active"
+        >
+          <BookOpen :size="20" />
+          <span>Test Bank</span>
+        </router-link>
 
         <!-- Exam Results -->
         <RouterLink
@@ -103,10 +92,9 @@
           />
 
           <span>
-            Exam Results
+            Assessment Results
           </span>
         </RouterLink>
-
 
         <!-- Item Analysis -->
         <RouterLink
@@ -122,25 +110,19 @@
             Item Analysis
           </span>
         </RouterLink>
-
-
-        <!-- Student History -->
+        <!-- Feedback -->
         <RouterLink
-          to="/faculty/student-history"
+          to="/faculty/feedback"
           @click="closeMobileMenu"
         >
-          <History
+          <MessageSquareText
             :size="20"
             :stroke-width="2"
           />
-
-          <span>
-            Students History
-          </span>
+          <span>Feedback</span>
         </RouterLink>
 
       </nav>
-
 
       <!-- ================= LOGOUT ================= -->
       <div class="bottom">
@@ -163,7 +145,6 @@
       </div>
 
     </aside>
-
 
     <!-- ================= MAIN ================= -->
     <div class="main">
@@ -192,11 +173,11 @@
 
         </div>
 
-
         <!-- About -->
         <button
           class="about-btn"
           type="button"
+          @click="showAboutDialog = true"
         >
           <Info
             :size="17"
@@ -210,7 +191,6 @@
 
       </header>
 
-
       <!-- ================= PAGE CONTENT ================= -->
       <main class="content">
         <RouterView />
@@ -221,6 +201,36 @@
 
   </div>
 
+  <!-- ================= ABOUT US DIALOG ================= -->
+  <div
+    v-if="showAboutDialog"
+    class="dialog-overlay"
+    @click.self="showAboutDialog = false"
+  >
+    <div class="dialog about-dialog">
+      <div class="about-dialog-icon">
+        <Info :size="34" :stroke-width="1.8" />
+      </div>
+      <h2>About I-SPAS</h2>
+      <p class="about-description">
+        I-SPAS is an Intranet-Based Student Performance Assessment System.
+      </p>
+      <div class="developer-box">
+        <span>Developed by</span>
+        <strong>Renz Cabucana</strong>
+        <strong>Joaquin Vinarao</strong>
+        <strong>Donnajane Chavez</strong>
+        <small>© 2026 I-SPAS</small>
+      </div>
+      <button
+        class="about-close-btn"
+        type="button"
+        @click="showAboutDialog = false"
+      >
+        Close
+      </button>
+    </div>
+  </div>
 
   <!-- ================= LOGOUT DIALOG ================= -->
   <div
@@ -246,7 +256,6 @@
         Are you sure you want to logout from the Faculty Portal?
       </p>
 
-
       <div class="dialog-buttons">
 
         <button
@@ -256,7 +265,6 @@
         >
           Cancel
         </button>
-
 
         <button
           class="start-btn"
@@ -281,7 +289,6 @@
 
 </template>
 
-
 <script setup lang="ts">
 
 import { ref } from 'vue'
@@ -290,26 +297,23 @@ import api from '../services/api'
 
 import {
   LayoutDashboard,
-  FilePlus2,
   Users,
   ClipboardCheck,
   BarChart3,
-  History,
+  MessageSquareText,
   LogOut,
   Menu,
   X,
-  Info
+  Info,
+  BookOpen
 } from '@lucide/vue'
-
 
 const router = useRouter()
 
-
 const showLogoutDialog = ref(false)
+const showAboutDialog = ref(false)
 
 const showMobileMenu = ref(false)
-
-
 
 // ==========================================
 // OPEN LOGOUT DIALOG
@@ -321,8 +325,6 @@ function openLogoutDialog() {
 
 }
 
-
-
 // ==========================================
 // CANCEL LOGOUT
 // ==========================================
@@ -332,8 +334,6 @@ function cancelLogout() {
   showLogoutDialog.value = false
 
 }
-
-
 
 // ==========================================
 // CLOSE MOBILE MENU
@@ -345,8 +345,6 @@ function closeMobileMenu() {
 
 }
 
-
-
 // ==========================================
 // CONFIRM LOGOUT
 // ==========================================
@@ -355,12 +353,10 @@ async function confirmLogout() {
 
   showLogoutDialog.value = false
 
-
   try {
 
     const token =
       localStorage.getItem('token')
-
 
     if (token) {
 
@@ -383,7 +379,6 @@ async function confirmLogout() {
 
     localStorage.removeItem('role')
 
-
     // Faculty → main login
     await router.replace('/')
 
@@ -392,7 +387,6 @@ async function confirmLogout() {
 }
 
 </script>
-
 
 <style scoped>
 
@@ -416,7 +410,6 @@ async function confirmLogout() {
     sans-serif;
 }
 
-
 /* ======================
    LAYOUT
 ====================== */
@@ -431,7 +424,6 @@ async function confirmLogout() {
 
   background: #f5fbf6;
 }
-
 
 /* ======================
    SIDEBAR
@@ -456,7 +448,6 @@ async function confirmLogout() {
   z-index: 10;
 }
 
-
 /* ======================
    LOGO
 ====================== */
@@ -476,7 +467,6 @@ async function confirmLogout() {
     1px solid #ececec;
 }
 
-
 .logo {
   width: 42px;
   height: 42px;
@@ -486,11 +476,9 @@ async function confirmLogout() {
   flex-shrink: 0;
 }
 
-
 .logo-text {
   min-width: 0;
 }
-
 
 .logo-text h2 {
   font-size: 18px;
@@ -502,7 +490,6 @@ async function confirmLogout() {
   line-height: 1.2;
 }
 
-
 .logo-text p {
   font-size: 13px;
 
@@ -510,7 +497,6 @@ async function confirmLogout() {
 
   margin-top: 2px;
 }
-
 
 /* ======================
    MOBILE CLOSE BUTTON
@@ -550,13 +536,11 @@ async function confirmLogout() {
     color .2s;
 }
 
-
 .close-drawer-btn:hover {
   background: #e5e7eb;
 
   color: #111827;
 }
-
 
 /* ======================
    MENU
@@ -573,7 +557,6 @@ async function confirmLogout() {
 
   overflow-y: auto;
 }
-
 
 .menu a {
   display: flex;
@@ -598,16 +581,13 @@ async function confirmLogout() {
     transform .2s;
 }
 
-
 .menu a svg {
   flex-shrink: 0;
 }
 
-
 .menu a span {
   white-space: nowrap;
 }
-
 
 .menu a:hover {
   background: #edfdf2;
@@ -617,7 +597,6 @@ async function confirmLogout() {
   transform:
     translateX(2px);
 }
-
 
 /* ======================
    ACTIVE ROUTE
@@ -631,7 +610,6 @@ async function confirmLogout() {
   font-weight: 600;
 }
 
-
 /* ======================
    LOGOUT AREA
 ====================== */
@@ -644,7 +622,6 @@ async function confirmLogout() {
   border-top:
     1px solid #ececec;
 }
-
 
 .logout-btn {
   width: 100%;
@@ -679,14 +656,12 @@ async function confirmLogout() {
   gap: 9px;
 }
 
-
 .logout-btn:hover {
   background: #ff4d4d;
 
   transform:
     translateY(-1px);
 }
-
 
 /* ======================
    MAIN
@@ -701,7 +676,6 @@ async function confirmLogout() {
 
   flex-direction: column;
 }
-
 
 /* ======================
    NAVBAR
@@ -725,7 +699,6 @@ async function confirmLogout() {
   flex-shrink: 0;
 }
 
-
 .navbar-left {
   display: flex;
 
@@ -734,7 +707,6 @@ async function confirmLogout() {
   gap: 14px;
 }
 
-
 .navbar h1 {
   font-size: 34px;
 
@@ -742,7 +714,6 @@ async function confirmLogout() {
 
   line-height: 1;
 }
-
 
 /* ======================
    HAMBURGER
@@ -768,11 +739,9 @@ async function confirmLogout() {
   justify-content: center;
 }
 
-
 .hamburger-btn:hover {
   opacity: .85;
 }
-
 
 /* ======================
    ABOUT BUTTON
@@ -807,13 +776,11 @@ async function confirmLogout() {
   font-weight: 500;
 }
 
-
 .about-btn:hover {
   background: white;
 
   color: #00c853;
 }
-
 
 /* ======================
    PAGE CONTENT
@@ -827,7 +794,6 @@ async function confirmLogout() {
   overflow: auto;
 }
 
-
 /* ======================
    MOBILE OVERLAY
 ====================== */
@@ -835,7 +801,6 @@ async function confirmLogout() {
 .mobile-overlay {
   display: none;
 }
-
 
 /* ======================
    LAPTOPS
@@ -851,35 +816,29 @@ async function confirmLogout() {
     flex: 0 0 190px;
   }
 
-
   .logo-section {
     padding:
       20px 16px;
   }
-
 
   .logo {
     width: 38px;
     height: 38px;
   }
 
-
   .logo-text h2 {
     font-size: 17px;
   }
 
-
   .logo-text p {
     font-size: 12px;
   }
-
 
   .menu {
     padding: 10px;
 
     gap: 8px;
   }
-
 
   .menu a {
     font-size: 14px;
@@ -890,19 +849,16 @@ async function confirmLogout() {
     gap: 10px;
   }
 
-
   .menu a svg {
     width: 19px;
     height: 19px;
   }
-
 
   .bottom {
     padding: 14px;
   }
 
 }
-
 
 /* ======================
    TABLET / IPAD
@@ -917,7 +873,6 @@ async function confirmLogout() {
     flex: 0 0 180px;
   }
 
-
   .logo-section {
     padding:
       18px 12px;
@@ -925,29 +880,24 @@ async function confirmLogout() {
     gap: 9px;
   }
 
-
   .logo {
     width: 34px;
     height: 34px;
   }
 
-
   .logo-text h2 {
     font-size: 15px;
   }
 
-
   .logo-text p {
     font-size: 11px;
   }
-
 
   .menu {
     padding: 9px;
 
     gap: 7px;
   }
-
 
   .menu a {
     font-size: 13px;
@@ -958,24 +908,20 @@ async function confirmLogout() {
     gap: 9px;
   }
 
-
   .menu a svg {
     width: 18px;
     height: 18px;
   }
 
-
   .navbar h1 {
     font-size: 28px;
   }
-
 
   .content {
     padding: 24px;
   }
 
 }
-
 
 /* ======================
    MOBILE
@@ -1010,17 +956,14 @@ async function confirmLogout() {
       rgba(0, 0, 0, .2);
   }
 
-
   .sidebar.sidebar-open {
     transform:
       translateX(0);
   }
 
-
   .close-drawer-btn {
     display: flex;
   }
-
 
   .mobile-overlay {
     display: block;
@@ -1035,11 +978,9 @@ async function confirmLogout() {
     z-index: 1000;
   }
 
-
   .hamburger-btn {
     display: flex;
   }
-
 
   .navbar {
     padding:
@@ -1048,11 +989,9 @@ async function confirmLogout() {
     height: 60px;
   }
 
-
   .navbar h1 {
     font-size: 22px;
   }
-
 
   .about-btn {
     padding:
@@ -1061,40 +1000,33 @@ async function confirmLogout() {
     font-size: 13px;
   }
 
-
   .about-btn svg {
     width: 16px;
     height: 16px;
   }
 
-
   .content {
     padding: 16px;
   }
-
 
   .logo-section {
     padding:
       18px;
   }
 
-
   .logo-text h2 {
     font-size: 16px;
   }
 
-
   .logo-text p {
     font-size: 12px;
   }
-
 
   .menu {
     padding: 14px;
 
     gap: 8px;
   }
-
 
   .menu a {
     padding:
@@ -1107,7 +1039,6 @@ async function confirmLogout() {
 
 }
 
-
 /* ======================
    SMALL MOBILE
 ====================== */
@@ -1118,7 +1049,6 @@ async function confirmLogout() {
     font-size: 19px;
   }
 
-
   .about-btn {
     padding:
       7px 10px;
@@ -1128,11 +1058,9 @@ async function confirmLogout() {
     gap: 5px;
   }
 
-
   .content {
     padding: 12px;
   }
-
 
   .dialog {
     width: 90%;
@@ -1141,7 +1069,6 @@ async function confirmLogout() {
   }
 
 }
-
 
 /* ======================
    LOGOUT DIALOG OVERLAY
@@ -1238,4 +1165,72 @@ async function confirmLogout() {
 .start-btn:hover {
   background: #b91c1c;
 }
+
+/* ================= ABOUT US DIALOG ================= */
+.about-dialog {
+  width: 440px;
+}
+
+.about-dialog-icon {
+  width: 62px;
+  height: 62px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eaf9ef;
+  color: #00b248;
+}
+
+.about-description {
+  margin: 0 auto;
+  max-width: 340px;
+}
+
+.developer-box {
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid #d1fae5;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: #f0fdf4;
+}
+
+.developer-box span {
+  margin-bottom: 5px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.developer-box strong {
+  color: #112244;
+  font-size: 14px;
+}
+
+.developer-box small {
+  margin-top: 10px;
+  color: #16a34a;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.about-close-btn {
+  margin-top: 20px;
+  padding: 11px 30px;
+  border: none;
+  border-radius: 9px;
+  background: #00c853;
+  color: #fff;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.about-close-btn:hover {
+  background: #00b248;
+}
+
 </style>

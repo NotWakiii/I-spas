@@ -413,6 +413,7 @@ interface ExamData {
   id: number
   title: string
   class_id?: number | null
+  assessment_type?: 'quiz' | 'examination' | null
   course: string
   grade: string
   section: string
@@ -479,6 +480,7 @@ const exam =
     id: 0,
     title: '',
     class_id: null,
+    assessment_type: null,
     course: '',
     grade: '',
     section: ''
@@ -545,6 +547,12 @@ async function fetchItemAnalysis() {
               examData.class_id
             )
           : null,
+      assessment_type:
+        examData.assessment_type === 'quiz'
+          ? 'quiz'
+          : examData.assessment_type === 'examination'
+            ? 'examination'
+            : null,
       /*
        * Keep "course" property in Vue
        * for compatibility with your
@@ -564,6 +572,24 @@ async function fetchItemAnalysis() {
         examData.section ||
         ''
     }
+    /*
+    |--------------------------------------------------------------------------
+    | ITEM ANALYSIS GUARD
+    |--------------------------------------------------------------------------
+    |
+    | Quiz assessments must never show Item Analysis.
+    | Item Analysis is available only for examinations.
+    |
+    */
+    if (
+      exam.value.assessment_type !==
+      'examination'
+    ) {
+      errorMessage.value =
+        'Item Analysis is only available for examinations.'
+      return
+    }
+
     /*
     |--------------------------------------------------------------------------
     | LOAD ITEM ANALYSIS
@@ -674,6 +700,17 @@ async function fetchItemAnalysis() {
               )
             : exam.value
                 .class_id,
+        assessment_type:
+          responseBody
+            .exam
+            .assessment_type === 'quiz'
+            ? 'quiz'
+            : responseBody
+                .exam
+                .assessment_type === 'examination'
+              ? 'examination'
+              : exam.value
+                  .assessment_type,
         grade:
           responseBody
             .exam

@@ -500,6 +500,13 @@
         <div class="result-actions">
           <button
             type="button"
+            class="feedback-btn"
+            @click="openFeedback"
+          >
+            Send Feedback
+          </button>
+          <button
+            type="button"
             class="finish-btn"
             @click="finishSession"
           >
@@ -507,17 +514,90 @@
           </button>
         </div>
       </main>
+
+      <div
+        v-if="showFeedback"
+        class="feedback-overlay"
+        @click.self="closeFeedback"
+      >
+        <div class="feedback-modal">
+          <div class="feedback-modal-header">
+            <div>
+              <span>ASSESSMENT FEEDBACK</span>
+              <h2>Send Feedback to Your Teacher</h2>
+              <p>Report a question or share a concern about this assessment.</p>
+            </div>
+            <button
+              type="button"
+              class="feedback-close"
+              :disabled="submittingFeedback"
+              @click="closeFeedback"
+            >
+              ×
+            </button>
+          </div>
+
+          <div class="feedback-context">
+            <strong>{{ result.exam_title }}</strong>
+            <span>Example: "I think number 1 is wrong because..."</span>
+          </div>
+
+          <textarea
+            v-model="feedbackMessage"
+            class="feedback-textarea"
+            maxlength="1000"
+            placeholder="Write your feedback here..."
+          ></textarea>
+
+          <div class="feedback-meta">
+            {{ feedbackMessage.length }}/1000
+          </div>
+
+          <div v-if="feedbackError" class="feedback-error">
+            {{ feedbackError }}
+          </div>
+
+          <div v-if="feedbackSuccess" class="feedback-success">
+            {{ feedbackSuccess }}
+          </div>
+
+          <div class="feedback-actions">
+            <button
+              type="button"
+              class="feedback-cancel"
+              :disabled="submittingFeedback"
+              @click="closeFeedback"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="feedback-submit"
+              :disabled="submittingFeedback || !feedbackMessage.trim()"
+              @click="submitFeedback"
+            >
+              {{ submittingFeedback ? 'Sending...' : 'Submit Feedback' }}
+            </button>
+          </div>
+        </div>
+      </div>
     </template>
   </div>
 </template>
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import api from '../../services/api'
+const route = useRoute()
 const router = useRouter()
 const loading = ref(true)
 const errorMessage = ref('')
 const activeTab = ref<'score' | 'leaderboard'>('score')
+const showFeedback = ref(false)
+const feedbackMessage = ref('')
+const feedbackError = ref('')
+const feedbackSuccess = ref('')
+const submittingFeedback = ref(false)
 const result = ref({
   session_id: 0,
   exam_id: 0,
@@ -578,80 +658,139 @@ function getInitials(name: string) {
     .substring(0, 2)
     .toUpperCase()
 }
-async function loadResults(
-  silent: boolean = false
-) {
+async function loadResults(silent: boolean = false) {
   if (!silent) {
     loading.value = true
   }
+
   errorMessage.value = ''
+
   try {
-    const sessionText =
-      localStorage.getItem('student_session')
-    if (!sessionText) {
-      router.replace('/student')
-      return
+    const routeExamId = Number(route.params.examId)
+
+    let response
+
+    // ==========================================
+    // HISTORICAL RESULT
+    // Dashboard -> Class -> View Result
+    // ==========================================
+    if (
+      Number.isInteger(routeExamId) &&
+      routeExamId > 0
+    ) {
+      response = await api.get(
+        `/student/results/${routeExamId}`,
+        {
+          params: {
+            timestamp: Date.now(),
+          },
+        }
+      )
     }
-    const session =
-      JSON.parse(sessionText)
-    const response = await api.get(
-      `/student-results/${session.id}`,
-      {
-        params: {
-          timestamp: Date.now(),
-        },
+
+    // ==========================================
+    // CURRENT EXAM RESULT
+    // Immediately after submitting an exam
+    // ==========================================
+    else {
+      const sessionText =
+        localStorage.getItem('student_session')
+
+      if (!sessionText) {
+        errorMessage.value =
+          'No examination result was found.'
+        return
       }
-    )
-    const data = response.data?.data
+
+      const session =
+        JSON.parse(sessionText)
+
+      response = await api.get(
+        `/student-results/${session.id}`,
+        {
+          params: {
+            timestamp: Date.now(),
+          },
+        }
+      )
+    }
+
+    const data =
+      response.data?.data
+
     if (!data) {
       throw new Error(
         'No result information was returned.'
       )
     }
+
     result.value = {
       session_id:
         Number(data.session_id),
+
       exam_id:
         Number(data.exam_id),
+
       student_name:
         data.student_name ||
         'Student',
+
       exam_title:
         data.exam_title ||
         'Examination',
+
       score:
         Number(data.score || 0),
+
       total_points:
         Number(data.total_points || 0),
+
       total_questions:
         Number(data.total_questions || 0),
+
       correct_answers:
         Number(data.correct_answers || 0),
+
       wrong_answers:
         Number(data.wrong_answers || 0),
+
       percentage:
         Number(data.percentage || 0),
+
       passing:
         Number(data.passing || 75),
+
       rank:
         data.rank === null ||
         data.rank === undefined
           ? null
           : Number(data.rank),
+
       leaderboard_available:
-        Boolean(data.leaderboard_available),
+        Boolean(
+          data.leaderboard_available
+        ),
+
       result_status:
         data.result_status === 'Passed'
           ? 'Passed'
           : 'Failed',
+
       time_spent:
         Number(data.time_spent || 0),
     }
+
     localStorage.setItem(
       'student_result',
       JSON.stringify(result.value)
     )
-    if (result.value.leaderboard_available) {
+
+    // ==========================================
+    // LEADERBOARD
+    // ==========================================
+    if (
+      result.value.leaderboard_available
+    ) {
       const leaderboardResponse =
         await api.get(
           `/student-leaderboard/${result.value.exam_id}`,
@@ -661,18 +800,24 @@ async function loadResults(
             },
           }
         )
+
       leaderboard.value =
         Array.isArray(
           leaderboardResponse.data?.data
         )
           ? leaderboardResponse.data.data
           : []
+
       if (resultRefreshInterval) {
-        clearInterval(resultRefreshInterval)
+        clearInterval(
+          resultRefreshInterval
+        )
+
         resultRefreshInterval = null
       }
     } else {
       leaderboard.value = []
+
       activeTab.value = 'score'
     }
   } catch (error: unknown) {
@@ -680,6 +825,7 @@ async function loadResults(
       'STUDENT RESULTS ERROR:',
       error
     )
+
     if (!silent) {
       const apiError =
         error as {
@@ -689,6 +835,7 @@ async function loadResults(
             }
           }
         }
+
       errorMessage.value =
         apiError.response?.data?.message ||
         'Unable to load examination results.'
@@ -699,6 +846,70 @@ async function loadResults(
     }
   }
 }
+function openFeedback() {
+  feedbackError.value = ''
+  feedbackSuccess.value = ''
+  showFeedback.value = true
+}
+
+function closeFeedback() {
+  if (submittingFeedback.value) return
+  showFeedback.value = false
+  feedbackError.value = ''
+  feedbackSuccess.value = ''
+}
+
+async function submitFeedback() {
+  const message = feedbackMessage.value.trim()
+
+  if (!message) {
+    feedbackError.value = 'Please write your feedback first.'
+    return
+  }
+
+  submittingFeedback.value = true
+  feedbackError.value = ''
+  feedbackSuccess.value = ''
+
+  try {
+    const response = await api.post(
+      '/student/feedback',
+      {
+        exam_id: result.value.exam_id,
+        exam_session_id: result.value.session_id,
+        message
+      }
+    )
+
+    feedbackSuccess.value =
+      response.data?.message ||
+      'Feedback submitted successfully.'
+
+    feedbackMessage.value = ''
+
+    setTimeout(() => {
+      showFeedback.value = false
+      feedbackSuccess.value = ''
+    }, 1000)
+  } catch (error: unknown) {
+    console.error('FEEDBACK SUBMIT ERROR:', error)
+
+    const apiError = error as {
+      response?: {
+        data?: {
+          message?: string
+        }
+      }
+    }
+
+    feedbackError.value =
+      apiError.response?.data?.message ||
+      'Unable to submit feedback.'
+  } finally {
+    submittingFeedback.value = false
+  }
+}
+
 function finishSession() {
   localStorage.removeItem('student_session')
   localStorage.removeItem('student_exam')
@@ -2022,4 +2233,222 @@ button{
         min-width:84px;
     }
 }
+
+/* ==========================================
+   FEEDBACK
+========================================== */
+.result-actions{
+  padding-top:18px;
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.feedback-btn,
+.finish-btn{
+  min-width:220px;
+  padding:14px 22px;
+  border:none;
+  border-radius:14px;
+  color:#ffffff;
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+  transition:.25s;
+}
+
+.feedback-btn{
+  background:#16a34a;
+}
+
+.feedback-btn:hover{
+  background:#15803d;
+  transform:translateY(-2px);
+}
+
+.feedback-overlay{
+  position:fixed;
+  inset:0;
+  z-index:10000;
+  padding:20px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(15,23,42,.55);
+  backdrop-filter:blur(4px);
+}
+
+.feedback-modal{
+  width:min(100%,560px);
+  padding:24px;
+  border-radius:22px;
+  background:#ffffff;
+  box-shadow:0 25px 60px rgba(15,23,42,.25);
+}
+
+.feedback-modal-header{
+  display:flex;
+  justify-content:space-between;
+  gap:20px;
+}
+
+.feedback-modal-header span{
+  color:#16a34a;
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:1px;
+}
+
+.feedback-modal-header h2{
+  margin-top:4px;
+  color:#0f172a;
+  font-size:20px;
+}
+
+.feedback-modal-header p{
+  margin-top:6px;
+  color:#64748b;
+  font-size:10px;
+  line-height:1.6;
+}
+
+.feedback-close{
+  width:34px;
+  height:34px;
+  flex-shrink:0;
+  border:none;
+  border-radius:9px;
+  background:#f1f5f9;
+  color:#475569;
+  font-size:21px;
+  cursor:pointer;
+}
+
+.feedback-context{
+  margin-top:18px;
+  padding:13px;
+  border:1px solid #dcfce7;
+  border-radius:12px;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  background:#f0fdf4;
+}
+
+.feedback-context strong{
+  color:#166534;
+  font-size:11px;
+}
+
+.feedback-context span{
+  color:#64748b;
+  font-size:9px;
+}
+
+.feedback-textarea{
+  width:100%;
+  min-height:150px;
+  margin-top:14px;
+  padding:14px;
+  border:1px solid #cbd5e1;
+  border-radius:12px;
+  resize:vertical;
+  outline:none;
+  color:#0f172a;
+  font-family:inherit;
+  font-size:12px;
+  line-height:1.6;
+}
+
+.feedback-textarea:focus{
+  border-color:#16a34a;
+  box-shadow:0 0 0 3px rgba(22,163,74,.12);
+}
+
+.feedback-meta{
+  margin-top:5px;
+  text-align:right;
+  color:#94a3b8;
+  font-size:8px;
+}
+
+.feedback-error,
+.feedback-success{
+  margin-top:10px;
+  padding:10px 12px;
+  border-radius:10px;
+  font-size:9px;
+}
+
+.feedback-error{
+  border:1px solid #fecaca;
+  background:#fef2f2;
+  color:#b91c1c;
+}
+
+.feedback-success{
+  border:1px solid #86efac;
+  background:#f0fdf4;
+  color:#166534;
+}
+
+.feedback-actions{
+  margin-top:18px;
+  display:flex;
+  justify-content:flex-end;
+  gap:10px;
+}
+
+.feedback-cancel,
+.feedback-submit{
+  min-height:40px;
+  padding:0 16px;
+  border:none;
+  border-radius:10px;
+  font-family:inherit;
+  font-size:10px;
+  font-weight:800;
+  cursor:pointer;
+}
+
+.feedback-cancel{
+  border:1px solid #e2e8f0;
+  background:#ffffff;
+  color:#475569;
+}
+
+.feedback-submit{
+  background:#16a34a;
+  color:#ffffff;
+}
+
+.feedback-submit:disabled,
+.feedback-cancel:disabled,
+.feedback-close:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+
+@media(max-width:520px){
+  .result-actions{
+    flex-direction:column;
+  }
+
+  .feedback-btn,
+  .finish-btn{
+    width:100%;
+    min-width:0;
+  }
+
+  .feedback-actions{
+    flex-direction:column;
+  }
+
+  .feedback-cancel,
+  .feedback-submit{
+    width:100%;
+  }
+}
+
 </style>

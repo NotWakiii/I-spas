@@ -2,72 +2,194 @@
   <div class="automatic-page">
     <button
       class="back-btn"
-      @click="$router.push('/faculty/create-exam')"
+      @click="goBackToSelection"
     >
       ← Back to Selection
     </button>
+
     <div class="page-header">
-      <h1>Automatic Exam Generation</h1>
+      <h1>
+        Automatic
+        {{
+          assessmentType === 'quiz'
+            ? 'Quiz'
+            : 'Examination'
+        }}
+        Generation
+      </h1>
+
       <p>
-        Generate draft questions by pasting questions with answers.
+        Generate draft questions by pasting
+        questions with answers.
       </p>
     </div>
+
     <!-- ==========================================
-         EXAM DETAILS + SUMMARY
+         ASSESSMENT DETAILS + SUMMARY
     =========================================== -->
     <div class="top-grid">
       <div class="card">
-        <h2>Exam Details</h2>
+        <h2>Assessment Details</h2>
+
+        <!-- TYPE -->
         <div class="form-group">
-          <label>Exam Title</label>
+          <label>Assessment Type</label>
+
+          <div class="assessment-type-options">
+            <button
+              type="button"
+              class="assessment-type-card"
+              :class="{
+                active:
+                  assessmentType === 'quiz'
+              }"
+              @click="
+                assessmentType = 'quiz'
+              "
+            >
+              <strong>Quiz</strong>
+
+              <span>
+                Short assessment without
+                Item Analysis.
+              </span>
+            </button>
+
+            <button
+              type="button"
+              class="assessment-type-card"
+              :class="{
+                active:
+                  assessmentType ===
+                  'examination'
+              }"
+              @click="
+                assessmentType =
+                  'examination'
+              "
+            >
+              <strong>Examination</strong>
+
+              <span>
+                Formal assessment with
+                competency-based Item Analysis.
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- TITLE -->
+        <div class="form-group">
+          <label>
+            {{
+              assessmentType === 'quiz'
+                ? 'Quiz Title'
+                : 'Examination Title'
+            }}
+          </label>
+
           <input
             v-model="examTitle"
             type="text"
-            placeholder="e.g. Midterm Examination"
+            :placeholder="
+              assessmentType === 'quiz'
+                ? 'e.g. Quiz 1'
+                : 'e.g. Midterm Examination'
+            "
           >
         </div>
+
+        <!-- DESCRIPTION -->
         <div class="form-group">
           <label>Description</label>
+
           <textarea
             v-model="description"
-            placeholder="Brief description of the exam"
+            placeholder="Brief description of the assessment"
           ></textarea>
         </div>
+
+        <!-- CLASSES -->
         <div class="form-group">
-          <label>Assign to Classes</label>
+          <label>
+            {{
+              isClassLocked
+                ? 'Assigned Class'
+                : 'Assign to Classes'
+            }}
+          </label>
+
           <div
             v-if="loadingClasses"
             class="class-loading"
           >
             Loading classes...
           </div>
+
           <div
-            v-else-if="classes.length > 0"
+            v-else-if="visibleClasses.length > 0"
             class="class-selection-box"
           >
             <label
-              v-for="schoolClass in classes"
+              v-for="schoolClass in visibleClasses"
               :key="schoolClass.id"
               class="class-checkbox-item"
               :class="{
-                selected: selectedClassIds.includes(schoolClass.id)
+                selected:
+                  selectedClassIds.includes(
+                    schoolClass.id
+                  )
               }"
             >
               <input
                 v-model="selectedClassIds"
                 type="checkbox"
                 :value="schoolClass.id"
+                :disabled="isClassLocked"
               >
+
               <div class="class-checkbox-info">
                 <strong>
-                  Grade {{ schoolClass.grade }}
+                  {{
+                    schoolClass.subject?.name ||
+                    'No Subject'
+                  }}
                 </strong>
+
                 <span>
-                  {{ schoolClass.section }}
+                  {{ schoolClass.grade }}
+                  •
+                  {{
+                    schoolClass.strand?.name ||
+                    'No Strand'
+                  }}
+                  •
+                  {{
+                    schoolClass
+                      .section_data
+                      ?.section ||
+                    schoolClass.section ||
+                    'No Section'
+                  }}
                 </span>
+
+                <small>
+                  {{
+                    schoolClass
+                      .school_year
+                      ?.year ||
+                    'No School Year'
+                  }}
+                  •
+                  {{
+                    schoolClass.semester ||
+                    'No Semester'
+                  }}
+                </small>
               </div>
             </label>
           </div>
+
           <p
             v-if="
               !loadingClasses &&
@@ -75,34 +197,77 @@
             "
             class="class-warning"
           >
-            No classes found. Create a class in Class Management first.
+            No classes found. Create a class
+            in Class Management first.
           </p>
-          <p
-            v-if="selectedClassIds.length > 0"
-            class="selected-class-count"
+
+          <template
+            v-if="
+              selectedClassIds.length > 0
+            "
           >
-            {{ selectedClassIds.length }} class(es) selected
-          </p>
+            <p class="selected-class-count">
+              {{
+                selectedClassIds.length
+              }}
+              class(es) selected
+            </p>
+
+            <p
+              v-if="hasMixedSubjects"
+              class="class-warning"
+            >
+              Selected classes must have the
+              same subject.
+            </p>
+
+            <p
+              v-if="isClassLocked"
+              class="locked-class-note"
+            >
+              This assessment will be created
+              for the class selected from
+              Class Management.
+            </p>
+          </template>
         </div>
-        <div class="form-group">
-          <label>Subject</label>
-          <input
-            v-model="subject"
-            type="text"
-            placeholder="e.g. Basic Accounting"
-          >
+
+        <!-- AUTO SUBJECT -->
+        <div
+          v-if="selectedSubject"
+          class="selected-subject"
+        >
+          <div>
+            <span>Subject</span>
+
+            <strong>
+              {{ selectedSubject }}
+            </strong>
+          </div>
+
+          <small>
+            Automatically based on the
+            selected class.
+          </small>
         </div>
+
+        <!-- DURATION / PASSING -->
         <div class="two-column">
           <div class="form-group">
-            <label>Duration (minutes)</label>
+            <label>
+              Duration (minutes)
+            </label>
             <input
               v-model.number="duration"
               type="number"
               min="1"
             >
           </div>
+
           <div class="form-group">
-            <label>Passing Score (%)</label>
+            <label>
+              Passing Score (%)
+            </label>
             <input
               v-model.number="passing"
               type="number"
@@ -111,29 +276,185 @@
             >
           </div>
         </div>
+
+        <!-- VIOLATION TIME PENALTIES -->
+        <div class="penalty-section">
+          <div class="penalty-heading">
+            <div>
+              <h3>Violation Time Penalties</h3>
+              <p>
+                Optional. Enter how many minutes will be deducted
+                for each violation. Leave blank or enter 0 for no deduction.
+              </p>
+            </div>
+          </div>
+
+          <div class="penalty-grid">
+            <div class="form-group">
+              <label>Tab Switch</label>
+              <div class="penalty-input">
+                <input
+                  v-model.number="tabSwitchPenaltyMinutes"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="0"
+                >
+                <span>min / violation</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Fullscreen Exit</label>
+              <div class="penalty-input">
+                <input
+                  v-model.number="fullscreenExitPenaltyMinutes"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="0"
+                >
+                <span>min / violation</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Copy Attempt</label>
+              <div class="penalty-input">
+                <input
+                  v-model.number="copyAttemptPenaltyMinutes"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="0"
+                >
+                <span>min / violation</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Paste Attempt</label>
+              <div class="penalty-input">
+                <input
+                  v-model.number="pasteAttemptPenaltyMinutes"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="0"
+                >
+                <span>min / violation</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Idle Violation</label>
+              <div class="penalty-input">
+                <input
+                  v-model.number="idlePenaltyMinutes"
+                  type="number"
+                  min="0"
+                  step="1"
+                  placeholder="0"
+                >
+                <span>min / violation</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <!-- SUMMARY -->
       <div class="card summary">
         <h2>Draft Summary</h2>
+
+        <div class="assessment-summary-info">
+          <div>
+            <span>Type</span>
+
+            <strong>
+              {{
+                assessmentType ===
+                'quiz'
+                  ? 'Quiz'
+                  : 'Examination'
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Subject</span>
+
+            <strong>
+              {{
+                selectedSubject ||
+                'Not selected'
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <span>Item Analysis</span>
+
+            <strong>
+              {{
+                assessmentType ===
+                'examination'
+                  ? 'Available'
+                  : 'Not Available'
+              }}
+            </strong>
+          </div>
+        </div>
+
         <div class="summary-box">
           <div>
-            <span>Questions Generated</span>
-            <h1>{{ questions.length }}</h1>
+            <span>
+              Questions Generated
+            </span>
+
+            <h1>
+              {{ questions.length }}
+            </h1>
           </div>
+
           <div>
             <span>Total Points</span>
-            <h1>{{ totalPoints }}</h1>
+
+            <h1>
+              {{ totalPoints }}
+            </h1>
           </div>
+
           <div>
-            <span>Detected Answers</span>
-            <h1>{{ detectedAnswers }}</h1>
+            <span>
+              Detected Answers
+            </span>
+
+            <h1>
+              {{ detectedAnswers }}
+            </h1>
           </div>
+
           <div>
-            <span>Missing Answers</span>
+            <span>
+              Missing Answers
+            </span>
+
             <h1 class="warning-text">
               {{ missingAnswers }}
             </h1>
           </div>
         </div>
+
+        <button
+          v-if="questions.length > 0"
+          class="test-bank-all-btn"
+          :disabled="addingAllToTestBank || hasMixedSubjects || !selectedSubjectId"
+          @click="addAllQuestionsToTestBank"
+        >
+          {{ addingAllToTestBank ? 'Adding to Test Bank...' : 'Add All Questions to Test Bank' }}
+        </button>
+
         <button
           class="create-btn"
           :disabled="creatingExam"
@@ -142,50 +463,84 @@
           {{
             creatingExam
               ? 'Creating...'
-              : 'Create Exam'
+              : assessmentType ===
+                  'quiz'
+                ? 'Create Quiz'
+                : 'Create Examination'
           }}
         </button>
       </div>
     </div>
+
     <!-- ==========================================
          GENERATION METHOD
     =========================================== -->
     <div class="card method-card">
       <div class="method-header">
         <h2>Generation Method</h2>
+
         <button
           class="how-to-btn"
           type="button"
-          @click="showHowToPopup = true"
+          @click="
+            showHowToPopup = true
+          "
         >
           How to Use
         </button>
       </div>
+
       <div class="tabs">
         <button class="active">
           Paste Questions
         </button>
       </div>
+
       <div class="method-content">
         <div class="format-box">
-          <strong>Accepted Format:</strong>
+          <strong>
+            Accepted Format:
+          </strong>
+
           <p>
-            Multiple Choice questions can be pasted directly
-            with A-D choices and an Answer key. You may also add
-            section labels such as <b>True or False</b> and
+            Multiple Choice questions can be
+            pasted directly with A-D choices
+            and an Answer key. You may also
+            add section labels such as
+            <b>True or False</b>
+            and
             <b>Identification</b>.
           </p>
-          <p>
-            You may add a competency before the question or after
-            the answer using:
-            <b>Competency: Your competency here</b>.
+
+          <p
+            v-if="
+              assessmentType ===
+              'examination'
+            "
+          >
+            <b>Competency is required for
+            examination questions.</b>
+            Add it before or after each
+            question using:
+            <b>
+              Competency: Your competency
+              here
+            </b>.
+          </p>
+
+          <p v-else>
+            Competency is optional for
+            quizzes because quizzes do not
+            include Item Analysis.
           </p>
         </div>
+
         <textarea
           v-model="rawText"
           class="paste-area"
           placeholder="Paste questions with answers here..."
         ></textarea>
+
         <button
           class="generate-btn"
           @click="generateFromText"
@@ -194,71 +549,129 @@
         </button>
       </div>
     </div>
+
+    <!-- HOW TO USE -->
     <div
       v-if="showHowToPopup"
       class="popup-overlay"
-      @click.self="showHowToPopup = false"
+      @click.self="
+        showHowToPopup = false
+      "
     >
       <div class="how-to-popup-card">
         <button
           class="how-to-close-btn"
           type="button"
-          @click="showHowToPopup = false"
+          @click="
+            showHowToPopup = false
+          "
         >
           ×
         </button>
-        <h2>How to Format Questions</h2>
+
+        <h2>
+          How to Format Questions
+        </h2>
+
         <p class="how-to-description">
-          For better question detection, follow this format when pasting your questions.
+          For better question detection,
+          follow this format when pasting
+          your questions.
         </p>
+
         <div class="format-example">
           <pre>1. Who founded the Katipunan?
 
-    A. José Rizal
-    B. Andrés Bonifacio
-    C. Emilio Aguinaldo
-    D. Apolinario Mabini
+A. José Rizal
+B. Andrés Bonifacio
+C. Emilio Aguinaldo
+D. Apolinario Mabini
 
-    Answer: B
-    Competency: Identifies significant historical figures and explains their contributions to Philippine history.
+Answer: B
+Competency: Identifies significant historical figures and explains their contributions to Philippine history.
 
-    2. In what year was Philippine independence proclaimed?
+2. In what year was Philippine independence proclaimed?
 
-    A. 1896
-    B. 1897
-    C. 1898
-    D. 1899
+A. 1896
+B. 1897
+C. 1898
+D. 1899
 
-    Answer: C
-    Competency: Identifies significant events and dates in Philippine history.</pre>
+Answer: C
+Competency: Identifies significant events and dates in Philippine history.</pre>
         </div>
+
         <div class="format-tips">
-          <p><strong>Tips:</strong></p>
-          <p>• Start every question with a number such as <strong>1.</strong>, <strong>2.</strong>, <strong>3.</strong></p>
-          <p>• Use <strong>A</strong>, <strong>B</strong>, <strong>C</strong>, and <strong>D</strong> for Multiple Choice options.</p>
-          <p>• Write the correct answer using <strong>Answer: B</strong></p>
-          <p>• Write the competency using <strong>Competency: ...</strong>.</p>
-          <p>• Put the competency after the answer for clearer question grouping.</p>
-          <p>• Avoid placing unrelated text between questions.</p>
-          <p>• Make sure the question numbers are part of the text so they can be copied when I copy the questions.</p>
+          <p>
+            <strong>Tips:</strong>
+          </p>
+
+          <p>
+            • Start every question with a
+            number such as
+            <strong>1.</strong>,
+            <strong>2.</strong>,
+            <strong>3.</strong>
+          </p>
+
+          <p>
+            • Use
+            <strong>A</strong>,
+            <strong>B</strong>,
+            <strong>C</strong>,
+            and
+            <strong>D</strong>
+            for Multiple Choice options.
+          </p>
+
+          <p>
+            • Write the correct answer using
+            <strong>Answer: B</strong>.
+          </p>
+
+          <p>
+            • For examinations, write
+            <strong>
+              Competency: ...
+            </strong>
+            for every question.
+          </p>
+
+          <p>
+            • For quizzes, competency is
+            optional.
+          </p>
+
+          <p>
+            • Put the competency after the
+            answer for clearer question
+            grouping.
+          </p>
         </div>
       </div>
     </div>
+
     <!-- ==========================================
          GENERATED QUESTIONS
     =========================================== -->
     <div class="card">
       <div class="question-header">
         <div>
-          <h2>Generated Draft Questions</h2>
+          <h2>
+            Generated Draft Questions
+          </h2>
+
           <p
             v-if="questions.length > 0"
             class="question-summary-text"
           >
-            {{ questions.length }} question(s) •
-            {{ totalPoints }} total point(s)
+            {{ questions.length }}
+            question(s) •
+            {{ totalPoints }}
+            total point(s)
           </p>
         </div>
+
         <button
           class="add-question-btn"
           @click="addBlankQuestion"
@@ -266,14 +679,19 @@
           + Add Question
         </button>
       </div>
+
       <div
         v-if="questions.length === 0"
         class="empty"
       >
         No generated questions yet.
       </div>
+
       <div
-        v-for="(questionItem, index) in questions"
+        v-for="(
+          questionItem,
+          index
+        ) in questions"
         :key="questionItem.id"
         class="question-card"
       >
@@ -281,148 +699,261 @@
           <h3>
             Question {{ index + 1 }}
           </h3>
-          <button
-            class="delete-btn"
-            @click="deleteQuestion(index)"
-          >
-            Delete
-          </button>
+
+          <div class="question-actions">
+            <button
+              class="test-bank-btn"
+              :class="{ saved: isQuestionInTestBank(questionItem) }"
+              :disabled="isQuestionInTestBank(questionItem) || isQuestionAdding(questionItem)"
+              @click="addQuestionToTestBank(questionItem)"
+            >
+              {{ isQuestionInTestBank(questionItem) ? '✓ In Test Bank' : isQuestionAdding(questionItem) ? 'Adding...' : 'Add to Test Bank' }}
+            </button>
+
+            <button
+              class="delete-btn"
+              @click="deleteQuestion(index)"
+            >
+              Delete
+            </button>
+          </div>
         </div>
+
+        <!-- COMPETENCY -->
         <div class="form-group">
-          <label>Competency</label>
+          <label>
+            Competency
+
+            <span
+              class="field-requirement"
+            >
+              {{
+                assessmentType ===
+                'examination'
+                  ? '(Required)'
+                  : '(Optional)'
+              }}
+            </span>
+          </label>
+
           <input
-            v-model="questionItem.competency"
+            v-model="
+              questionItem.competency
+            "
             type="text"
-            placeholder="Enter learning competency"
+            :placeholder="
+              assessmentType ===
+              'examination'
+                ? 'Enter learning competency'
+                : 'Optional for quizzes'
+            "
           >
         </div>
+
+        <!-- QUESTION TYPE -->
         <div class="form-group">
-          <label>Question Type</label>
+          <label>
+            Question Type
+          </label>
+
           <select
             v-model="questionItem.type"
-            @change="normalizeQuestion(questionItem)"
+            @change="
+              normalizeQuestion(
+                questionItem
+              )
+            "
           >
             <option>
               Multiple Choice
             </option>
+
             <option>
               True or False
             </option>
+
             <option>
               Identification
             </option>
           </select>
         </div>
+
+        <!-- QUESTION -->
         <div class="form-group">
           <label>Question</label>
+
           <textarea
-            v-model="questionItem.question"
+            v-model="
+              questionItem.question
+            "
             placeholder="Enter question"
           ></textarea>
         </div>
-        <!-- MULTIPLE CHOICE OPTIONS -->
+
+        <!-- MCQ -->
         <div
-          v-if="questionItem.type === 'Multiple Choice'"
+          v-if="
+            questionItem.type ===
+            'Multiple Choice'
+          "
           class="two-column"
         >
           <div class="form-group">
             <label>Option A</label>
+
             <input
-              v-model="questionItem.options[0]"
+              v-model="
+                questionItem.options[0]
+              "
               placeholder="Option A"
             >
           </div>
+
           <div class="form-group">
             <label>Option B</label>
+
             <input
-              v-model="questionItem.options[1]"
+              v-model="
+                questionItem.options[1]
+              "
               placeholder="Option B"
             >
           </div>
+
           <div class="form-group">
             <label>Option C</label>
+
             <input
-              v-model="questionItem.options[2]"
+              v-model="
+                questionItem.options[2]
+              "
               placeholder="Option C"
             >
           </div>
+
           <div class="form-group">
             <label>Option D</label>
+
             <input
-              v-model="questionItem.options[3]"
+              v-model="
+                questionItem.options[3]
+              "
               placeholder="Option D"
             >
           </div>
         </div>
+
         <!-- ANSWER / POINTS / TIME -->
         <div class="three-column">
           <div class="form-group">
-            <label>Correct Answer</label>
+            <label>
+              Correct Answer
+            </label>
+
             <select
               v-if="
                 questionItem.type ===
                 'Multiple Choice'
               "
-              v-model="questionItem.answer"
+              v-model="
+                questionItem.answer
+              "
             >
               <option value="">
                 Select answer
               </option>
+
               <option>A</option>
               <option>B</option>
               <option>C</option>
               <option>D</option>
             </select>
+
             <select
               v-else-if="
                 questionItem.type ===
                 'True or False'
               "
-              v-model="questionItem.answer"
+              v-model="
+                questionItem.answer
+              "
             >
               <option value="">
                 Select answer
               </option>
+
               <option>True</option>
               <option>False</option>
             </select>
+
             <input
-              v-else-if="
-                questionItem.type ===
-                'Identification'
+              v-else
+              v-model="
+                questionItem.answer
               "
-              v-model="questionItem.answer"
               type="text"
               placeholder="Enter correct answer"
             >
           </div>
+
           <div class="form-group">
             <label>Points</label>
+
             <input
-              v-model.number="questionItem.points"
+              v-model.number="
+                questionItem.points
+              "
               type="number"
               min="1"
             >
           </div>
+
           <div class="form-group">
-            <label>Time Limit (sec)</label>
+            <label>
+              Time Limit (sec)
+            </label>
+
             <input
-              v-model.number="questionItem.time"
+              v-model.number="
+                questionItem.time
+              "
               type="number"
               min="1"
             >
           </div>
         </div>
+
         <div
-          v-if="!questionItem.answer.trim()"
+          v-if="
+            !String(
+              questionItem.answer
+            ).trim()
+          "
           class="warning-box"
         >
-          ⚠ No answer detected for this question.
+          ⚠ No answer detected for this
+          question.
+        </div>
+
+        <div
+          v-if="
+            assessmentType ===
+              'examination' &&
+            !questionItem
+              .competency
+              .trim()
+          "
+          class="competency-warning"
+        >
+          ⚠ Competency is required because
+          Item Analysis is enabled for
+          examinations.
         </div>
       </div>
     </div>
+
     <!-- ==========================================
-         CREATE EXAM POPUP
+         CREATE POPUP
     =========================================== -->
     <div
       v-if="showCreatePopup"
@@ -433,37 +964,85 @@
         <div class="popup-icon">
           ✓
         </div>
-        <h2>Create Examination?</h2>
+
+        <h2>
+          Create
+          {{
+            assessmentType === 'quiz'
+              ? 'Quiz'
+              : 'Examination'
+          }}?
+        </h2>
+
         <p>
-          This examination will be saved as a draft.
-          You can still edit it later before publishing.
+          This assessment will be saved
+          as a draft. You can still edit
+          it before publishing.
         </p>
+
         <div class="confirmation-summary">
           <div>
+            <span>Type</span>
+
+            <strong>
+              {{
+                assessmentType ===
+                'quiz'
+                  ? 'Quiz'
+                  : 'Examination'
+              }}
+            </strong>
+          </div>
+
+          <div>
             <span>Classes</span>
+
             <strong>
               {{ selectedClassLabel }}
             </strong>
           </div>
+
           <div>
             <span>Subject</span>
+
             <strong>
-              {{ subject }}
+              {{
+                selectedSubject ||
+                'Not selected'
+              }}
             </strong>
           </div>
+
           <div>
             <span>Questions</span>
+
             <strong>
               {{ questions.length }}
             </strong>
           </div>
+
           <div>
             <span>Total Points</span>
+
             <strong>
               {{ totalPoints }}
             </strong>
           </div>
+
+          <div>
+            <span>Item Analysis</span>
+
+            <strong>
+              {{
+                assessmentType ===
+                'examination'
+                  ? 'Available'
+                  : 'Not Available'
+              }}
+            </strong>
+          </div>
         </div>
+
         <div class="popup-buttons">
           <button
             class="cancel-btn"
@@ -472,23 +1051,28 @@
           >
             Still Edit
           </button>
+
           <button
             class="confirm-btn"
             :disabled="creatingExam"
-            @click="confirmCreateExam"
+            @click="
+              confirmCreateExam
+            "
           >
             {{
               creatingExam
                 ? 'Creating...'
-                : 'Create Exam'
+                : assessmentType ===
+                    'quiz'
+                  ? 'Create Quiz'
+                  : 'Create Examination'
             }}
           </button>
         </div>
       </div>
     </div>
-    <!-- ==========================================
-        SYSTEM NOTIFICATION
-    =========================================== -->
+
+    <!-- NOTIFICATION -->
     <Transition name="notification">
       <div
         v-if="notification.show"
@@ -496,14 +1080,39 @@
         :class="notification.type"
       >
         <div class="notification-icon">
-          <span v-if="notification.type === 'success'">✓</span>
-          <span v-else-if="notification.type === 'error'">!</span>
-          <span v-else>i</span>
+          <span
+            v-if="
+              notification.type ===
+              'success'
+            "
+          >
+            ✓
+          </span>
+
+          <span
+            v-else-if="
+              notification.type ===
+              'error'
+            "
+          >
+            !
+          </span>
+
+          <span v-else>
+            i
+          </span>
         </div>
+
         <div class="notification-content">
-          <strong>{{ notification.title }}</strong>
-          <p>{{ notification.message }}</p>
+          <strong>
+            {{ notification.title }}
+          </strong>
+
+          <p>
+            {{ notification.message }}
+          </p>
         </div>
+
         <button
           type="button"
           class="notification-close"
@@ -522,10 +1131,16 @@ import {
   onMounted,
   ref
 } from 'vue'
+
 import {
+  useRoute,
   useRouter
 } from 'vue-router'
+
 import api from '../services/api'
+
+const route =
+  useRoute()
 
 const router =
   useRouter()
@@ -534,10 +1149,43 @@ const router =
 // TYPES
 // ==========================================
 
-interface SchoolClass {
+interface SchoolYear {
+  id: number
+  year: string
+  status?: string
+}
+
+interface Strand {
+  id: number
+  name: string
+}
+
+interface SectionData {
   id: number
   grade: string
+  strand_id: number
   section: string
+}
+
+interface Subject {
+  id: number
+  name: string
+}
+
+interface SchoolClass {
+  id: number
+  faculty_id: number
+  school_year_id: number
+  semester: string
+  grade: string
+  strand_id: number
+  section_id: number
+  subject_id: number
+  section?: string
+  school_year?: SchoolYear
+  strand?: Strand
+  section_data?: SectionData
+  subject?: Subject
 }
 
 interface ExamQuestion {
@@ -552,8 +1200,14 @@ interface ExamQuestion {
 }
 
 // ==========================================
-// EXAM DETAILS
+// ASSESSMENT DETAILS
 // ==========================================
+
+const assessmentType =
+  ref<
+    'quiz' |
+    'examination'
+  >('examination')
 
 const passing =
   ref(50)
@@ -570,8 +1224,35 @@ const description =
 const duration =
   ref(60)
 
-const subject =
-  ref('')
+const tabSwitchPenaltyMinutes =
+  ref<number | null>(null)
+
+const fullscreenExitPenaltyMinutes =
+  ref<number | null>(null)
+
+const copyAttemptPenaltyMinutes =
+  ref<number | null>(null)
+
+const pasteAttemptPenaltyMinutes =
+  ref<number | null>(null)
+
+const idlePenaltyMinutes =
+  ref<number | null>(null)
+
+function minutesToSeconds(
+  value: number | null
+) {
+  const minutes =
+    Number(value || 0)
+
+  if (minutes <= 0) {
+    return null
+  }
+
+  return Math.round(
+    minutes * 60
+  )
+}
 
 // ==========================================
 // CLASSES
@@ -586,6 +1267,141 @@ const selectedClassIds =
 const loadingClasses =
   ref(false)
 
+const sourceClassId =
+  computed(() => {
+    const id =
+      Number(
+        route.query.class_id
+      )
+
+    return (
+      Number.isInteger(id) &&
+      id > 0
+    )
+      ? id
+      : null
+  })
+
+const isClassLocked =
+  computed(() =>
+    sourceClassId.value !== null
+  )
+
+const visibleClasses =
+  computed(() => {
+    if (!sourceClassId.value) {
+      return classes.value
+    }
+
+    return classes.value.filter(
+      schoolClass =>
+        schoolClass.id ===
+        sourceClassId.value
+    )
+  })
+
+const selectedClasses =
+  computed(() => {
+    return classes.value.filter(
+      schoolClass =>
+        selectedClassIds.value
+          .includes(
+            schoolClass.id
+          )
+    )
+  })
+
+const selectedSubjectIds =
+  computed(() => {
+    return [
+      ...new Set(
+        selectedClasses.value
+          .map(
+            schoolClass =>
+              schoolClass.subject_id
+          )
+      )
+    ]
+  })
+
+const selectedSubjectId =
+  computed<number | null>(() => {
+    if (selectedSubjectIds.value.length !== 1) {
+      return null
+    }
+
+    return selectedSubjectIds.value[0] ?? null
+  })
+
+const hasMixedSubjects =
+  computed(() => {
+    return (
+      selectedSubjectIds.value
+        .length > 1
+    )
+  })
+
+const selectedSubject =
+  computed(() => {
+    if (
+      selectedClasses.value
+        .length === 0
+    ) {
+      return ''
+    }
+
+    return (
+      selectedClasses.value[0]
+        ?.subject?.name ||
+      ''
+    )
+  })
+
+const selectedClassLabel =
+  computed(() => {
+    if (
+      selectedClasses.value
+        .length === 0
+    ) {
+      return 'Not selected'
+    }
+
+    return selectedClasses.value
+      .map(
+        schoolClass => {
+          const subject =
+            schoolClass.subject
+              ?.name ||
+            'No Subject'
+
+          const grade =
+            schoolClass.grade
+
+          const strand =
+            schoolClass.strand
+              ?.name ||
+            ''
+
+          const section =
+            schoolClass
+              .section_data
+              ?.section ||
+            schoolClass.section ||
+            ''
+
+          return [
+            subject,
+            grade,
+            strand,
+            section
+          ]
+            .filter(Boolean)
+            .join(' • ')
+        }
+      )
+      .join(', ')
+  })
+
 // ==========================================
 // GENERATION
 // ==========================================
@@ -598,6 +1414,7 @@ const showCreatePopup =
 
 const showHowToPopup =
   ref(false)
+
 type NotificationType =
   'success' |
   'error' |
@@ -606,14 +1423,16 @@ type NotificationType =
 const notification =
   ref({
     show: false,
-    type: 'success' as NotificationType,
+    type:
+      'success' as NotificationType,
     title: '',
     message: ''
   })
 
 let notificationTimer:
   ReturnType<typeof setTimeout> |
-  null = null
+  null =
+    null
 
 function showNotification(
   type: NotificationType,
@@ -653,8 +1472,163 @@ function closeNotification() {
       null
   }
 }
+
 const questions =
   ref<ExamQuestion[]>([])
+
+const testBankSavedIds = ref<Set<number>>(new Set())
+const testBankAddingIds = ref<Set<number>>(new Set())
+const addingAllToTestBank = ref(false)
+
+function questionTypeForApi(type: string) {
+  if (type === 'Multiple Choice') return 'multiple_choice'
+  if (type === 'True or False') return 'true_false'
+  return 'identification'
+}
+
+function buildTestBankOptions(question: ExamQuestion) {
+  if (question.type === 'Multiple Choice') {
+    return question.options.map((option, index) => ({
+      option_text: String(option || '').trim(),
+      is_correct: question.answer === String.fromCharCode(65 + index)
+    }))
+  }
+
+  if (question.type === 'True or False') {
+    return ['True', 'False'].map(option => ({
+      option_text: option,
+      is_correct: question.answer === option
+    }))
+  }
+
+  return []
+}
+
+function buildTestBankQuestion(question: ExamQuestion) {
+  return {
+    question: question.question.trim(),
+    question_type: questionTypeForApi(question.type),
+    competency: question.competency.trim() || null,
+    answer: String(question.answer || '').trim() || null,
+    points: Number(question.points || 1),
+    options: buildTestBankOptions(question)
+  }
+}
+
+function isQuestionInTestBank(question: ExamQuestion) {
+  return testBankSavedIds.value.has(question.id)
+}
+
+function isQuestionAdding(question: ExamQuestion) {
+  return testBankAddingIds.value.has(question.id)
+}
+
+function validateTestBankQuestion(question: ExamQuestion): string | null {
+  if (!selectedSubjectId.value) return 'Please select a class with a subject first.'
+  if (!question.question.trim()) return 'Please enter the question text first.'
+  if (!String(question.answer || '').trim()) return 'Please provide the correct answer first.'
+
+  if (question.type === 'Multiple Choice') {
+    if (question.options.length !== 4 || question.options.some(option => !String(option || '').trim())) {
+      return 'Please complete all four Multiple Choice options first.'
+    }
+    if (!['A', 'B', 'C', 'D'].includes(question.answer)) {
+      return 'Please select the correct Multiple Choice answer first.'
+    }
+  }
+
+  return null
+}
+
+async function addQuestionToTestBank(question: ExamQuestion) {
+  if (isQuestionInTestBank(question) || isQuestionAdding(question)) return
+
+  const errorMessage = validateTestBankQuestion(question)
+  if (errorMessage) {
+    showNotification('error', 'Cannot Add to Test Bank', errorMessage)
+    return
+  }
+
+  testBankAddingIds.value = new Set([...testBankAddingIds.value, question.id])
+
+  try {
+    const response = await api.post('/faculty/test-bank', {
+      subject_id: selectedSubjectId.value,
+      ...buildTestBankQuestion(question)
+    })
+
+    testBankSavedIds.value = new Set([...testBankSavedIds.value, question.id])
+    showNotification(
+      'success',
+      response.data?.already_exists ? 'Already in Test Bank' : 'Added to Test Bank',
+      response.data?.message || 'Question added to Test Bank successfully.'
+    )
+  } catch (error: any) {
+    showNotification(
+      'error',
+      'Test Bank Error',
+      error.response?.data?.message || 'Failed to add the question to Test Bank.'
+    )
+  } finally {
+    const next = new Set(testBankAddingIds.value)
+    next.delete(question.id)
+    testBankAddingIds.value = next
+  }
+}
+
+async function addAllQuestionsToTestBank() {
+  if (addingAllToTestBank.value) return
+
+  if (!selectedSubjectId.value) {
+    showNotification('error', 'Subject Required', 'Please select a class with a subject first.')
+    return
+  }
+
+  if (hasMixedSubjects.value) {
+    showNotification('error', 'Different Subjects Selected', 'All selected classes must belong to the same subject.')
+    return
+  }
+
+  if (questions.value.length === 0) {
+    showNotification('error', 'No Questions Available', 'Please generate or add at least one question first.')
+    return
+  }
+
+  const invalidQuestion = questions.value.find(question => validateTestBankQuestion(question))
+  if (invalidQuestion) {
+    const questionNumber = questions.value.indexOf(invalidQuestion) + 1
+    showNotification(
+      'error',
+      'Incomplete Question',
+      `Question ${questionNumber}: ${validateTestBankQuestion(invalidQuestion)}`
+    )
+    return
+  }
+
+  addingAllToTestBank.value = true
+
+  try {
+    const response = await api.post('/faculty/test-bank/bulk', {
+      subject_id: selectedSubjectId.value,
+      questions: questions.value.map(buildTestBankQuestion)
+    })
+
+    testBankSavedIds.value = new Set(questions.value.map(question => question.id))
+    showNotification(
+      'success',
+      'Test Bank Updated',
+      response.data?.message || `${questions.value.length} question(s) added to Test Bank.`
+    )
+  } catch (error: any) {
+    showNotification(
+      'error',
+      'Test Bank Error',
+      error.response?.data?.message || 'Failed to add questions to Test Bank.'
+    )
+  } finally {
+    addingAllToTestBank.value = false
+  }
+}
 
 // ==========================================
 // SUMMARY
@@ -694,30 +1668,6 @@ const totalPoints =
     )
   })
 
-const selectedClassLabel =
-  computed(() => {
-    if (
-      selectedClassIds.value.length === 0
-    ) {
-      return 'Not selected'
-    }
-
-    const selected =
-      classes.value.filter(
-        schoolClass =>
-          selectedClassIds.value.includes(
-            schoolClass.id
-          )
-      )
-
-    return selected
-      .map(
-        schoolClass =>
-          `${schoolClass.grade} - ${schoolClass.section}`
-      )
-      .join(', ')
-  })
-
 // ==========================================
 // FETCH CLASSES
 // ==========================================
@@ -731,17 +1681,36 @@ async function fetchClasses() {
         '/faculty/classes'
       )
 
-    console.log(
-      'AUTOMATIC EXAM CLASSES:',
-      response.data
-    )
-
     classes.value =
       Array.isArray(
         response.data?.data
       )
         ? response.data.data
         : []
+
+    if (sourceClassId.value) {
+      const classExists =
+        classes.value.some(
+          schoolClass =>
+            schoolClass.id ===
+            sourceClassId.value
+        )
+
+      if (classExists) {
+        selectedClassIds.value = [
+          sourceClassId.value
+        ]
+      }
+      else {
+        selectedClassIds.value = []
+
+        showNotification(
+          'error',
+          'Class Not Found',
+          'The selected class is not available in your Class Management.'
+        )
+      }
+    }
   }
   catch (error: any) {
     console.error(
@@ -751,9 +1720,16 @@ async function fetchClasses() {
     )
 
     classes.value = []
+
+    showNotification(
+      'error',
+      'Unable to Load Classes',
+      'Failed to load your classes.'
+    )
   }
   finally {
-    loadingClasses.value = false
+    loadingClasses.value =
+      false
   }
 }
 
@@ -768,6 +1744,7 @@ function generateFromText() {
       'Questions Required',
       'Please paste questions first.'
     )
+
     return
   }
 
@@ -782,11 +1759,15 @@ function generateFromText() {
       'No Questions Detected',
       'No valid questions were detected. Please check the question format and try again.'
     )
+
     return
   }
 
   questions.value =
     parsed
+
+  testBankSavedIds.value = new Set()
+  testBankAddingIds.value = new Set()
 
   showNotification(
     'success',
@@ -796,7 +1777,7 @@ function generateFromText() {
 }
 
 // ==========================================
-// PARSE QUESTIONS
+// PARSER
 // ==========================================
 
 function parseQuestions(
@@ -813,28 +1794,50 @@ function parseQuestions(
   const lines = text
     .replace(/\r/g, '')
     .split('\n')
-    .map(line => line.trim())
+    .map(line =>
+      line.trim()
+    )
     .filter(Boolean)
 
-  const parsedQuestions: ExamQuestion[] = []
+  const parsedQuestions:
+    ExamQuestion[] =
+      []
 
-  let currentType = 'Multiple Choice'
-  let pendingCompetency = ''
-  let currentQuestion: ParsedQuestion | null = null
+  let currentType =
+    'Multiple Choice'
 
-  const createQuestion = (): ParsedQuestion => ({
-    type: currentType,
-    competency: pendingCompetency,
-    questionLines: [],
-    options: ['', '', '', ''],
-    answer: ''
-  })
+  let pendingCompetency =
+    ''
+
+  let currentQuestion:
+    ParsedQuestion |
+    null =
+      null
+
+  const createQuestion =
+    (): ParsedQuestion => ({
+      type:
+        currentType,
+
+      competency:
+        pendingCompetency,
+
+      questionLines: [],
+
+      options:
+        ['', '', '', ''],
+
+      answer:
+        ''
+    })
 
   const saveQuestion = (
-    question: ParsedQuestion
+    question:
+      ParsedQuestion
   ) => {
     const questionText =
-      question.questionLines
+      question
+        .questionLines
         .join(' ')
         .trim()
 
@@ -859,24 +1862,32 @@ function parseQuestions(
         'Multiple Choice'
 
       finalAnswer =
-        finalAnswer.toUpperCase()
+        finalAnswer
+          .toUpperCase()
     }
     else if (
-      finalAnswer.toLowerCase() === 'true'
+      finalAnswer
+        .toLowerCase() ===
+        'true'
       ||
-      finalAnswer.toLowerCase() === 'false'
+      finalAnswer
+        .toLowerCase() ===
+        'false'
     ) {
       finalType =
         'True or False'
 
       finalAnswer =
-        finalAnswer.toLowerCase() === 'true'
+        finalAnswer
+          .toLowerCase() ===
+          'true'
           ? 'True'
           : 'False'
     }
     else {
       finalType =
-        question.type === 'True or False'
+        question.type ===
+          'True or False'
           ? 'True or False'
           : 'Identification'
     }
@@ -885,20 +1896,27 @@ function parseQuestions(
       id:
         Date.now() +
         parsedQuestions.length,
+
       type:
         finalType,
+
       competency:
-        question.competency.trim()
-        ||
-        'Unassigned Competency',
+        question
+          .competency
+          .trim(),
+
       question:
         questionText,
+
       options:
         question.options,
+
       answer:
         finalAnswer,
+
       points:
         1,
+
       time:
         30
     })
@@ -906,11 +1924,19 @@ function parseQuestions(
 
   for (const line of lines) {
     if (
-      /^multiple\s*choice$/i.test(line)
+      /^multiple\s*choice$/i
+        .test(line)
     ) {
-      if (currentQuestion !== null) {
-        saveQuestion(currentQuestion)
-        currentQuestion = null
+      if (
+        currentQuestion !==
+        null
+      ) {
+        saveQuestion(
+          currentQuestion
+        )
+
+        currentQuestion =
+          null
       }
 
       currentType =
@@ -920,11 +1946,19 @@ function parseQuestions(
     }
 
     if (
-      /^true\s*or\s*false$/i.test(line)
+      /^true\s*or\s*false$/i
+        .test(line)
     ) {
-      if (currentQuestion !== null) {
-        saveQuestion(currentQuestion)
-        currentQuestion = null
+      if (
+        currentQuestion !==
+        null
+      ) {
+        saveQuestion(
+          currentQuestion
+        )
+
+        currentQuestion =
+          null
       }
 
       currentType =
@@ -934,11 +1968,19 @@ function parseQuestions(
     }
 
     if (
-      /^identification$/i.test(line)
+      /^identification$/i
+        .test(line)
     ) {
-      if (currentQuestion !== null) {
-        saveQuestion(currentQuestion)
-        currentQuestion = null
+      if (
+        currentQuestion !==
+        null
+      ) {
+        saveQuestion(
+          currentQuestion
+        )
+
+        currentQuestion =
+          null
       }
 
       currentType =
@@ -957,10 +1999,15 @@ function parseQuestions(
       competencyMatch[1]
     ) {
       const competency =
-        competencyMatch[1].trim()
+        competencyMatch[1]
+          .trim()
 
-      if (currentQuestion !== null) {
-        currentQuestion.competency =
+      if (
+        currentQuestion !==
+        null
+      ) {
+        currentQuestion
+          .competency =
           competency
       }
       else {
@@ -980,8 +2027,13 @@ function parseQuestions(
       questionMatch &&
       questionMatch[2]
     ) {
-      if (currentQuestion !== null) {
-        saveQuestion(currentQuestion)
+      if (
+        currentQuestion !==
+        null
+      ) {
+        saveQuestion(
+          currentQuestion
+        )
       }
 
       currentQuestion =
@@ -990,14 +2042,20 @@ function parseQuestions(
       pendingCompetency =
         ''
 
-      currentQuestion.questionLines.push(
-        questionMatch[2].trim()
-      )
+      currentQuestion
+        .questionLines
+        .push(
+          questionMatch[2]
+            .trim()
+        )
 
       continue
     }
 
-    if (currentQuestion === null) {
+    if (
+      currentQuestion ===
+      null
+    ) {
       currentQuestion =
         createQuestion()
 
@@ -1024,11 +2082,15 @@ function parseQuestions(
           .trim()
 
       const optionIndex =
-        letter.charCodeAt(0) - 65
+        letter
+          .charCodeAt(0) -
+        65
 
-      currentQuestion.options[
-        optionIndex
-      ] = value
+      currentQuestion
+        .options[
+          optionIndex
+        ] =
+        value
 
       continue
     }
@@ -1043,17 +2105,21 @@ function parseQuestions(
       answerMatch[2]
     ) {
       currentQuestion.answer =
-        answerMatch[2].trim()
+        answerMatch[2]
+          .trim()
 
       continue
     }
 
-    currentQuestion.questionLines.push(
-      line
-    )
+    currentQuestion
+      .questionLines
+      .push(line)
   }
 
-  if (currentQuestion !== null) {
+  if (
+    currentQuestion !==
+    null
+  ) {
     saveQuestion(
       currentQuestion
     )
@@ -1061,7 +2127,8 @@ function parseQuestions(
 
   return parsedQuestions.filter(
     item =>
-      item.question.trim() !== ''
+      item.question.trim() !==
+      ''
   )
 }
 
@@ -1070,7 +2137,8 @@ function parseQuestions(
 // ==========================================
 
 function normalizeQuestion(
-  question: ExamQuestion
+  question:
+    ExamQuestion
 ) {
   if (
     question.type ===
@@ -1095,7 +2163,8 @@ function normalizeQuestion(
         question.answer
       )
     ) {
-      question.answer = ''
+      question.answer =
+        ''
     }
 
     return
@@ -1115,40 +2184,41 @@ function normalizeQuestion(
       question.answer !==
         'False'
     ) {
-      question.answer = ''
+      question.answer =
+        ''
     }
 
     return
   }
 
-  if (
-    question.type ===
-    'Identification'
-  ) {
-    question.options =
-      ['', '', '', '']
+  question.options =
+    ['', '', '', '']
 
-    question.answer =
-      String(
-        question.answer || ''
-      )
-  }
+  question.answer =
+    String(
+      question.answer ||
+      ''
+    )
 }
 
 // ==========================================
-// ADD BLANK QUESTION
+// ADD QUESTION
 // ==========================================
 
 function addBlankQuestion() {
   questions.value.push({
     id:
       Date.now(),
+
     type:
       'Multiple Choice',
+
     competency:
       '',
+
     question:
       '',
+
     options:
       [
         '',
@@ -1156,18 +2226,17 @@ function addBlankQuestion() {
         '',
         ''
       ],
+
     answer:
       '',
+
     points:
       1,
+
     time:
       30
   })
 }
-
-// ==========================================
-// DELETE QUESTION
-// ==========================================
 
 function deleteQuestion(
   index: number
@@ -1179,40 +2248,60 @@ function deleteQuestion(
 }
 
 // ==========================================
-// OPEN CREATE POPUP
+// VALIDATION
 // ==========================================
 
 function openCreatePopup() {
+  const assessmentName =
+    assessmentType.value ===
+      'quiz'
+      ? 'Quiz'
+      : 'Examination'
+
   if (
     !examTitle.value.trim()
   ) {
-showNotification(
-  'error',
-  'Exam Title Required',
-  'Please enter an exam title.'
-)
+    showNotification(
+      'error',
+      `${assessmentName} Title Required`,
+      `Please enter a ${assessmentName.toLowerCase()} title.`
+    )
+
     return
   }
 
   if (
-    selectedClassIds.value.length === 0
+    selectedClassIds.value
+      .length === 0
   ) {
     showNotification(
       'error',
       'Class Required',
       'Please select at least one class.'
     )
+
+    return
+  }
+
+  if (hasMixedSubjects.value) {
+    showNotification(
+      'error',
+      'Different Subjects Selected',
+      'All selected classes must belong to the same subject.'
+    )
+
     return
   }
 
   if (
-    !subject.value.trim()
+    !selectedSubject.value
   ) {
     showNotification(
       'error',
-      'Subject Required',
-      'Please enter the subject.'
+      'Subject Not Found',
+      'The selected class does not have a subject assigned.'
     )
+
     return
   }
 
@@ -1226,6 +2315,7 @@ showNotification(
       'Invalid Duration',
       'Duration must be greater than 0.'
     )
+
     return
   }
 
@@ -1243,24 +2333,52 @@ showNotification(
       'Invalid Passing Score',
       'Passing score must be between 1 and 100.'
     )
+
+    return
+  }
+
+  const penaltyValues = [
+    tabSwitchPenaltyMinutes.value,
+    fullscreenExitPenaltyMinutes.value,
+    copyAttemptPenaltyMinutes.value,
+    pasteAttemptPenaltyMinutes.value,
+    idlePenaltyMinutes.value
+  ]
+
+  if (
+    penaltyValues.some(
+      value =>
+        Number(value || 0) < 0
+    )
+  ) {
+    showNotification(
+      'error',
+      'Invalid Time Penalty',
+      'Violation time penalties cannot be negative.'
+    )
+
     return
   }
 
   if (
-    questions.value.length === 0
+    questions.value.length ===
+    0
   ) {
     showNotification(
       'error',
       'No Questions Available',
       'Please generate or add at least one question.'
     )
+
     return
   }
 
   const hasEmptyQuestion =
     questions.value.some(
       question =>
-        !question.question.trim()
+        !question
+          .question
+          .trim()
     )
 
   if (hasEmptyQuestion) {
@@ -1269,22 +2387,37 @@ showNotification(
       'Incomplete Questions',
       'Please complete all question texts.'
     )
+
     return
   }
 
-  const hasEmptyCompetency =
-    questions.value.some(
-      question =>
-        !question.competency.trim()
-    )
+  /*
+   * Competency is required
+   * ONLY for examinations.
+   */
+  if (
+    assessmentType.value ===
+    'examination'
+  ) {
+    const hasEmptyCompetency =
+      questions.value.some(
+        question =>
+          !question
+            .competency
+            .trim()
+      )
 
-  if (hasEmptyCompetency) {
-    showNotification(
-      'error',
-      'Incomplete Questions',
-      'Please complete the competency for all questions.'
-    )
-    return
+    if (
+      hasEmptyCompetency
+    ) {
+      showNotification(
+        'error',
+        'Competency Required',
+        'Every examination question must have a competency because Item Analysis is enabled.'
+      )
+
+      return
+    }
   }
 
   const hasMissingAnswer =
@@ -1301,6 +2434,7 @@ showNotification(
       'Incomplete Questions',
       'Please provide the correct answer for all questions.'
     )
+
     return
   }
 
@@ -1311,12 +2445,14 @@ showNotification(
           'Multiple Choice'
         &&
         (
-          question.options.length !== 4
+          question.options
+            .length !== 4
           ||
-          question.options.some(
-            option =>
-              !option.trim()
-          )
+          question.options
+            .some(
+              option =>
+                !option.trim()
+            )
           ||
           ![
             'A',
@@ -1329,12 +2465,15 @@ showNotification(
         )
     )
 
-  if (invalidMultipleChoice) {
+  if (
+    invalidMultipleChoice
+  ) {
     showNotification(
       'error',
       'Invalid Multiple Choice Questions',
       'Please complete all Multiple Choice options and select the correct answer.'
     )
+
     return
   }
 
@@ -1365,12 +2504,15 @@ showNotification(
       }
     )
 
-  if (duplicateMultipleChoice) {
+  if (
+    duplicateMultipleChoice
+  ) {
     showNotification(
       'error',
       'Duplicate Options',
       'Multiple Choice options must be unique.'
     )
+
     return
   }
 
@@ -1388,6 +2530,7 @@ showNotification(
       'Invalid Points',
       'Points must be at least 1 for every question.'
     )
+
     return
   }
 
@@ -1405,6 +2548,7 @@ showNotification(
       'Invalid Time Limit',
       'Time limit must be at least 1 second for every question.'
     )
+
     return
   }
 
@@ -1413,7 +2557,7 @@ showNotification(
 }
 
 // ==========================================
-// STILL EDIT
+// POPUP
 // ==========================================
 
 function stillEdit() {
@@ -1428,7 +2572,7 @@ function stillEdit() {
 }
 
 // ==========================================
-// CREATE EXAM
+// CREATE ASSESSMENT
 // ==========================================
 
 async function confirmCreateExam() {
@@ -1449,48 +2593,89 @@ async function confirmCreateExam() {
       title:
         examTitle.value
           .trim(),
+
       description:
         description.value
           .trim(),
+
+      assessment_type:
+        assessmentType.value,
+
       class_ids:
         selectedClassIds.value,
-      subject:
-        subject.value
-          .trim(),
+
       duration:
         Number(
           duration.value
         ),
+
       passing:
         Number(
           passing.value
         ),
+
+      tab_switch_penalty_seconds:
+        minutesToSeconds(
+          tabSwitchPenaltyMinutes.value
+        ),
+
+      fullscreen_exit_penalty_seconds:
+        minutesToSeconds(
+          fullscreenExitPenaltyMinutes.value
+        ),
+
+      copy_attempt_penalty_seconds:
+        minutesToSeconds(
+          copyAttemptPenaltyMinutes.value
+        ),
+
+      paste_attempt_penalty_seconds:
+        minutesToSeconds(
+          pasteAttemptPenaltyMinutes.value
+        ),
+
+      idle_penalty_seconds:
+        minutesToSeconds(
+          idlePenaltyMinutes.value
+        ),
+
       questions:
         questions.value.map(
           question => ({
             type:
               question.type,
+
             competency:
-              question.competency
+              question
+                .competency
                 .trim(),
+
             question:
-              question.question
+              question
+                .question
                 .trim(),
+
             options:
               question.type ===
                 'Multiple Choice'
-                ? question.options.map(
-                    option =>
-                      option.trim()
-                  )
+                ? question
+                    .options
+                    .map(
+                      option =>
+                        option.trim()
+                    )
                 : [],
+
             answer:
-              question.answer
+              question
+                .answer
                 .trim(),
+
             points:
               Number(
                 question.points
               ),
+
             time:
               Number(
                 question.time
@@ -1500,7 +2685,7 @@ async function confirmCreateExam() {
     }
 
     console.log(
-      'AUTOMATIC EXAM PAYLOAD:',
+      'AUTOMATIC ASSESSMENT PAYLOAD:',
       payload
     )
 
@@ -1509,24 +2694,44 @@ async function confirmCreateExam() {
       payload
     )
 
+    const typeLabel =
+      assessmentType.value ===
+        'quiz'
+        ? 'Quiz'
+        : 'Examination'
+
     showNotification(
       'success',
-      'Exam Created',
-      `${selectedClassIds.value.length} exam(s) created successfully!`
+      `${typeLabel} Created`,
+      `${selectedClassIds.value.length} ${typeLabel.toLowerCase()}${selectedClassIds.value.length === 1 ? '' : 's'} created successfully!`
     )
 
     await new Promise(
       resolve =>
-        setTimeout(resolve, 1200)
+        setTimeout(
+          resolve,
+          1200
+        )
     )
 
-    await router.push(
-      '/faculty/dashboard'
-    )
+    if (sourceClassId.value) {
+      await router.push({
+        path:
+          `/faculty/classes/${sourceClassId.value}`,
+        query: {
+          tab: 'assessments'
+        }
+      })
+    }
+    else {
+      await router.push(
+        '/faculty/dashboard'
+      )
+    }
   }
   catch (error: any) {
     console.error(
-      'CREATE EXAM ERROR:',
+      'CREATE ASSESSMENT ERROR:',
       error
     )
 
@@ -1536,7 +2741,9 @@ async function confirmCreateExam() {
     )
 
     const validationErrors =
-      error.response?.data?.errors
+      error.response
+        ?.data
+        ?.errors
 
     if (validationErrors) {
       const firstError =
@@ -1550,7 +2757,7 @@ async function confirmCreateExam() {
         'Validation Error',
         String(
           firstError ||
-          'Please check the exam information.'
+          'Please check the assessment information.'
         )
       )
     }
@@ -1562,7 +2769,7 @@ async function confirmCreateExam() {
           ?.data
           ?.message
         ||
-        'Failed to create generated exam.'
+        'Failed to create assessment.'
       )
     }
   }
@@ -1570,6 +2777,27 @@ async function confirmCreateExam() {
     creatingExam.value =
       false
   }
+}
+
+// ==========================================
+// BACK TO SELECTION
+// ==========================================
+
+function goBackToSelection() {
+  router.push({
+    path:
+      '/faculty/create-exam',
+
+    query:
+      sourceClassId.value
+        ? {
+            class_id:
+              String(
+                sourceClassId.value
+              )
+          }
+        : {}
+  })
 }
 
 // ==========================================
@@ -1597,10 +2825,6 @@ onMounted(() => {
   background: #f7f9fc;
 }
 
-/* ==========================================
-   BACK BUTTON
-========================================== */
-
 .back-btn {
   margin-bottom: 25px;
   padding: 12px 18px;
@@ -1618,10 +2842,6 @@ onMounted(() => {
   color: white;
 }
 
-/* ==========================================
-   HEADER
-========================================== */
-
 .page-header {
   margin-bottom: 30px;
 }
@@ -1635,10 +2855,6 @@ onMounted(() => {
 .page-header p {
   color: #6b7280;
 }
-
-/* ==========================================
-   GRID
-========================================== */
 
 .top-grid {
   margin-bottom: 25px;
@@ -1662,9 +2878,58 @@ onMounted(() => {
   gap: 20px;
 }
 
-/* ==========================================
-   CARD
-========================================== */
+.penalty-section {
+  margin-top: 8px;
+  padding: 18px;
+  border: 1px solid #dbe3dd;
+  border-radius: 14px;
+  background: #f8fdf9;
+}
+
+.penalty-heading {
+  margin-bottom: 16px;
+}
+
+.penalty-heading h3 {
+  margin-bottom: 5px;
+  color: #17351f;
+  font-size: 16px;
+}
+
+.penalty-heading p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.penalty-grid {
+  display: grid;
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.penalty-grid .form-group {
+  margin-bottom: 0;
+}
+
+.penalty-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.penalty-input input {
+  min-width: 0;
+}
+
+.penalty-input span {
+  flex: 0 0 auto;
+  color: #64748b;
+  font-size: 11px;
+  white-space: nowrap;
+}
 
 .card {
   margin-bottom: 25px;
@@ -1681,10 +2946,6 @@ onMounted(() => {
   color: #112244;
 }
 
-/* ==========================================
-   FORMS
-========================================== */
-
 .form-group {
   margin-bottom: 18px;
 }
@@ -1694,6 +2955,13 @@ onMounted(() => {
   margin-bottom: 8px;
   color: #374151;
   font-weight: 600;
+}
+
+.field-requirement {
+  margin-left: 4px;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 500;
 }
 
 input,
@@ -1723,15 +2991,228 @@ textarea {
   resize: vertical;
 }
 
+/* ASSESSMENT TYPE */
+
+.assessment-type-options {
+  display: grid;
+  grid-template-columns:
+    1fr 1fr;
+  gap: 12px;
+}
+
+.assessment-type-card {
+  min-height: 90px;
+  padding: 14px;
+  border:
+    1px solid #dbe3dd;
+  border-radius: 12px;
+  background: white;
+  text-align: left;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.assessment-type-card strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #17231c;
+  font-size: 14px;
+}
+
+.assessment-type-card span {
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.assessment-type-card:hover {
+  border-color: #86efac;
+}
+
+.assessment-type-card.active {
+  border-color: #16a34a;
+  background: #f0fdf4;
+}
+
+.assessment-type-card.active strong {
+  color: #15803d;
+}
+
+/* CLASS SELECTION */
+
+.class-selection-box {
+  display: grid;
+  grid-template-columns:
+    1fr 1fr;
+  gap: 10px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 12px;
+  border:
+    1px solid #d9dce2;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.class-checkbox-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border:
+    1px solid #e5e7eb;
+  border-radius: 10px;
+  background: white;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.class-checkbox-item:hover {
+  border-color: #00c853;
+}
+
+.class-checkbox-item.selected {
+  border-color: #00c853;
+  background: #f0fdf4;
+}
+
+.class-checkbox-item input {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: #00c853;
+}
+
+.class-checkbox-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.class-checkbox-info strong {
+  color: #112244;
+  font-size: 13px;
+}
+
+.class-checkbox-info span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.class-checkbox-info small {
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.selected-class-count {
+  margin-top: 8px;
+  color: #16a34a;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.class-loading {
+  padding: 14px;
+  color: #64748b;
+  border:
+    1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
 .class-warning {
   margin-top: 7px;
   color: #dc2626;
   font-size: 12px;
 }
 
-/* ==========================================
-   SUMMARY
-========================================== */
+.locked-class-note {
+  margin-top: 8px;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.class-checkbox-item:has(
+  input:disabled
+) {
+  cursor: default;
+}
+
+.class-checkbox-item input:disabled {
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+/* SUBJECT */
+
+.selected-subject {
+  margin-bottom: 18px;
+  padding: 13px 15px;
+  border:
+    1px solid #dcfce7;
+  border-radius: 10px;
+  background: #f0fdf4;
+}
+
+.selected-subject > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.selected-subject span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.selected-subject strong {
+  color: #166534;
+  font-size: 13px;
+}
+
+.selected-subject small {
+  display: block;
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 10px;
+}
+
+/* SUMMARY */
+
+.assessment-summary-info {
+  margin-bottom: 20px;
+  padding: 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.assessment-summary-info > div {
+  display: flex;
+  justify-content:
+    space-between;
+  gap: 10px;
+  padding: 7px 0;
+  border-bottom:
+    1px solid #e5e7eb;
+}
+
+.assessment-summary-info > div:last-child {
+  border-bottom: none;
+}
+
+.assessment-summary-info span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.assessment-summary-info strong {
+  color: #17231c;
+  font-size: 11px;
+  text-align: right;
+}
 
 .summary-box {
   display: flex;
@@ -1764,9 +3245,20 @@ textarea {
   color: #f59e0b !important;
 }
 
-/* ==========================================
-   GENERATION METHOD
-========================================== */
+/* GENERATION */
+
+.method-header {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content:
+    space-between;
+  gap: 15px;
+}
+
+.method-header h2 {
+  margin-bottom: 0;
+}
 
 .tabs {
   margin-bottom: 20px;
@@ -1808,9 +3300,7 @@ textarea {
   margin-bottom: 15px;
 }
 
-/* ==========================================
-   BUTTONS
-========================================== */
+/* BUTTONS */
 
 .generate-btn,
 .create-btn,
@@ -1841,9 +3331,7 @@ textarea {
   cursor: not-allowed;
 }
 
-/* ==========================================
-   QUESTIONS
-========================================== */
+/* QUESTIONS */
 
 .question-header,
 .question-card-header {
@@ -1884,17 +3372,23 @@ textarea {
   font-weight: 600;
 }
 
-.delete-btn:hover {
-  background: #fecaca;
+.warning-box,
+.competency-warning {
+  margin-top: 10px;
+  padding: 14px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .warning-box {
-  margin-top: 10px;
-  padding: 14px;
   background: #fff7ed;
-  border-radius: 10px;
   color: #c2410c;
-  font-weight: 600;
+}
+
+.competency-warning {
+  background: #fef2f2;
+  color: #dc2626;
 }
 
 .empty {
@@ -1903,9 +3397,7 @@ textarea {
   text-align: center;
 }
 
-/* ==========================================
-   POPUP
-========================================== */
+/* POPUP */
 
 .popup-overlay {
   position: fixed;
@@ -2016,170 +3508,18 @@ textarea {
   color: white;
 }
 
-/* ==========================================
-   MULTIPLE CLASS SELECTION
-========================================== */
-
-.class-selection-box {
-  display: grid;
-  grid-template-columns:
-    1fr 1fr;
-  gap: 10px;
-  max-height: 250px;
-  overflow-y: auto;
-  padding: 12px;
-  border:
-    1px solid #d9dce2;
-  border-radius: 12px;
-  background: #f8fafc;
-}
-
-.class-checkbox-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px;
-  border:
-    1px solid #e5e7eb;
-  border-radius: 10px;
-  background: white;
-  cursor: pointer;
-  transition: .2s;
-}
-
-.class-checkbox-item:hover {
-  border-color: #00c853;
-}
-
-.class-checkbox-item.selected {
-  border-color: #00c853;
-  background: #f0fdf4;
-}
-
-.class-checkbox-item input {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-  accent-color: #00c853;
-}
-
-.class-checkbox-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.class-checkbox-info strong {
-  color: #112244;
-  font-size: 14px;
-}
-
-.class-checkbox-info span {
-  color: #64748b;
-  font-size: 12px;
-}
-
-.selected-class-count {
-  margin-top: 8px;
-  color: #16a34a;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.class-loading {
-  padding: 14px;
-  color: #64748b;
-  border:
-    1px solid #e5e7eb;
-  border-radius: 10px;
-  background: #f8fafc;
-}
-
-/* ==========================================
-   RESPONSIVE
-========================================== */
-
-@media (max-width: 900px) {
-  .top-grid,
-  .two-column,
-  .three-column {
-    grid-template-columns:
-      1fr;
-  }
-
-  .automatic-page {
-    padding: 20px;
-  }
-
-  .page-header h1 {
-    font-size: 28px;
-  }
-
-  .question-header,
-  .question-card-header,
-  .popup-buttons {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .tabs {
-    flex-direction: column;
-  }
-
-  .confirmation-summary > div {
-    flex-direction: column;
-    gap: 3px;
-  }
-
-  .confirmation-summary strong {
-    text-align: left;
-  }
-}
-
-@media (max-width: 600px) {
-  .automatic-page {
-    padding: 15px;
-  }
-
-  .card {
-    padding: 18px;
-  }
-
-  .page-header h1 {
-    font-size: 24px;
-  }
-
-  .popup-card {
-    padding: 25px 20px;
-  }
-}
-.method-header {
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-}
-
-.method-header h2 {
-  margin-bottom: 0;
-}
+/* HOW TO */
 
 .how-to-btn {
   padding: 7px 12px;
-  border: 1px solid #16a34a;
+  border:
+    1px solid #16a34a;
   border-radius: 8px;
   background: #f0fdf4;
   color: #16a34a;
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
-  transition: .2s;
-}
-
-.how-to-btn:hover {
-  background: #16a34a;
-  color: white;
 }
 
 .how-to-popup-card {
@@ -2191,14 +3531,6 @@ textarea {
   padding: 32px;
   background: white;
   border-radius: 18px;
-  box-shadow:
-    0 20px 45px
-    rgba(0, 0, 0, .2);
-}
-
-.how-to-popup-card h2 {
-  margin-bottom: 10px;
-  color: #112244;
 }
 
 .how-to-description {
@@ -2219,19 +3551,14 @@ textarea {
   color: #334155;
   cursor: pointer;
   font-size: 22px;
-  line-height: 1;
-}
-
-.how-to-close-btn:hover {
-  background: #fee2e2;
-  color: #dc2626;
 }
 
 .format-example {
   margin-bottom: 20px;
   padding: 18px;
   overflow-x: auto;
-  border: 1px solid #e2e8f0;
+  border:
+    1px solid #e2e8f0;
   border-radius: 12px;
   background: #f8fafc;
 }
@@ -2247,7 +3574,8 @@ textarea {
 
 .format-tips {
   padding: 16px;
-  border-left: 4px solid #16a34a;
+  border-left:
+    4px solid #16a34a;
   border-radius: 10px;
   background: #f0fdf4;
 }
@@ -2259,28 +3587,31 @@ textarea {
   line-height: 1.6;
 }
 
-.format-tips p:last-child {
-  margin-bottom: 0;
-}
-/* ==========================================
-   SYSTEM NOTIFICATION
-========================================== */
+/* NOTIFICATION */
+
 .notification-container {
   position: fixed;
   top: 25px;
   right: 25px;
   z-index: 10000;
   width: 390px;
-  max-width: calc(100vw - 40px);
-  padding: 16px 45px 16px 16px;
+  max-width:
+    calc(100vw - 40px);
+  padding:
+    16px 45px
+    16px 16px;
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  border: 1px solid #e5e7eb;
+  border:
+    1px solid #e5e7eb;
   border-radius: 14px;
   background: white;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, .15);
+  box-shadow:
+    0 15px 35px
+    rgba(0, 0, 0, .15);
 }
+
 .notification-icon {
   width: 38px;
   height: 38px;
@@ -2292,42 +3623,58 @@ textarea {
   font-size: 20px;
   font-weight: 700;
 }
+
 .notification-content {
   flex: 1;
 }
+
 .notification-content strong {
   display: block;
   margin-bottom: 3px;
   color: #1e293b;
   font-size: 14px;
 }
+
 .notification-content p {
   margin: 0;
   color: #64748b;
   font-size: 13px;
   line-height: 1.5;
 }
+
 .notification-container.success {
-  border-left: 5px solid #16a34a;
+  border-left:
+    5px solid #16a34a;
 }
-.notification-container.success .notification-icon {
+
+.notification-container.success
+.notification-icon {
   background: #dcfce7;
   color: #16a34a;
 }
+
 .notification-container.error {
-  border-left: 5px solid #dc2626;
+  border-left:
+    5px solid #dc2626;
 }
-.notification-container.error .notification-icon {
+
+.notification-container.error
+.notification-icon {
   background: #fee2e2;
   color: #dc2626;
 }
+
 .notification-container.info {
-  border-left: 5px solid #2563eb;
+  border-left:
+    5px solid #2563eb;
 }
-.notification-container.info .notification-icon {
+
+.notification-container.info
+.notification-icon {
   background: #dbeafe;
   color: #2563eb;
 }
+
 .notification-close {
   position: absolute;
   top: 10px;
@@ -2337,21 +3684,98 @@ textarea {
   color: #94a3b8;
   cursor: pointer;
   font-size: 22px;
-  line-height: 1;
 }
-.notification-close:hover {
-  color: #334155;
-}
+
 .notification-enter-active,
 .notification-leave-active {
-  transition: opacity .25s ease, transform .25s ease;
+  transition:
+    opacity .25s ease,
+    transform .25s ease;
 }
+
 .notification-enter-from,
 .notification-leave-to {
   opacity: 0;
-  transform: translateX(30px);
+  transform:
+    translateX(30px);
 }
+
+/* RESPONSIVE */
+
+@media (max-width: 900px) {
+  .top-grid,
+  .two-column,
+  .three-column {
+    grid-template-columns:
+      1fr;
+  }
+
+  .automatic-page {
+    padding: 20px;
+  }
+
+  .class-selection-box {
+    grid-template-columns:
+      1fr;
+  }
+
+  .page-header h1 {
+    font-size: 28px;
+  }
+
+  .question-header,
+  .question-card-header,
+  .popup-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .confirmation-summary > div {
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .confirmation-summary strong {
+    text-align: left;
+  }
+}
+
+@media (max-width: 760px) {
+  .penalty-grid {
+    grid-template-columns:
+      1fr;
+  }
+
+  .penalty-input {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+
 @media (max-width: 600px) {
+  .automatic-page {
+    padding: 15px;
+  }
+
+  .card {
+    padding: 18px;
+  }
+
+  .page-header h1 {
+    font-size: 24px;
+  }
+
+  .popup-card {
+    padding:
+      25px 20px;
+  }
+
+  .assessment-type-options {
+    grid-template-columns:
+      1fr;
+  }
+
   .notification-container {
     top: 15px;
     right: 15px;
@@ -2360,4 +3784,54 @@ textarea {
     max-width: none;
   }
 }
+
+.question-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.test-bank-btn,
+.test-bank-all-btn {
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.test-bank-btn {
+  padding: 8px 12px;
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.test-bank-btn:hover:not(:disabled) {
+  background: #d1fae5;
+}
+
+.test-bank-btn.saved {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.test-bank-btn:disabled,
+.test-bank-all-btn:disabled {
+  cursor: not-allowed;
+  opacity: .65;
+}
+
+.test-bank-all-btn {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 12px 16px;
+  background: white;
+  color: #047857;
+  border: 1px solid #10b981;
+}
+
+.test-bank-all-btn:hover:not(:disabled) {
+  background: #ecfdf5;
+}
+
 </style>

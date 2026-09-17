@@ -4,7 +4,7 @@
       <!-- LOGO -->
       <div class="logo-container">
         <img
-          src="@/assets/logo.png"
+          src="../../assets/logo.png"
           alt="I-SPAS Logo"
           class="logo"
         />

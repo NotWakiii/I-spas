@@ -192,9 +192,12 @@
                 <th>Percentage</th>
                 <th>Status</th>
                 <th>Tab Switches</th>
+                <th>Tab Switch Time</th>
                 <th>Copy</th>
                 <th>Paste</th>
                 <th>Fullscreen Exit</th>
+                <th>Fullscreen Exit Time</th>
+                <th>Total Time Away</th>
                 <th>Idle Time</th>
                 <th>Time Spent</th>
                 <th>Submitted</th>
@@ -249,42 +252,67 @@
                     :class="{ 'violation-data': (student.tab_switches ?? 0) > 0 }"
                   >
                     <MonitorOff :size="14" />
-                    <span>
-                      {{ student.tab_switches ?? 0 }}
-                    </span>
+                    <span>{{ student.tab_switches ?? 0 }}</span>
                   </div>
                 </td>
+
+                <td>
+                  <div
+                    class="data-with-icon"
+                    :class="{ 'violation-data': (student.tab_switch_seconds ?? 0) > 0 }"
+                  >
+                    <Clock3 :size="14" />
+                    <span>{{ formatSeconds(student.tab_switch_seconds) }}</span>
+                  </div>
+                </td>
+
                 <td>
                   <div
                     class="data-with-icon"
                     :class="{ 'violation-data': (student.copy_attempts ?? 0) > 0 }"
                   >
                     <Copy :size="14" />
-                    <span>
-                      {{ student.copy_attempts ?? 0 }}
-                    </span>
+                    <span>{{ student.copy_attempts ?? 0 }}</span>
                   </div>
                 </td>
+
                 <td>
                   <div
                     class="data-with-icon"
                     :class="{ 'violation-data': (student.paste_attempts ?? 0) > 0 }"
                   >
                     <ClipboardPaste :size="14" />
-                    <span>
-                      {{ student.paste_attempts ?? 0 }}
-                    </span>
+                    <span>{{ student.paste_attempts ?? 0 }}</span>
                   </div>
                 </td>
+
                 <td>
                   <div
                     class="data-with-icon"
                     :class="{ 'violation-data': (student.fullscreen_exits ?? 0) > 0 }"
                   >
                     <Minimize2 :size="14" />
-                    <span>
-                      {{ student.fullscreen_exits ?? 0 }}
-                    </span>
+                    <span>{{ student.fullscreen_exits ?? 0 }}</span>
+                  </div>
+                </td>
+
+                <td>
+                  <div
+                    class="data-with-icon"
+                    :class="{ 'violation-data': (student.fullscreen_exit_seconds ?? 0) > 0 }"
+                  >
+                    <Clock3 :size="14" />
+                    <span>{{ formatSeconds(student.fullscreen_exit_seconds) }}</span>
+                  </div>
+                </td>
+
+                <td>
+                  <div
+                    class="data-with-icon"
+                    :class="{ 'violation-data': (student.total_away_seconds ?? 0) > 0 }"
+                  >
+                    <Timer :size="14" />
+                    <span>{{ formatSeconds(student.total_away_seconds) }}</span>
                   </div>
                 </td>
                 <td>
@@ -329,7 +357,7 @@
                 v-if="filteredStudents.length === 0"
               >
                 <td
-                  colspan="12"
+                  colspan="15"
                   class="no-search-results"
                 >
                   No student found.
@@ -407,9 +435,12 @@ interface StudentResult {
   submitted_at: string | null
   time_spent: number | null
   tab_switches: number | null
+  tab_switch_seconds: number | null
   copy_attempts: number | null
   paste_attempts: number | null
   fullscreen_exits: number | null
+  fullscreen_exit_seconds: number | null
+  total_away_seconds: number | null
   idle_seconds: number | null
   status: string
 }
@@ -517,24 +548,38 @@ function exportToExcel() {
               : 'Failed',
           'Tab Switches':
             student.tab_switches ?? 0,
+
+          'Tab Switch Time':
+            formatSeconds(
+              student.tab_switch_seconds
+            ),
+
           'Copy Attempts':
             student.copy_attempts ?? 0,
+
           'Paste Attempts':
             student.paste_attempts ?? 0,
+
           'Fullscreen Exits':
             student.fullscreen_exits ?? 0,
+
+          'Fullscreen Exit Time':
+            formatSeconds(
+              student.fullscreen_exit_seconds
+            ),
+
+          'Total Time Away':
+            formatSeconds(
+              student.total_away_seconds
+            ),
           'Idle Time':
-            formatSeconds(
-              student.idle_seconds
-            ),
+            formatSeconds(student.idle_seconds),
+
           'Time Spent':
-            formatSeconds(
-              student.time_spent
-            ),
+            formatSeconds(student.time_spent),
+
           'Submitted At':
-            formatDate(
-              student.submitted_at
-            )
+            formatDate(student.submitted_at)
         }
       }
     )
@@ -555,8 +600,11 @@ function exportToExcel() {
     { wch: 15 },
     { wch: 12 },
     { wch: 15 },
+    { wch: 18 },
     { wch: 15 },
     { wch: 15 },
+    { wch: 18 },
+    { wch: 20 },
     { wch: 18 },
     { wch: 15 },
     { wch: 15 },
