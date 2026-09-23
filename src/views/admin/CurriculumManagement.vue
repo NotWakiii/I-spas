@@ -27,6 +27,7 @@
         <table>
           <thead>
             <tr>
+              <th class="number-column">#</th>
               <th>Grade Level</th>
               <th>Strand</th>
               <th>Subjects</th>
@@ -34,7 +35,13 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="curriculum in curricula" :key="curriculum.id">
+            <tr
+              v-for="(curriculum, index) in curricula"
+              :key="curriculum.id"
+            >
+              <td class="number-cell">
+                {{ index + 1 }}
+              </td>
               <td>
                 <span class="grade-badge">
                   {{ curriculum.grade }}
@@ -70,7 +77,7 @@
               </td>
             </tr>
             <tr v-if="curricula.length === 0">
-              <td colspan="4" class="empty-state">
+              <td colspan="5" class="empty-state">
                 <BookMarked :size="42" />
                 <strong>No curriculum found</strong>
                 <p>Add a curriculum to assign subjects to a grade level and strand.</p>
@@ -894,6 +901,16 @@ tbody tr:hover {
   background: #dcfce7;
   color: #15803d;
   font-size: 10px;
+  font-weight: 700;
+}
+.number-column,
+.number-cell {
+  width: 65px;
+  text-align: center;
+}
+
+.number-cell {
+  color: #64748b;
   font-weight: 700;
 }
 

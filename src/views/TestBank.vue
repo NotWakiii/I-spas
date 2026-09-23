@@ -23,11 +23,11 @@
 
     <div class="filters-card">
       <div class="filter-group">
-        <label>Subject</label>
-        <select v-model="subjectFilter">
-          <option value="">All Subjects</option>
-          <option v-for="subject in taughtSubjects" :key="subject.id" :value="String(subject.id)">
-            {{ subject.name }}
+        <label>Class</label>
+        <select v-model="classFilter">
+          <option value="">All Classes</option>
+          <option v-for="item in classes" :key="item.id" :value="String(item.id)">
+            {{ classLabel(item) }}
           </option>
         </select>
       </div>
@@ -72,6 +72,12 @@
             <div class="badges">
               <span class="type-badge">{{ typeLabel(item.question_type) }}</span>
               <span class="points-badge">{{ item.points }} pt{{ Number(item.points) === 1 ? '' : 's' }}</span>
+              <span class="performance-percentage" :class="{empty: !item.statistics?.total_answers}">
+                {{ item.statistics?.total_answers ? `${item.statistics.correct_percentage}% Correct`: 'No responses' }}
+              </span>
+              <span class="status-badge" :class="item.is_active ? 'enabled' : 'disabled'">
+                {{ item.is_active ? 'Enabled' : 'Disabled' }}
+              </span>
             </div>
           </div>
           <div class="actions">
@@ -79,9 +85,18 @@
               <Pencil :size="15" />
               <span>Edit</span>
             </button>
-            <button class="delete-btn" @click="openDeleteModal(item)">
-              <Trash2 :size="15" />
-              <span>Delete</span>
+            <button
+              class="status-btn"
+              :class="item.is_active ? 'disable' : 'enable'"
+              :disabled="togglingId === item.id"
+              @click="toggleQuestionStatus(item)"
+            >
+              <LoaderCircle v-if="togglingId === item.id" :size="15" class="spin" />
+              <CircleOff v-else-if="item.is_active" :size="15" />
+              <CircleCheckBig v-else :size="15" />
+              <span>
+                {{ togglingId === item.id ? 'Updating...' : item.is_active ? 'Disable' : 'Enable' }}
+              </span>
             </button>
           </div>
         </div>
@@ -115,7 +130,7 @@
         </div>
 
         <div class="question-footer">
-          <span><BookOpen :size="14" /> {{ item.subject?.name || 'Unknown Subject' }}</span>
+          <span><BookOpen :size="14" /> {{ questionClassLabel(item) }}</span>
         </div>
       </article>
     </div>
@@ -135,7 +150,7 @@
         <div class="form-grid">
           <div class="form-group">
             <label>Subject</label>
-            <select v-model.number="form.subject_id">
+            <select v-model.number="form.subject_id" @change="handleSubjectChange">
               <option :value="0" disabled>Select Subject</option>
               <option v-for="subject in taughtSubjects" :key="subject.id" :value="subject.id">
                 {{ subject.name }}
@@ -150,6 +165,21 @@
               <option value="identification">Identification</option>
             </select>
           </div>
+        </div>
+
+        <div class="form-group">
+          <label>Assign to Classes</label>
+          <div v-if="!form.subject_id" class="class-assignment-empty">Select a subject first.</div>
+          <div v-else-if="availableClassesForForm.length === 0" class="class-assignment-empty">No classes found for this subject.</div>
+          <div v-else class="class-assignment-list">
+            <label v-for="item in availableClassesForForm" :key="item.id" class="class-check">
+              <input v-model="form.class_ids" type="checkbox" :value="item.id">
+              <span>{{ classLabel(item) }}</span>
+            </label>
+          </div>
+          <small v-if="form.class_ids.length" class="selected-class-count">
+            {{ form.class_ids.length }} class{{ form.class_ids.length === 1 ? '' : 'es' }} selected
+          </small>
         </div>
 
         <div class="form-group">
@@ -212,22 +242,6 @@
       </div>
     </div>
 
-    <div v-if="showDeleteModal" class="modal-overlay" @click.self="closeDeleteModal">
-      <div class="modal-card delete-modal">
-        <div class="danger-icon"><Trash2 :size="30" /></div>
-        <h2>Delete Question?</h2>
-        <p>This question will be permanently removed from your Test Bank. Existing assessments will not be affected.</p>
-        <div class="modal-actions centered">
-          <button class="secondary-btn" :disabled="deleting" @click="closeDeleteModal">Cancel</button>
-          <button class="danger-btn" :disabled="deleting" @click="deleteQuestion">
-            <LoaderCircle v-if="deleting" :size="17" class="spin" />
-            <Trash2 v-else :size="17" />
-            <span>{{ deleting ? 'Deleting...' : 'Delete' }}</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
     <Transition name="notification">
       <div v-if="notification.show" class="notification" :class="notification.type">
         <div class="notification-mark">{{ notification.type === 'success' ? '✓' : notification.type === 'error' ? '!' : 'i' }}</div>
@@ -244,19 +258,34 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import api from '../services/api'
-import { BookOpen, CircleCheckBig, LoaderCircle, Pencil, Plus, Save, Search, Trash2, X } from '@lucide/vue'
+import { BookOpen, CircleCheckBig, CircleOff, LoaderCircle, Pencil, Plus, Save, Search, X } from '@lucide/vue'
 
 interface Subject { id: number; name: string }
-interface SchoolClass { id: number; subject_id: number; subject?: Subject }
+interface SchoolClass {
+  id: number
+  subject_id: number
+  subject?: Subject
+  grade_level?: string
+  strand?: string | { id?: number; name?: string }
+  section?: string | { id?: number; name?: string }
+}
 interface TestBankOption { id?: number; option_text: string; is_correct: boolean }
 interface TestBankQuestion {
   id: number
+  class_id?: number
   subject_id: number
+  classes?: SchoolClass[]
   question: string
   question_type: 'multiple_choice' | 'true_false' | 'identification'
   competency?: string | null
   answer?: string | null
   points: number
+  is_active: boolean
+  statistics?: {
+    total_answers: number
+    correct_answers: number
+    correct_percentage: number
+  }
   subject?: Subject
   options?: TestBankOption[]
 }
@@ -266,18 +295,17 @@ const questions = ref<TestBankQuestion[]>([])
 const classes = ref<SchoolClass[]>([])
 const loading = ref(false)
 const saving = ref(false)
-const deleting = ref(false)
-const subjectFilter = ref('')
+const classFilter = ref('')
 const typeFilter = ref('')
 const searchText = ref('')
 const showQuestionModal = ref(false)
-const showDeleteModal = ref(false)
 const editingQuestion = ref<TestBankQuestion | null>(null)
-const pendingDelete = ref<TestBankQuestion | null>(null)
+const togglingId = ref<number | null>(null)
 const notification = ref({ show: false, type: 'success' as NotificationType, title: '', message: '' })
 let notificationTimer: ReturnType<typeof setTimeout> | null = null
 
 const form = reactive({
+  class_ids: [] as number[],
   subject_id: 0,
   question: '',
   question_type: 'multiple_choice' as TestBankQuestion['question_type'],
@@ -298,15 +326,46 @@ const taughtSubjects = computed(() => {
 const filteredQuestions = computed(() => {
   const search = searchText.value.trim().toLowerCase()
   return questions.value.filter(item => {
-    if (subjectFilter.value && item.subject_id !== Number(subjectFilter.value)) return false
+    if (classFilter.value && !(item.classes || []).some(c => c.id === Number(classFilter.value))) return false
     if (typeFilter.value && item.question_type !== typeFilter.value) return false
     if (search) {
-      const haystack = `${item.question} ${item.competency || ''} ${item.subject?.name || ''}`.toLowerCase()
+      const haystack = `${item.question} ${item.competency || ''} ${item.subject?.name || ''} ${questionClassLabel(item)}`.toLowerCase()
       if (!haystack.includes(search)) return false
     }
     return true
   })
 })
+
+function classLabel(item: SchoolClass) {
+  const subject = item.subject?.name || 'Unknown Subject'
+  const grade = item.grade_level || ''
+  const strand =
+    typeof item.strand === 'object'
+      ? item.strand?.name || ''
+      : item.strand || ''
+  const section =
+    typeof item.section === 'object'
+      ? item.section?.name || ''
+      : item.section || ''
+
+  return [subject, grade, strand, section]
+    .filter(Boolean)
+    .join(' - ')
+}
+
+function questionClassLabel(item: TestBankQuestion) {
+  const assigned = item.classes || []
+  if (!assigned.length) return item.subject?.name || 'No assigned classes'
+  return assigned.map(classLabel).join(' • ')
+}
+
+const availableClassesForForm = computed(() =>
+  classes.value.filter(item => item.subject_id === form.subject_id)
+)
+
+function handleSubjectChange() {
+  form.class_ids = []
+}
 
 function typeLabel(type: string) {
   if (type === 'multiple_choice') return 'Multiple Choice'
@@ -339,7 +398,9 @@ async function fetchClasses() {
 async function fetchQuestions() {
   loading.value = true
   try {
-    const response = await api.get('/faculty/test-bank')
+    const response = await api.get('/faculty/test-bank', {
+      params: classFilter.value ? { class_id: Number(classFilter.value) } : {}
+    })
     questions.value = Array.isArray(response.data?.data) ? response.data.data : []
   } catch (error: any) {
     console.error('LOAD TEST BANK ERROR:', error)
@@ -351,6 +412,7 @@ async function fetchQuestions() {
 }
 
 function resetForm() {
+  form.class_ids = []
   form.subject_id = taughtSubjects.value.length === 1 ? taughtSubjects.value[0].id : 0
   form.question = ''
   form.question_type = 'multiple_choice'
@@ -365,10 +427,44 @@ function openAddModal() {
   resetForm()
   showQuestionModal.value = true
 }
+async function toggleQuestionStatus(item: TestBankQuestion) {
+  if (togglingId.value !== null) return
 
+  togglingId.value = item.id
+
+  try {
+    const response = await api.patch(
+      `/faculty/test-bank/${item.id}/status`,
+      {
+        is_active: !item.is_active
+      }
+    )
+
+    item.is_active = response.data?.data?.is_active ?? !item.is_active
+
+    showNotification(
+      'success',
+      item.is_active ? 'Question Enabled' : 'Question Disabled',
+      item.is_active
+        ? 'This question can now be used in new assessments.'
+        : 'This question will no longer be available for new assessments.'
+    )
+  } catch (error: any) {
+    console.error('UPDATE QUESTION STATUS ERROR:', error)
+
+    showNotification(
+      'error',
+      'Update Failed',
+      error.response?.data?.message || 'Failed to update question status.'
+    )
+  } finally {
+    togglingId.value = null
+  }
+}
 function openEditModal(item: TestBankQuestion) {
   editingQuestion.value = item
   form.subject_id = item.subject_id
+  form.class_ids = (item.classes || []).map(c => c.id)
   form.question = item.question
   form.question_type = item.question_type
   form.competency = item.competency || ''
@@ -402,6 +498,7 @@ function resetFormForType() {
 
 function validateForm() {
   if (!form.subject_id) return 'Please select a subject.'
+  if (form.class_ids.length === 0) return 'Please assign the question to at least one class.'
   if (!form.question.trim()) return 'Please enter a question.'
   if (Number(form.points) < 1) return 'Points must be at least 1.'
   if (!form.answer.trim()) return 'Please provide the correct answer.'
@@ -428,6 +525,7 @@ function buildPayload() {
     }))
   }
   return {
+    class_ids: form.class_ids.map(Number),
     subject_id: form.subject_id,
     question: form.question.trim(),
     question_type: form.question_type,
@@ -471,34 +569,6 @@ async function saveQuestion() {
   }
 }
 
-function openDeleteModal(item: TestBankQuestion) {
-  pendingDelete.value = item
-  showDeleteModal.value = true
-}
-
-function closeDeleteModal() {
-  if (deleting.value) return
-  showDeleteModal.value = false
-  pendingDelete.value = null
-}
-
-async function deleteQuestion() {
-  if (!pendingDelete.value || deleting.value) return
-  deleting.value = true
-  try {
-    await api.delete(`/faculty/test-bank/${pendingDelete.value.id}`)
-    showNotification('success', 'Question Deleted', 'Question removed from Test Bank successfully.')
-    showDeleteModal.value = false
-    pendingDelete.value = null
-    await fetchQuestions()
-  } catch (error: any) {
-    console.error('DELETE TEST BANK ERROR:', error)
-    showNotification('error', 'Delete Failed', error.response?.data?.message || 'Failed to delete question.')
-  } finally {
-    deleting.value = false
-  }
-}
-
 onMounted(async () => {
   await Promise.all([fetchClasses(), fetchQuestions()])
 })
@@ -510,11 +580,11 @@ onMounted(async () => {
 .page-header { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 20px; }
 .page-header h1 { margin: 0 0 5px; color: #112244; font-size: 32px; }
 .page-header p { margin: 0; color: #64748b; font-size: 14px; }
-.primary-btn, .secondary-btn, .danger-btn, .edit-btn, .delete-btn, .icon-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 0; cursor: pointer; font-weight: 600; transition: .2s; }
+.primary-btn, .secondary-btn, .edit-btn, .status-btn, .icon-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 0; cursor: pointer; font-weight: 600; transition: .2s; }
 .primary-btn { min-height: 44px; padding: 0 16px; border-radius: 10px; background: #00c853; color: white; }
 .primary-btn:hover:not(:disabled) { background: #00b34a; }
 .primary-btn.compact { margin-top: 10px; }
-.primary-btn:disabled, .secondary-btn:disabled, .danger-btn:disabled { opacity: .6; cursor: not-allowed; }
+.primary-btn:disabled, .secondary-btn:disabled { opacity: .6; cursor: not-allowed; }
 .stats-card, .filters-card, .question-card, .state-card { background: white; border-radius: 15px; box-shadow: 0 4px 16px rgba(0,0,0,.06); }
 .stats-card { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; margin-bottom: 15px; border-left: 4px solid #00c853; }
 .stats-card div { display: flex; align-items: center; gap: 12px; }
@@ -542,15 +612,23 @@ onMounted(async () => {
 .question-number { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .question-number > span { color: #112244; font-size: 13px; font-weight: 700; }
 .badges { display: flex; gap: 6px; }
-.type-badge, .points-badge { padding: 4px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+.type-badge, .points-badge, .performance-percentage, .status-badge { padding: 4px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; }
 .type-badge { background: #dcfce7; color: #15803d; }
+.performance-percentage { background: #dbeafe; color: #1d4ed8; }
+.performance-percentage.empty { background: #f1f5f9; color: #64748b; }
+.status-badge.enabled { background: #dcfce7; color: #15803d; }
+.status-badge.disabled { background: #fee2e2; color: #dc2626; }
 .points-badge { background: #f1f5f9; color: #475569; }
 .actions { display: flex; gap: 7px; }
 .edit-btn, .delete-btn { padding: 7px 10px; border-radius: 7px; font-size: 11px; }
 .edit-btn { background: #ecfdf5; color: #15803d; }
 .edit-btn:hover { background: #dcfce7; }
-.delete-btn { background: #fee2e2; color: #dc2626; }
-.delete-btn:hover { background: #fecaca; }
+.status-btn { padding: 7px 10px; border: 0; border-radius: 7px; cursor: pointer; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 7px; transition: .2s; }
+.status-btn.disable { background: #fff7ed; color: #c2410c; }
+.status-btn.disable:hover:not(:disabled) { background: #ffedd5; }
+.status-btn.enable { background: #ecfdf5; color: #15803d; }
+.status-btn.enable:hover:not(:disabled) { background: #dcfce7; }
+.status-btn:disabled { opacity: .6; cursor: not-allowed; }
 .question-text { margin: 0 0 8px; color: #273548; font-size: 16px; line-height: 1.55; }
 .competency { margin: 0 0 12px; color: #64748b; font-size: 12px; }
 .competency strong { color: #166534; }
@@ -573,6 +651,12 @@ onMounted(async () => {
 .icon-btn { width: 34px; height: 34px; flex-shrink: 0; border-radius: 8px; background: #f1f5f9; color: #64748b; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .form-group { margin-bottom: 13px; }
+.class-assignment-list { display: grid; gap: 8px; max-height: 190px; overflow-y: auto; padding: 10px; border: 1px solid #d9dce2; border-radius: 9px; background: #f8fafc; }
+.class-check { display: flex !important; align-items: center; gap: 9px; margin: 0 !important; padding: 9px 10px; border-radius: 8px; background: white; cursor: pointer; font-size: 12px !important; font-weight: 600 !important; }
+.class-check:hover { background: #f0fdf4; }
+.class-check input { width: 16px !important; height: 16px !important; flex: 0 0 16px; accent-color: #00c853; }
+.class-assignment-empty { padding: 12px; border: 1px dashed #cbd5e1; border-radius: 9px; background: #f8fafc; color: #64748b; font-size: 12px; }
+.selected-class-count { display: block; margin-top: 7px; color: #15803d; font-size: 11px; font-weight: 600; }
 .choice-row { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
 .choice-row span { width: 20px; color: #15803d; font-size: 12px; font-weight: 700; }
 .choice-row input { flex: 1; }

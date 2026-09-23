@@ -51,6 +51,7 @@
         <table>
           <thead>
             <tr>
+              <th class="number-column">#</th>
               <th>Year</th>
               <th>Status</th>
               <th class="actions-column">
@@ -61,9 +62,12 @@
 
           <tbody>
             <tr
-              v-for="schoolYear in schoolYears"
+              v-for="(schoolYear, index) in schoolYears"
               :key="schoolYear.id"
             >
+              <td class="number-cell">
+                {{ index + 1 }}
+              </td>
               <td>
                 <strong>
                   {{ schoolYear.year }}
@@ -118,7 +122,7 @@
               v-if="schoolYears.length === 0"
             >
               <td
-                colspan="3"
+                colspan="4"
                 class="empty-state"
               >
                 <CalendarDays :size="42" />
@@ -1136,7 +1140,16 @@ tbody tr:hover {
   font-size: 10px;
   line-height: 1.6;
 }
+.number-column,
+.number-cell {
+  width: 65px;
+  text-align: center;
+}
 
+.number-cell {
+  color: #64748b;
+  font-weight: 700;
+}
 .form-error-message svg {
   flex-shrink: 0;
 }

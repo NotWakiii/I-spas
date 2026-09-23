@@ -27,9 +27,22 @@
 
     <main class="content">
       <div class="page-heading">
-        <span class="eyebrow">STUDENT DASHBOARD</span>
-        <h1>Current Classes</h1>
-        <p>Select a class to view its examinations and results.</p>
+        <div>
+          <span class="eyebrow">STUDENT DASHBOARD</span>
+          <h1>Current Classes</h1>
+          <p>Select a class to view its examinations and results.</p>
+        </div>
+
+        <button
+          type="button"
+          class="join-class-btn"
+          @click="openJoinDialog"
+        >
+          + Join Class
+        </button>
+      </div>
+      <div v-if="successMessage" class="dashboard-alert success">
+        {{ successMessage }}
       </div>
 
       <div v-if="loading" class="state-card">
@@ -97,26 +110,60 @@
     </main>
 
     <div
-      v-if="showAboutDialog"
+      v-if="showJoinDialog"
       class="dialog-overlay"
-      @click.self="showAboutDialog = false"
+      @click.self="closeJoinDialog"
     >
-      <div class="about-dialog">
-        <div class="about-icon">i</div>
-        <h2>About I-SPAS</h2>
-        <p>I-SPAS is an Intranet-Based Student Performance Assessment System.</p>
+      <div class="join-dialog">
+        <div class="join-icon">+</div>
 
-        <div class="developer-box">
-          <span>Developed by</span>
-          <strong>Renz Cabucana</strong>
-          <strong>Joaquin Vinarao</strong>
-          <strong>Donnajane Chavez</strong>
-          <small>© 2026 I-SPAS</small>
-        </div>
+        <h2>Join Class</h2>
 
-        <button class="about-close-btn" type="button" @click="showAboutDialog = false">
-          Close
-        </button>
+        <p>
+          Enter the class code provided by your faculty.
+        </p>
+
+        <form @submit.prevent="joinClass">
+          <div class="class-code-field">
+            <label>Class Code</label>
+
+            <input
+              v-model="classCode"
+              type="text"
+              maxlength="10"
+              placeholder="Enter class code"
+              autocomplete="off"
+              :disabled="joiningClass"
+              @input="formatClassCode"
+            >
+          </div>
+
+          <div
+            v-if="joinErrorMessage"
+            class="join-error"
+          >
+            {{ joinErrorMessage }}
+          </div>
+
+          <div class="join-actions">
+            <button
+              type="button"
+              class="cancel-join-btn"
+              :disabled="joiningClass"
+              @click="closeJoinDialog"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              class="confirm-join-btn"
+              :disabled="joiningClass || !classCode.trim()"
+            >
+              {{ joiningClass ? 'Joining...' : 'Join Class' }}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 
@@ -186,6 +233,11 @@ const errorMessage = ref('')
 const showAboutDialog = ref(false)
 const showLogoutDialog = ref(false)
 const loggingOut = ref(false)
+const showJoinDialog = ref(false)
+const classCode = ref('')
+const joiningClass = ref(false)
+const joinErrorMessage = ref('')
+const successMessage = ref('')
 
 onMounted(() => {
   loadStudent()
@@ -228,7 +280,70 @@ async function loadClasses() {
     loading.value = false
   }
 }
+function openJoinDialog() {
+  classCode.value = ''
+  joinErrorMessage.value = ''
+  showJoinDialog.value = true
+}
 
+function closeJoinDialog() {
+  if (joiningClass.value) return
+
+  showJoinDialog.value = false
+  classCode.value = ''
+  joinErrorMessage.value = ''
+}
+async function joinClass() {
+  const code = classCode.value.trim().toUpperCase()
+
+  if (!code || joiningClass.value) return
+
+  joiningClass.value = true
+  joinErrorMessage.value = ''
+
+  try {
+    const response = await api.post(
+      '/student/classes/join',
+      {
+        class_code: code
+      }
+    )
+
+    showJoinDialog.value = false
+    classCode.value = ''
+
+    successMessage.value =
+      response.data?.message ||
+      'Class joined successfully.'
+
+    await loadClasses()
+
+    window.setTimeout(() => {
+      successMessage.value = ''
+    }, 3500)
+  }  catch (error: any) {
+  console.error('JOIN CLASS ERROR:', error)
+  console.error('STATUS:', error.response?.status)
+  console.error('RESPONSE:', error.response?.data)
+
+    if (error.response?.status === 401) {
+      clearStudentSession()
+      await router.replace('/student/login')
+      return
+    }
+
+    joinErrorMessage.value =
+      error.response?.data?.message ||
+      'Unable to join this class.'
+  } finally {
+    joiningClass.value = false
+  }
+}
+function formatClassCode() {
+  classCode.value = classCode.value
+    .toUpperCase()
+    .replace(/\s/g, '')
+}
 function openClass(id: number) {
   router.push(`/student/classes/${id}`)
 }
@@ -384,6 +499,10 @@ async function logout() {
 
 .page-heading {
   margin-bottom: 25px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
 }
 
 .eyebrow {
@@ -404,6 +523,164 @@ async function logout() {
   margin: 0;
   color: #64748b;
   font-size: 11px;
+}
+.join-dialog {
+  width: 430px;
+  max-width: 100%;
+  padding: 28px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 20px 50px rgba(15,23,42,.25);
+}
+.join-class-btn {
+  height: 42px;
+  padding: 0 18px;
+  border: 1px solid #15803d;
+  border-radius: 10px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  background: #15803d;
+  color: #ffffff;
+
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(21, 128, 61, .15);
+  transition: all .2s ease;
+}
+
+.join-class-btn:hover {
+  background: #166534;
+  border-color: #166534;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(21, 128, 61, .22);
+}
+
+.join-class-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 7px rgba(21, 128, 61, .16);
+}
+.join-icon {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.join-dialog h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 20px;
+  text-align: center;
+}
+
+.join-dialog > p {
+  margin: 7px 0 20px;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.6;
+  text-align: center;
+}
+
+.class-code-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.class-code-field label {
+  color: #334155;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.class-code-field input {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  outline: none;
+  background: #fff;
+  color: #0f172a;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.class-code-field input:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22,163,74,.1);
+}
+
+.class-code-field input::placeholder {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.join-error {
+  margin-top: 10px;
+  padding: 9px 11px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 9px;
+}
+
+.join-actions {
+  margin-top: 18px;
+  display: flex;
+  gap: 10px;
+}
+
+.cancel-join-btn,
+.confirm-join-btn {
+  flex: 1;
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cancel-join-btn {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.confirm-join-btn {
+  background: #16a34a;
+  color: #fff;
+}
+
+.confirm-join-btn:hover:not(:disabled) {
+  background: #15803d;
+}
+
+.cancel-join-btn:disabled,
+.confirm-join-btn:disabled {
+  opacity: .6;
+  cursor: not-allowed;
 }
 
 .class-grid {
@@ -447,6 +724,7 @@ async function logout() {
   font-size: 17px;
   font-weight: 800;
 }
+
 
 .class-content {
   min-width: 0;

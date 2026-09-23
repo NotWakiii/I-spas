@@ -20,6 +20,7 @@ import ItemAnalysis from '../views/ItemAnalysis.vue'
 import Feedback from '../views/Feedback.vue'
 import TestBank from '../views/TestBank.vue'
 import TestBankAssessment from '../views/TestBankAssessment.vue'
+import AddStudent from '../views/AddStudent.vue'
 
 // Student views
 import StudentLogin from '../views/student/StudentLogin.vue'
@@ -234,6 +235,11 @@ const router = createRouter({
           path: 'test-bank-exam',
           name: 'TestBankAssessment',
           component: TestBankAssessment,
+        },
+        {
+          path: 'addstudent',
+          name: 'AddStudent',
+          component: AddStudent
         }
       ],
     },

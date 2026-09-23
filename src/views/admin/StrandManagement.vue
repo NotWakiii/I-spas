@@ -51,6 +51,7 @@
         <table>
           <thead>
             <tr>
+              <th class="number-column">#</th>
               <th>Strand</th>
               <th>Description</th>
               <th class="actions-column">
@@ -61,9 +62,12 @@
 
           <tbody>
             <tr
-              v-for="strand in strands"
+              v-for="(strand, index) in strands"
               :key="strand.id"
             >
+              <td class="number-column">
+                {{ index + 1 }}
+              </td>
               <td>
                 <strong>
                   {{ strand.name }}
@@ -100,7 +104,7 @@
 
             <tr v-if="strands.length === 0">
               <td
-                colspan="3"
+                colspan="4"
                 class="empty-state"
               >
                 <Layers3 :size="42" />
@@ -744,7 +748,16 @@ onMounted(() => {
   font-size: 12px;
   font-weight: 600;
 }
+.number-column,
+.number-cell {
+  width: 65px;
+  text-align: center;
+}
 
+.number-cell {
+  color: #64748b;
+  font-weight: 700;
+}
 .notification.success {
   border: 1px solid #bbf7d0;
   background: #f0fdf4;

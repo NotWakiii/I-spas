@@ -27,12 +27,19 @@
         <table>
           <thead>
             <tr>
+              <th class="number-column">#</th>
               <th>Subject Name</th>
               <th class="actions-column">Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="subject in subjects" :key="subject.id">
+            <tr
+                v-for="(subject, index) in subjects"
+                :key="subject.id"
+              >
+              <td class="number-cell">
+                {{ index + 1 }}
+              </td>
               <td>
                 <strong>{{ subject.name }}</strong>
               </td>
@@ -56,7 +63,7 @@
               </td>
             </tr>
             <tr v-if="subjects.length === 0">
-              <td colspan="2" class="empty-state">
+              <td colspan="3" class="empty-state">
                 <BookOpenText :size="42" />
                 <strong>No subjects found</strong>
                 <p>Add a subject to get started.</p>
@@ -531,7 +538,16 @@ onMounted(() => {
   color: #64748b;
   font-size: 12px;
 }
+.number-column,
+.number-cell {
+  width: 65px;
+  text-align: center;
+}
 
+.number-cell {
+  color: #64748b;
+  font-weight: 700;
+}
 .add-btn {
   min-height: 42px;
   padding: 0 17px;

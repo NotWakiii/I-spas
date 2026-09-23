@@ -1,36 +1,75 @@
 <template>
   <div class="student-page">
+
+    <!-- ==========================================
+         PAGE HEADER
+    =========================================== -->
     <div class="page-header">
       <div>
         <h1>Manage Students</h1>
-        <p>Create and manage student accounts within the Senior High School department.</p>
+        <p>
+          Create and manage student accounts within the
+          Senior High School department.
+        </p>
       </div>
+
       <div class="header-actions">
-        <button class="import-btn" @click="openImportModal">
+        <button
+          class="import-btn"
+          @click="openImportModal"
+        >
           <FileSpreadsheet :size="18" />
           Import Excel
         </button>
-        <button class="add-btn" @click="openAddModal">
+
+        <button
+          class="add-btn"
+          @click="openAddModal"
+        >
           <UserPlus :size="18" />
           Add Student
         </button>
       </div>
     </div>
 
-    <div v-if="successMessage" class="notification success">
+    <!-- ==========================================
+         NOTIFICATIONS
+    =========================================== -->
+    <div
+      v-if="successMessage"
+      class="notification success"
+    >
       <CircleCheckBig :size="20" />
       <span>{{ successMessage }}</span>
     </div>
 
-    <div v-if="errorMessage" class="notification error">
+    <div
+      v-if="errorMessage"
+      class="notification error"
+    >
       <CircleAlert :size="20" />
       <span>{{ errorMessage }}</span>
     </div>
 
-    <div v-if="selectedStudents.length" class="bulk-actions">
+    <!-- ==========================================
+         BULK ACTIONS
+    =========================================== -->
+    <div
+      v-if="selectedStudents.length"
+      class="bulk-actions"
+    >
       <div class="bulk-info">
-        <strong>{{ selectedStudents.length }}</strong>
-        <span>{{ selectedStudents.length === 1 ? 'student selected' : 'students selected' }}</span>
+        <strong>
+          {{ selectedStudents.length }}
+        </strong>
+
+        <span>
+          {{
+            selectedStudents.length === 1
+              ? 'student selected'
+              : 'students selected'
+          }}
+        </span>
       </div>
 
       <div class="bulk-buttons">
@@ -48,52 +87,93 @@
           :disabled="bulkUpdating"
           @click="bulkUpdateStatus('inactive')"
         >
-          <LoaderCircle v-if="bulkUpdating" :size="16" class="spinner" />
-          <CircleAlert v-else :size="16" />
+          <LoaderCircle
+            v-if="bulkUpdating"
+            :size="16"
+            class="spinner"
+          />
+
+          <CircleAlert
+            v-else
+            :size="16"
+          />
+
           Mark Inactive
         </button>
       </div>
     </div>
 
+    <!-- ==========================================
+         STUDENT TABLE
+    =========================================== -->
     <div class="table-card">
-      <div v-if="loading" class="loading-state">
-        <LoaderCircle :size="28" class="spinner" />
-        <span>Loading students...</span>
+
+      <div
+        v-if="loading"
+        class="loading-state"
+      >
+        <LoaderCircle
+          :size="28"
+          class="spinner"
+        />
+
+        <span>
+          Loading students...
+        </span>
       </div>
 
-      <div v-else class="table-wrapper">
+      <div
+        v-else
+        class="table-wrapper"
+      >
         <table>
           <thead>
             <tr>
+
+              <!-- SELECT ALL -->
               <th class="select-all-column">
-              <label class="select-all-label">
-                <input
-                  ref="selectAllCheckbox"
-                  type="checkbox"
-                  :checked="allStudentsSelected"
-                  @change="toggleSelectAll"
-                />
-                <span>Select All</span>
-              </label>
-            </th>
+                <label class="select-all-label">
+                  <input
+                    ref="selectAllCheckbox"
+                    type="checkbox"
+                    :checked="allStudentsSelected"
+                    @change="toggleSelectAll"
+                  />
+
+                  <span>Select All</span>
+                </label>
+              </th>
+
+              <!-- NUMBER -->
+              <th class="number-column">
+                #
+              </th>
+
               <th>LRN</th>
               <th>Name</th>
               <th>Sex</th>
               <th>Email</th>
-              <th>Strand</th>
-              <th>Section</th>
               <th>Status</th>
               <th>Date</th>
-              <th class="actions-column">Actions</th>
+
+              <th class="actions-column">
+                Actions
+              </th>
             </tr>
           </thead>
 
           <tbody>
+
             <tr
-              v-for="student in students"
+              v-for="(student, index) in students"
               :key="student.id"
-              :class="{ 'selected-row': selectedStudents.includes(student.id) }"
+              :class="{
+                'selected-row':
+                  selectedStudents.includes(student.id)
+              }"
             >
+
+              <!-- CHECKBOX -->
               <td class="checkbox-column">
                 <input
                   v-model="selectedStudents"
@@ -102,51 +182,70 @@
                 />
               </td>
 
-              <td>
-                <span class="lrn-value">{{ student.lrn }}</span>
+              <!-- NUMBER -->
+              <td class="number-cell">
+                {{ index + 1 }}
               </td>
 
+              <!-- LRN -->
+              <td>
+                <span class="lrn-value">
+                  {{ student.lrn }}
+                </span>
+              </td>
+
+              <!-- NAME -->
               <td>
                 <div class="student-info">
+
                   <div class="student-avatar">
                     {{ getInitials(student.name) }}
                   </div>
-                  <strong>{{ student.name }}</strong>
+
+                  <strong>
+                    {{ student.name }}
+                  </strong>
+
                 </div>
               </td>
 
-              <td>{{ student.sex }}</td>
-
-              <td>{{ student.email }}</td>
-
+              <!-- SEX -->
               <td>
-                <span class="strand-badge">
-                  {{ student.strand?.name || 'N/A' }}
-                </span>
+                {{ student.sex }}
               </td>
 
+              <!-- EMAIL -->
               <td>
-                <div class="section-info">
-                  <strong>{{ student.section?.section || 'N/A' }}</strong>
-                  <span v-if="student.section?.grade">
-                    {{ student.section.grade }}
-                  </span>
-                </div>
+                {{ student.email }}
               </td>
 
+              <!-- STATUS -->
               <td>
                 <span
                   class="status-badge"
-                  :class="student.status === 'active' ? 'active' : 'inactive'"
+                  :class="
+                    student.status === 'active'
+                      ? 'active'
+                      : 'inactive'
+                  "
                 >
-                  {{ student.status === 'active' ? 'Active' : 'Inactive' }}
+                  {{
+                    student.status === 'active'
+                      ? 'Active'
+                      : 'Inactive'
+                  }}
                 </span>
               </td>
 
-              <td>{{ formatDate(student.created_at) }}</td>
+              <!-- DATE -->
+              <td>
+                {{ formatDate(student.created_at) }}
+              </td>
 
+              <!-- ACTIONS -->
               <td>
                 <div class="action-buttons">
+
                   <button
                     class="action-btn edit"
                     @click="openEditModal(student)"
@@ -162,64 +261,127 @@
                     <Trash2 :size="15" />
                     Delete
                   </button>
+
                 </div>
+              </td>
+
+            </tr>
+
+            <!-- EMPTY STATE -->
+            <tr v-if="students.length === 0">
+              <td
+                colspan="9"
+                class="empty-state"
+              >
+                <Users :size="42" />
+
+                <strong>
+                  No students found
+                </strong>
+
+                <p>
+                  Add your first student account
+                  to get started.
+                </p>
               </td>
             </tr>
 
-            <tr v-if="students.length === 0">
-              <td colspan="10" class="empty-state">
-                <Users :size="42" />
-                <strong>No students found</strong>
-                <p>Add your first student account to get started.</p>
-              </td>
-            </tr>
           </tbody>
         </table>
       </div>
     </div>
 
+
+    <!-- ==========================================
+         IMPORT STUDENTS MODAL
+    =========================================== -->
     <div
       v-if="showImportModal"
       class="modal-overlay"
       @click.self="closeImportModal"
     >
       <div class="modal-card import-modal">
+
         <div class="modal-header">
           <div>
-            <h2>Import Students</h2>
-            <p>Upload multiple student accounts using an Excel or CSV file.</p>
+            <h2>
+              Import Students
+            </h2>
+
+            <p>
+              Upload multiple student accounts
+              using an Excel or CSV file.
+            </p>
           </div>
-          <button class="close-btn" :disabled="importing" @click="closeImportModal">
+
+          <button
+            class="close-btn"
+            :disabled="importing"
+            @click="closeImportModal"
+          >
             <X :size="20" />
           </button>
         </div>
 
+
+        <!-- IMPORT GUIDE -->
         <div class="import-guide">
+
           <div class="guide-title">
             <CircleAlert :size="18" />
-            <strong>Excel Format Guide</strong>
+
+            <strong>
+              Excel Format Guide
+            </strong>
           </div>
-          <p>Your file must use these exact columns in the first row:</p>
+
+          <p>
+            Your file must use these exact columns
+            in the first row:
+          </p>
+
           <div class="column-preview">
             <span>LRN</span>
             <span>Name</span>
             <span>Sex</span>
             <span>Email</span>
-            <span>Strand</span>
-            <span>Grade</span>
-            <span>Section</span>
           </div>
+
           <ul>
-            <li>Do not rename the column headers.</li>
-            <li>LRN must contain numbers only.</li>
-            <li>Sex must be Male or Female.</li>
-            <li>Strand must match an existing strand in I-SPAS.</li>
-            <li>Grade must be Grade 11 or Grade 12.</li>
-            <li>Section must match an existing section in I-SPAS.</li>
-            <li>Use one student per row and do not add blank rows above the headers.</li>
+            <li>
+              Do not rename the column headers.
+            </li>
+
+            <li>
+              LRN must contain numbers only.
+            </li>
+
+            <li>
+              Sex must be Male or Female.
+            </li>
+
+            <li>
+              Email must contain a valid email address.
+            </li>
+
+            <li>
+              Use one student per row.
+            </li>
+
+            <li>
+              Do not add blank rows above the headers.
+            </li>
+
+            <li>
+              Strand, grade, section, subject, and class
+              are not required in Student Management.
+            </li>
           </ul>
 
+
+          <!-- EXAMPLE -->
           <div class="example-table-wrapper">
+
             <table class="example-table">
               <thead>
                 <tr>
@@ -227,105 +389,216 @@
                   <th>Name</th>
                   <th>Sex</th>
                   <th>Email</th>
-                  <th>Strand</th>
-                  <th>Grade</th>
-                  <th>Section</th>
                 </tr>
               </thead>
+
               <tbody>
                 <tr>
                   <td>123456789001</td>
                   <td>Juan Dela Cruz</td>
                   <td>Male</td>
                   <td>juan@gmail.com</td>
-                  <td>STEM</td>
-                  <td>Grade 12</td>
-                  <td>St. Joseph</td>
                 </tr>
               </tbody>
             </table>
+
           </div>
 
+
+          <!-- GUIDE BUTTONS -->
           <div class="guide-actions">
-            <button type="button" class="guide-btn" @click="downloadTemplate">
+
+            <button
+              type="button"
+              class="guide-btn"
+              @click="downloadTemplate"
+            >
               <Download :size="16" />
               Download CSV Template
             </button>
-            <button type="button" class="guide-btn" @click="copyChatGPTPrompt">
+
+            <button
+              type="button"
+              class="guide-btn"
+              @click="copyChatGPTPrompt"
+            >
               <Copy :size="16" />
-              {{ promptCopied ? 'Prompt Copied!' : 'Copy ChatGPT Prompt' }}
+
+              {{
+                promptCopied
+                  ? 'Prompt Copied!'
+                  : 'Copy ChatGPT Prompt'
+              }}
             </button>
+
           </div>
+
         </div>
 
+
+        <!-- FILE UPLOAD -->
         <div class="file-upload-box">
+
           <FileSpreadsheet :size="40" />
-          <strong>Select Excel File</strong>
-          <span>Accepted: .xlsx, .xls, .csv</span>
+
+          <strong>
+            Select Excel File
+          </strong>
+
+          <span>
+            Accepted: .xlsx, .xls, .csv
+          </span>
+
           <input
             type="file"
             accept=".xlsx,.xls,.csv"
             :disabled="importing"
             @change="handleImportFile"
           />
-          <p v-if="importFile">Selected: {{ importFile.name }}</p>
+
+          <p v-if="importFile">
+            Selected: {{ importFile.name }}
+          </p>
+
         </div>
 
-        <div v-if="importError" class="form-error-message import-message">
+
+        <!-- IMPORT ERROR -->
+        <div
+          v-if="importError"
+          class="form-error-message import-message"
+        >
           <CircleAlert :size="18" />
           <span>{{ importError }}</span>
         </div>
 
-        <div v-if="importResult" class="import-result">
-          <strong>Import Complete</strong>
-          <span>Imported: {{ importResult.imported ?? 0 }}</span>
-          <span>Skipped: {{ importResult.skipped ?? 0 }}</span>
-          <span v-if="importResult.failed !== undefined">Failed: {{ importResult.failed }}</span>
+
+        <!-- IMPORT RESULT -->
+        <div
+          v-if="importResult"
+          class="import-result"
+        >
+          <strong>
+            Import Complete
+          </strong>
+
+          <span>
+            Imported:
+            {{ importResult.imported ?? 0 }}
+          </span>
+
+          <span>
+            Skipped:
+            {{ importResult.skipped ?? 0 }}
+          </span>
+
+          <span
+            v-if="importResult.failed !== undefined"
+          >
+            Failed:
+            {{ importResult.failed }}
+          </span>
         </div>
 
+
+        <!-- IMPORT ACTIONS -->
         <div class="modal-actions">
-          <button type="button" class="cancel-btn" :disabled="importing" @click="closeImportModal">Cancel</button>
-          <button type="button" class="save-btn" :disabled="importing || !importFile" @click="importStudents">
-            <LoaderCircle v-if="importing" :size="17" class="spinner" />
-            <FileSpreadsheet v-else :size="17" />
-            {{ importing ? 'Importing...' : 'Import Students' }}
+
+          <button
+            type="button"
+            class="cancel-btn"
+            :disabled="importing"
+            @click="closeImportModal"
+          >
+            Cancel
           </button>
+
+          <button
+            type="button"
+            class="save-btn"
+            :disabled="importing || !importFile"
+            @click="importStudents"
+          >
+            <LoaderCircle
+              v-if="importing"
+              :size="17"
+              class="spinner"
+            />
+
+            <FileSpreadsheet
+              v-else
+              :size="17"
+            />
+
+            {{
+              importing
+                ? 'Importing...'
+                : 'Import Students'
+            }}
+          </button>
+
         </div>
+
       </div>
     </div>
 
+
+    <!-- ==========================================
+         ADD / EDIT STUDENT MODAL
+    =========================================== -->
     <div
       v-if="showModal"
       class="modal-overlay"
       @click.self="closeModal"
     >
       <div class="modal-card">
+
         <div class="modal-header">
           <div>
+
             <h2>
-              {{ editingStudent ? 'Edit Student' : 'Add Student' }}
+              {{
+                editingStudent
+                  ? 'Edit Student'
+                  : 'Add Student'
+              }}
             </h2>
+
             <p>
               {{
                 editingStudent
-                  ? 'Update the student information.'
-                  : 'Enter the information for the new student.'
+                  ? 'Update the student account information.'
+                  : 'Enter the information for the new student account.'
               }}
             </p>
+
           </div>
 
-          <button class="close-btn" @click="closeModal">
+          <button
+            class="close-btn"
+            :disabled="saving"
+            @click="closeModal"
+          >
             <X :size="20" />
           </button>
+
         </div>
+
 
         <form
           class="modal-form"
           @submit.prevent="saveStudent"
         >
+
+          <!-- LRN + SEX -->
           <div class="form-row">
+
             <div class="form-group">
-              <label>LRN</label>
+
+              <label>
+                LRN
+              </label>
+
               <input
                 v-model="form.lrn"
                 type="text"
@@ -335,23 +608,38 @@
                 :disabled="saving"
                 @input="cleanLRN"
               />
+
               <span
                 v-if="formErrors.lrn"
                 class="field-error"
               >
                 {{ formErrors.lrn }}
               </span>
+
             </div>
 
+
             <div class="form-group">
-              <label>Sex</label>
+
+              <label>
+                Sex
+              </label>
+
               <select
                 v-model="form.sex"
                 :disabled="saving"
               >
-                <option value="">Select Sex</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
+                <option value="">
+                  Select Sex
+                </option>
+
+                <option value="Male">
+                  Male
+                </option>
+
+                <option value="Female">
+                  Female
+                </option>
               </select>
 
               <span
@@ -360,11 +648,19 @@
               >
                 {{ formErrors.sex }}
               </span>
+
             </div>
+
           </div>
 
+
+          <!-- NAME -->
           <div class="form-group">
-            <label>Student Name</label>
+
+            <label>
+              Student Name
+            </label>
+
             <input
               v-model="form.name"
               type="text"
@@ -378,10 +674,17 @@
             >
               {{ formErrors.name }}
             </span>
+
           </div>
 
+
+          <!-- EMAIL -->
           <div class="form-group">
-            <label>Email Address</label>
+
+            <label>
+              Email Address
+            </label>
+
             <input
               v-model="form.email"
               type="email"
@@ -395,71 +698,11 @@
             >
               {{ formErrors.email }}
             </span>
+
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label>Strand</label>
 
-              <select
-                v-model="form.strand_id"
-                :disabled="saving || loadingReferences"
-                @change="handleStrandChange"
-              >
-                <option value="">Select Strand</option>
-
-                <option
-                  v-for="strand in strands"
-                  :key="strand.id"
-                  :value="strand.id"
-                >
-                  {{ strand.name }}
-                </option>
-              </select>
-
-              <span
-                v-if="formErrors.strand_id"
-                class="field-error"
-              >
-                {{ formErrors.strand_id }}
-              </span>
-            </div>
-
-            <div class="form-group">
-              <label>Section</label>
-
-              <select
-                v-model="form.section_id"
-                :disabled="saving || !form.strand_id"
-              >
-                <option value="">Select Section</option>
-
-                <option
-                  v-for="section in filteredSections"
-                  :key="section.id"
-                  :value="section.id"
-                >
-                  {{ section.grade }} - {{ section.section }}
-                </option>
-              </select>
-
-              <span
-                v-if="formErrors.section_id"
-                class="field-error"
-              >
-                {{ formErrors.section_id }}
-              </span>
-            </div>
-          </div>
-
-          <div
-            v-if="form.strand_id && filteredSections.length === 0"
-            class="info-message"
-          >
-            <CircleAlert :size="17" />
-            <span>No sections are available for the selected strand.</span>
-          </div>
-
+          <!-- FORM ERROR -->
           <div
             v-if="formErrorMessage"
             class="form-error-message"
@@ -468,7 +711,10 @@
             <span>{{ formErrorMessage }}</span>
           </div>
 
+
+          <!-- ACTIONS -->
           <div class="modal-actions">
+
             <button
               type="button"
               class="cancel-btn"
@@ -483,6 +729,7 @@
               class="save-btn"
               :disabled="saving"
             >
+
               <LoaderCircle
                 v-if="saving"
                 :size="17"
@@ -501,39 +748,63 @@
                     ? 'Update Student'
                     : 'Add Student'
               }}
+
             </button>
+
           </div>
+
         </form>
+
       </div>
     </div>
 
+
+    <!-- ==========================================
+         DELETE STUDENT MODAL
+    =========================================== -->
     <div
       v-if="studentToDelete"
       class="modal-overlay"
       @click.self="closeDeleteDialog"
     >
       <div class="delete-card">
+
         <div class="delete-icon">
           <Trash2 :size="30" />
         </div>
 
-        <h2>Delete Student?</h2>
+        <h2>
+          Delete Student?
+        </h2>
 
         <p>
           Are you sure you want to delete
-          <strong>{{ studentToDelete.name }}</strong>?
+          <strong>
+            {{ studentToDelete.name }}
+          </strong>?
         </p>
 
         <div class="student-delete-details">
-          <span>LRN: {{ studentToDelete.lrn }}</span>
-          <span>{{ studentToDelete.email }}</span>
+
+          <span>
+            LRN:
+            {{ studentToDelete.lrn }}
+          </span>
+
+          <span>
+            {{ studentToDelete.email }}
+          </span>
+
         </div>
 
         <p class="warning-text">
-          This will permanently remove the student's account.
+          This will permanently remove the
+          student's account.
         </p>
 
+
         <div class="modal-actions">
+
           <button
             class="cancel-btn"
             :disabled="deleting"
@@ -547,6 +818,7 @@
             :disabled="deleting"
             @click="deleteStudent"
           >
+
             <LoaderCircle
               v-if="deleting"
               :size="17"
@@ -558,22 +830,32 @@
               :size="17"
             />
 
-            {{ deleting ? 'Deleting...' : 'Delete Student' }}
+            {{
+              deleting
+                ? 'Deleting...'
+                : 'Delete Student'
+            }}
+
           </button>
+
         </div>
+
       </div>
     </div>
+
   </div>
 </template>
 
+
 <script setup lang="ts">
+
 import {
   computed,
   nextTick,
-  onMounted,
   reactive,
   ref,
-  watch
+  watch,
+  onMounted
 } from 'vue'
 
 import {
@@ -593,18 +875,10 @@ import {
 
 import api from '../../services/api'
 
-interface Strand {
-  id: number
-  name: string
-}
 
-interface Section {
-  id: number
-  grade: string
-  strand_id: number
-  section: string
-  strand?: Strand
-}
+/* ==========================================
+   INTERFACES
+========================================== */
 
 interface Student {
   id: number
@@ -612,117 +886,213 @@ interface Student {
   name: string
   sex: string
   email: string
-  strand_id: number
-  section_id: number
   role: string
   status: string
-  strand?: Strand
-  section?: Section
   created_at?: string
 }
 
-const students = ref<Student[]>([])
-const strands = ref<Strand[]>([])
-const sections = ref<Section[]>([])
 
-const loading = ref(false)
-const loadingReferences = ref(false)
-const saving = ref(false)
-const deleting = ref(false)
-const bulkUpdating = ref(false)
-const importing = ref(false)
-const showImportModal = ref(false)
-const importFile = ref<File | null>(null)
-const importError = ref('')
-const importResult = ref<any>(null)
-const promptCopied = ref(false)
+/* ==========================================
+   STUDENTS
+========================================== */
 
-const showModal = ref(false)
+const students =
+  ref<Student[]>([])
 
-const editingStudent = ref<Student | null>(null)
-const studentToDelete = ref<Student | null>(null)
 
-const successMessage = ref('')
-const errorMessage = ref('')
-const formErrorMessage = ref('')
+/* ==========================================
+   LOADING STATES
+========================================== */
 
-const selectedStudents = ref<number[]>([])
-const selectAllCheckbox = ref<HTMLInputElement | null>(null)
+const loading =
+  ref(false)
+
+const saving =
+  ref(false)
+
+const deleting =
+  ref(false)
+
+const bulkUpdating =
+  ref(false)
+
+const importing =
+  ref(false)
+
+
+/* ==========================================
+   MODALS
+========================================== */
+
+const showModal =
+  ref(false)
+
+const showImportModal =
+  ref(false)
+
+const editingStudent =
+  ref<Student | null>(null)
+
+const studentToDelete =
+  ref<Student | null>(null)
+
+
+/* ==========================================
+   MESSAGES
+========================================== */
+
+const successMessage =
+  ref('')
+
+const errorMessage =
+  ref('')
+
+const formErrorMessage =
+  ref('')
+
+
+/* ==========================================
+   IMPORT
+========================================== */
+
+const importFile =
+  ref<File | null>(null)
+
+const importError =
+  ref('')
+
+const importResult =
+  ref<any>(null)
+
+const promptCopied =
+  ref(false)
+
+
+/* ==========================================
+   BULK SELECTION
+========================================== */
+
+const selectedStudents =
+  ref<number[]>([])
+
+const selectAllCheckbox =
+  ref<HTMLInputElement | null>(null)
+
+
+/* ==========================================
+   FORM
+========================================== */
 
 const form = reactive({
   lrn: '',
   name: '',
   sex: '',
-  email: '',
-  strand_id: '' as number | '',
-  section_id: '' as number | ''
+  email: ''
 })
+
 
 const formErrors = reactive({
   lrn: '',
   name: '',
   sex: '',
-  email: '',
-  strand_id: '',
-  section_id: ''
+  email: ''
 })
 
-const filteredSections = computed(() => {
-  if (!form.strand_id) return []
 
-  return sections.value.filter(
-    section =>
-      Number(section.strand_id) ===
-      Number(form.strand_id)
-  )
-})
+/* ==========================================
+   SELECT ALL COMPUTED
+========================================== */
 
-const allStudentsSelected = computed(() => {
-  return (
-    students.value.length > 0 &&
-    selectedStudents.value.length === students.value.length
-  )
-})
+const allStudentsSelected =
+  computed(() => {
 
-const someStudentsSelected = computed(() => {
-  return (
-    selectedStudents.value.length > 0 &&
-    selectedStudents.value.length < students.value.length
-  )
-})
+    return (
+      students.value.length > 0 &&
+      selectedStudents.value.length ===
+        students.value.length
+    )
+
+  })
+
+
+const someStudentsSelected =
+  computed(() => {
+
+    return (
+      selectedStudents.value.length > 0 &&
+      selectedStudents.value.length <
+        students.value.length
+    )
+
+  })
+
+
+/* ==========================================
+   CHECKBOX INDETERMINATE
+========================================== */
 
 watch(
-  [allStudentsSelected, someStudentsSelected],
+  [
+    allStudentsSelected,
+    someStudentsSelected
+  ],
+
   async () => {
+
     await nextTick()
 
     if (selectAllCheckbox.value) {
+
       selectAllCheckbox.value.indeterminate =
         someStudentsSelected.value
+
     }
+
   },
+
   {
     immediate: true
   }
 )
 
-function getInitials(name: string) {
-  if (!name) return 'S'
+
+/* ==========================================
+   HELPERS
+========================================== */
+
+function getInitials(
+  name: string
+) {
+
+  if (!name) {
+    return 'S'
+  }
 
   return name
     .trim()
     .split(/\s+/)
     .slice(0, 2)
     .map(word =>
-      word.charAt(0).toUpperCase()
+      word
+        .charAt(0)
+        .toUpperCase()
     )
     .join('')
+
 }
 
-function formatDate(date?: string) {
-  if (!date) return 'N/A'
 
-  return new Date(date).toLocaleDateString(
+function formatDate(
+  date?: string
+) {
+
+  if (!date) {
+    return 'N/A'
+  }
+
+  return new Date(
+    date
+  ).toLocaleDateString(
     'en-PH',
     {
       year: 'numeric',
@@ -730,79 +1100,147 @@ function formatDate(date?: string) {
       day: 'numeric'
     }
   )
+
 }
+
 
 function cleanLRN() {
-  form.lrn = form.lrn.replace(/\D/g, '')
+
+  form.lrn =
+    form.lrn.replace(
+      /\D/g,
+      ''
+    )
+
 }
 
+
+/* ==========================================
+   FORM RESET
+========================================== */
+
 function clearFormErrors() {
+
   formErrors.lrn = ''
   formErrors.name = ''
   formErrors.sex = ''
   formErrors.email = ''
-  formErrors.strand_id = ''
-  formErrors.section_id = ''
+
 }
 
+
 function resetForm() {
+
   form.lrn = ''
   form.name = ''
   form.sex = ''
   form.email = ''
-  form.strand_id = ''
-  form.section_id = ''
+
   formErrorMessage.value = ''
+
   clearFormErrors()
+
 }
 
-function showSuccess(message: string) {
-  successMessage.value = message
 
-  window.setTimeout(() => {
-    successMessage.value = ''
-  }, 3500)
+/* ==========================================
+   NOTIFICATIONS
+========================================== */
+
+function showSuccess(
+  message: string
+) {
+
+  successMessage.value =
+    message
+
+  window.setTimeout(
+    () => {
+
+      successMessage.value = ''
+
+    },
+    3500
+  )
+
 }
 
-function showError(message: string) {
-  errorMessage.value = message
 
-  window.setTimeout(() => {
-    errorMessage.value = ''
-  }, 4000)
+function showError(
+  message: string
+) {
+
+  errorMessage.value =
+    message
+
+  window.setTimeout(
+    () => {
+
+      errorMessage.value = ''
+
+    },
+    4000
+  )
+
 }
 
-function toggleSelectAll(event: Event) {
+
+/* ==========================================
+   SELECT ALL
+========================================== */
+
+function toggleSelectAll(
+  event: Event
+) {
+
   const target =
     event.target as HTMLInputElement
 
   selectedStudents.value =
     target.checked
       ? students.value.map(
-          student => student.id
+          student =>
+            student.id
         )
       : []
+
 }
 
+
+/* ==========================================
+   FETCH STUDENTS
+========================================== */
+
 async function fetchStudents() {
+
   loading.value = true
 
   try {
+
     const response =
-      await api.get('/admin/students')
+      await api.get(
+        '/admin/students'
+      )
 
     students.value =
-      Array.isArray(response.data?.data)
+      Array.isArray(
+        response.data?.data
+      )
         ? response.data.data
         : []
 
+
     selectedStudents.value =
-      selectedStudents.value.filter(id =>
-        students.value.some(
-          student => student.id === id
-        )
+      selectedStudents.value.filter(
+        id =>
+          students.value.some(
+            student =>
+              student.id === id
+          )
       )
+
   } catch (error: any) {
+
     console.error(
       'STUDENT FETCH ERROR:',
       error
@@ -812,240 +1250,382 @@ async function fetchStudents() {
       error.response?.data?.message ||
       'Failed to load students.'
     )
+
   } finally {
+
     loading.value = false
+
   }
+
 }
 
-async function fetchReferences() {
-  loadingReferences.value = true
 
-  try {
-    const [
-      strandResponse,
-      sectionResponse
-    ] = await Promise.all([
-      api.get('/admin/strands'),
-      api.get('/admin/sections')
-    ])
+/* ==========================================
+   IMPORT CHATGPT PROMPT
+========================================== */
 
-    strands.value =
-      Array.isArray(
-        strandResponse.data?.data
-      )
-        ? strandResponse.data.data
-        : []
-
-    sections.value =
-      Array.isArray(
-        sectionResponse.data?.data
-      )
-        ? sectionResponse.data.data
-        : []
-  } catch (error: any) {
-    console.error(
-      'REFERENCE FETCH ERROR:',
-      error
-    )
-
-    showError(
-      error.response?.data?.message ||
-      'Failed to load strands or sections.'
-    )
-  } finally {
-    loadingReferences.value = false
-  }
-}
-
-const chatGPTPrompt = `I need to prepare a student list for import into the I-SPAS Student Management System.
+const chatGPTPrompt = `
+I need to prepare a student account list for import into the I-SPAS Student Management System.
 
 Please clean and organize my student data using exactly these Excel columns and this exact order:
-LRN | Name | Sex | Email | Strand | Grade | Section
+
+LRN | Name | Sex | Email
 
 Follow these rules:
+
 - Keep one student per row.
 - LRN must contain numbers only and must not be changed.
 - Name should contain the student's complete name.
 - Sex must only be Male or Female.
 - Email must be a valid email address.
-- Strand must use the correct strand abbreviation, such as STEM, ABM, HUMSS, or the strand provided in my original data.
-- Grade must only be Grade 11 or Grade 12.
-- Section must contain only the section name.
+- Do not add Strand, Grade, Section, Subject, or Class columns.
 - Do not add extra columns.
 - Do not change or invent missing student information.
 - If information is missing or unclear, mark the cell as MISSING instead of guessing.
 - Preserve leading zeros in LRN if there are any.
 - Remove duplicate students only when they have the exact same LRN.
 
-After cleaning the data, create an .xlsx Excel file that is ready to import into I-SPAS. Do not add a title, explanation, merged cells, blank rows, or formatting above the column headers. The first row must immediately contain the required column headers.`
+After cleaning the data, create an .xlsx Excel file that is ready to import into I-SPAS.
+
+Do not add a title, explanation, merged cells, blank rows, or formatting above the column headers.
+
+The first row must immediately contain the required column headers.
+`
+
+
+/* ==========================================
+   IMPORT MODAL
+========================================== */
 
 function openImportModal() {
+
   importFile.value = null
   importError.value = ''
   importResult.value = null
   promptCopied.value = false
+
   showImportModal.value = true
+
 }
+
 
 function closeImportModal() {
-  if (importing.value) return
-  showImportModal.value = false
-  importFile.value = null
-  importError.value = ''
-  importResult.value = null
-}
 
-function handleImportFile(event: Event) {
-  const input = event.target as HTMLInputElement
-  importFile.value = input.files?.[0] || null
-  importError.value = ''
-  importResult.value = null
-}
-
-async function copyChatGPTPrompt() {
-  try {
-    await navigator.clipboard.writeText(chatGPTPrompt)
-    promptCopied.value = true
-    window.setTimeout(() => {
-      promptCopied.value = false
-    }, 2500)
-  } catch {
-    importError.value = 'Unable to copy the prompt. Please allow clipboard access.'
-  }
-}
-
-function downloadTemplate() {
-  const csv = 'LRN,Name,Sex,Email,Strand,Grade,Section\n123456789001,Juan Dela Cruz,Male,juan@gmail.com,STEM,Grade 12,St. Joseph\n'
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = 'I-SPAS_Student_Import_Template.csv'
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
-}
-
-async function importStudents() {
-  if (!importFile.value) {
-    importError.value = 'Please select an Excel or CSV file.'
+  if (importing.value) {
     return
   }
 
-  importing.value = true
+  showImportModal.value = false
+
+  importFile.value = null
   importError.value = ''
   importResult.value = null
 
-  try {
-    const formData = new FormData()
-    formData.append('file', importFile.value)
-
-    const response = await api.post('/admin/students/import', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
-
-    importResult.value = response.data?.data || response.data
-    showSuccess(response.data?.message || 'Students imported successfully.')
-    await fetchStudents()
-  } catch (error: any) {
-    console.error('STUDENT IMPORT ERROR:', error)
-    importError.value = error.response?.data?.message || 'Failed to import students.'
-  } finally {
-    importing.value = false
-  }
 }
+
+
+function handleImportFile(
+  event: Event
+) {
+
+  const input =
+    event.target as HTMLInputElement
+
+  importFile.value =
+    input.files?.[0] || null
+
+  importError.value = ''
+  importResult.value = null
+
+}
+
+
+/* ==========================================
+   COPY CHATGPT PROMPT
+========================================== */
+
+async function copyChatGPTPrompt() {
+
+  try {
+
+    await navigator.clipboard.writeText(
+      chatGPTPrompt
+    )
+
+    promptCopied.value = true
+
+    window.setTimeout(
+      () => {
+
+        promptCopied.value = false
+
+      },
+      2500
+    )
+
+  } catch {
+
+    importError.value =
+      'Unable to copy the prompt. Please allow clipboard access.'
+
+  }
+
+}
+
+
+/* ==========================================
+   DOWNLOAD CSV TEMPLATE
+========================================== */
+
+function downloadTemplate() {
+
+  const csv =
+    'LRN,Name,Sex,Email\n' +
+    '123456789001,Juan Dela Cruz,Male,juan@gmail.com\n'
+
+  const blob =
+    new Blob(
+      [csv],
+      {
+        type:
+          'text/csv;charset=utf-8;'
+      }
+    )
+
+  const url =
+    URL.createObjectURL(blob)
+
+  const link =
+    document.createElement('a')
+
+  link.href = url
+
+  link.download =
+    'I-SPAS_Student_Import_Template.csv'
+
+  document.body.appendChild(
+    link
+  )
+
+  link.click()
+
+  document.body.removeChild(
+    link
+  )
+
+  URL.revokeObjectURL(
+    url
+  )
+
+}
+
+
+/* ==========================================
+   IMPORT STUDENTS
+========================================== */
+
+async function importStudents() {
+
+  if (!importFile.value) {
+
+    importError.value =
+      'Please select an Excel or CSV file.'
+
+    return
+
+  }
+
+
+  importing.value = true
+
+  importError.value = ''
+
+  importResult.value = null
+
+
+  try {
+
+    const formData =
+      new FormData()
+
+    formData.append(
+      'file',
+      importFile.value
+    )
+
+
+    const response =
+      await api.post(
+        '/admin/students/import',
+        formData,
+        {
+          headers: {
+            'Content-Type':
+              'multipart/form-data'
+          }
+        }
+      )
+
+
+    importResult.value =
+      response.data?.data ||
+      response.data
+
+
+    showSuccess(
+      response.data?.message ||
+      'Students imported successfully.'
+    )
+
+
+    await fetchStudents()
+
+  } catch (error: any) {
+
+    console.error(
+      'STUDENT IMPORT ERROR:',
+      error
+    )
+
+    importError.value =
+      error.response?.data?.message ||
+      'Failed to import students.'
+
+  } finally {
+
+    importing.value = false
+
+  }
+
+}
+
+
+/* ==========================================
+   ADD STUDENT
+========================================== */
 
 function openAddModal() {
+
   resetForm()
+
   editingStudent.value = null
+
   showModal.value = true
+
 }
+
+
+/* ==========================================
+   EDIT STUDENT
+========================================== */
 
 function openEditModal(
   student: Student
 ) {
+
   resetForm()
 
-  editingStudent.value = student
+  editingStudent.value =
+    student
 
-  form.lrn = student.lrn
-  form.name = student.name
-  form.sex = student.sex
-  form.email = student.email
-  form.strand_id =
-    student.strand_id
-  form.section_id =
-    student.section_id
+  form.lrn =
+    student.lrn
+
+  form.name =
+    student.name
+
+  form.sex =
+    student.sex
+
+  form.email =
+    student.email
 
   showModal.value = true
+
 }
 
+
+/* ==========================================
+   CLOSE ADD / EDIT MODAL
+========================================== */
+
 function closeModal() {
-  if (saving.value) return
+
+  if (saving.value) {
+    return
+  }
 
   showModal.value = false
+
   editingStudent.value = null
 
   resetForm()
+
 }
 
-function handleStrandChange() {
-  form.section_id = ''
-  formErrors.section_id = ''
-}
+
+/* ==========================================
+   VALIDATION
+========================================== */
 
 function validateForm() {
+
   clearFormErrors()
 
   let valid = true
 
+
   if (!form.lrn.trim()) {
+
     formErrors.lrn =
       'LRN is required.'
 
     valid = false
+
   }
 
+
   if (!form.name.trim()) {
+
     formErrors.name =
       'Student name is required.'
 
     valid = false
+
   }
 
+
   if (!form.sex) {
+
     formErrors.sex =
       'Sex is required.'
 
     valid = false
+
   }
 
+
   if (!form.email.trim()) {
+
     formErrors.email =
       'Email address is required.'
 
     valid = false
+
   }
 
-  if (!form.strand_id) {
-    formErrors.strand_id =
-      'Strand is required.'
-
-    valid = false
-  }
-
-  if (!form.section_id) {
-    formErrors.section_id =
-      'Section is required.'
-
-    valid = false
-  }
 
   return valid
+
 }
 
+
+/* ==========================================
+   SAVE STUDENT
+========================================== */
+
 async function saveStudent() {
+
   if (
     saving.value ||
     !validateForm()
@@ -1053,22 +1633,33 @@ async function saveStudent() {
     return
   }
 
+
   saving.value = true
+
   formErrorMessage.value = ''
 
+
   try {
+
     const payload = {
-      lrn: form.lrn.trim(),
-      name: form.name.trim(),
-      sex: form.sex,
-      email: form.email.trim(),
-      strand_id:
-        Number(form.strand_id),
-      section_id:
-        Number(form.section_id)
+
+      lrn:
+        form.lrn.trim(),
+
+      name:
+        form.name.trim(),
+
+      sex:
+        form.sex,
+
+      email:
+        form.email.trim()
+
     }
 
+
     if (editingStudent.value) {
+
       await api.put(
         `/admin/students/${editingStudent.value.id}`,
         payload
@@ -1077,7 +1668,9 @@ async function saveStudent() {
       showSuccess(
         'Student updated successfully.'
       )
+
     } else {
+
       await api.post(
         '/admin/students',
         payload
@@ -1086,78 +1679,95 @@ async function saveStudent() {
       showSuccess(
         'Student added successfully.'
       )
+
     }
 
+
     showModal.value = false
+
     editingStudent.value = null
 
     resetForm()
 
     await fetchStudents()
+
   } catch (error: any) {
+
     console.error(
       'STUDENT SAVE ERROR:',
       error
     )
 
+
     if (
       error.response?.status === 422
     ) {
+
       const errors =
         error.response?.data?.errors
 
+
       if (errors?.lrn?.[0]) {
+
         formErrors.lrn =
           errors.lrn[0]
+
       }
+
 
       if (errors?.name?.[0]) {
+
         formErrors.name =
           errors.name[0]
+
       }
+
 
       if (errors?.sex?.[0]) {
+
         formErrors.sex =
           errors.sex[0]
+
       }
 
-      if (
-        errors?.email?.[0]
-      ) {
+
+      if (errors?.email?.[0]) {
+
         formErrors.email =
           errors.email[0]
+
       }
 
-      if (
-        errors?.strand_id?.[0]
-      ) {
-        formErrors.strand_id =
-          errors.strand_id[0]
-      }
-
-      if (
-        errors?.section_id?.[0]
-      ) {
-        formErrors.section_id =
-          errors.section_id[0]
-      }
 
       formErrorMessage.value =
         error.response?.data?.message ||
         'Please check the information you entered.'
+
     } else {
+
       formErrorMessage.value =
         error.response?.data?.message ||
         'Failed to save student.'
+
     }
+
   } finally {
+
     saving.value = false
+
   }
+
 }
+
+
+/* ==========================================
+   BULK STATUS UPDATE
+========================================== */
 
 async function bulkUpdateStatus(
   status: 'active' | 'inactive'
 ) {
+
   if (
     !selectedStudents.value.length ||
     bulkUpdating.value
@@ -1165,20 +1775,26 @@ async function bulkUpdateStatus(
     return
   }
 
+
   bulkUpdating.value = true
 
+
   try {
+
     const count =
       selectedStudents.value.length
+
 
     await api.put(
       '/admin/students/bulk-status',
       {
         student_ids:
           selectedStudents.value,
+
         status
       }
     )
+
 
     showSuccess(
       `${count} ${
@@ -1188,37 +1804,65 @@ async function bulkUpdateStatus(
       } marked as ${status}.`
     )
 
+
     selectedStudents.value = []
 
     await fetchStudents()
+
   } catch (error: any) {
+
     console.error(
       'BULK STATUS ERROR:',
       error
     )
 
+
     showError(
       error.response?.data?.message ||
       'Failed to update student status.'
     )
+
   } finally {
+
     bulkUpdating.value = false
+
   }
+
 }
+
+
+/* ==========================================
+   DELETE DIALOG
+========================================== */
 
 function openDeleteDialog(
   student: Student
 ) {
-  studentToDelete.value = student
+
+  studentToDelete.value =
+    student
+
 }
+
 
 function closeDeleteDialog() {
-  if (deleting.value) return
 
-  studentToDelete.value = null
+  if (deleting.value) {
+    return
+  }
+
+  studentToDelete.value =
+    null
+
 }
 
+
+/* ==========================================
+   DELETE STUDENT
+========================================== */
+
 async function deleteStudent() {
+
   if (
     !studentToDelete.value ||
     deleting.value
@@ -1226,12 +1870,16 @@ async function deleteStudent() {
     return
   }
 
+
   deleting.value = true
 
+
   try {
+
     await api.delete(
       `/admin/students/${studentToDelete.value.id}`
     )
+
 
     selectedStudents.value =
       selectedStudents.value.filter(
@@ -1240,34 +1888,51 @@ async function deleteStudent() {
           studentToDelete.value?.id
       )
 
+
     studentToDelete.value = null
+
 
     showSuccess(
       'Student deleted successfully.'
     )
 
+
     await fetchStudents()
+
   } catch (error: any) {
+
     console.error(
       'STUDENT DELETE ERROR:',
       error
     )
 
+
     showError(
       error.response?.data?.message ||
       'Failed to delete student.'
     )
+
   } finally {
+
     deleting.value = false
+
   }
+
 }
 
-onMounted(async () => {
-  await Promise.all([
-    fetchStudents(),
-    fetchReferences()
-  ])
-})
+
+/* ==========================================
+   ON MOUNT
+========================================== */
+
+onMounted(
+  async () => {
+
+    await fetchStudents()
+
+  }
+)
+
 </script>
 
 <style scoped>
@@ -1430,7 +2095,7 @@ onMounted(async () => {
 
 table {
   width: 100%;
-  min-width: 1220px;
+  min-width: 1050px;
   border-collapse: collapse;
 }
 
@@ -1509,6 +2174,16 @@ tbody tr:hover {
 
 .student-info strong {
   font-size: 11px;
+}
+.number-column,
+.number-cell {
+  width: 55px;
+  text-align: center;
+}
+
+.number-cell {
+  color: #64748b;
+  font-weight: 700;
 }
 
 .strand-badge {

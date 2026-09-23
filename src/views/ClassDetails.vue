@@ -345,157 +345,66 @@
       <!-- ==========================================
            STUDENTS
       =========================================== -->
-      <div
-        v-if="activeTab === 'students'"
-        class="students-content"
-      >
-
+      <div v-if="activeTab === 'students'" class="students-content">
         <div class="students-header">
           <div>
-            <h2>
-              Students
-            </h2>
-
-            <p>
-              Official students enrolled in this
-              class.
-            </p>
+            <h2>Students</h2>
+            <p>Official students enrolled in this class.</p>
           </div>
-
-          <div class="student-count">
-            <Users :size="16" />
-            <strong>
-              {{ students.length }}
-            </strong>
-            Students
-          </div>
+          <button type="button" class="add-student-btn" @click="openAddStudentModal">
+            <Plus :size="16" />
+            Add Student
+          </button>
         </div>
 
         <div class="student-toolbar">
           <div class="student-search">
             <Search :size="17" />
-
-            <input
-              v-model="studentSearch"
-              type="text"
-              placeholder="Search student..."
-            >
+            <input v-model="studentSearch" type="text" placeholder="Search student...">
           </div>
         </div>
 
-        <div
-          v-if="studentsLoading"
-          class="students-loading"
-        >
-          <LoaderCircle
-            :size="25"
-            class="spinner"
-          />
-
-          <span>
-            Loading students...
-          </span>
+        <div v-if="studentsLoading" class="students-loading">
+          <LoaderCircle :size="25" class="spinner" />
+          <span>Loading students...</span>
         </div>
 
-        <div
-          v-else-if="filteredStudents.length"
-          class="student-list-card"
-        >
-
+        <div v-else-if="filteredStudents.length" class="student-list-card">
           <div class="student-table-header">
             <span>#</span>
             <span>Student</span>
             <span>LRN</span>
             <span>Status</span>
+            <span>Actions</span>
           </div>
 
-          <div
-            v-for="(
-              enrollment,
-              index
-            ) in filteredStudents"
-            :key="enrollment.id"
-            class="student-row"
-          >
-            <span class="student-number">
-              {{ index + 1 }}
-            </span>
-
+          <div v-for="(enrollment,index) in filteredStudents" :key="enrollment.id" class="student-row">
+            <span class="student-number">{{ index + 1 }}</span>
             <div class="student-profile">
-              <div class="student-avatar">
-                {{
-                  getStudentName(enrollment)
-                    .charAt(0)
-                    .toUpperCase()
-                }}
-              </div>
-
+              <div class="student-avatar">{{ getStudentName(enrollment).charAt(0).toUpperCase() }}</div>
               <div>
-                <strong>
-                  {{
-                    getStudentName(
-                      enrollment
-                    )
-                  }}
-                </strong>
-
-                <span>
-                  {{
-                    enrollment.student
-                      ?.email ||
-                    'No email'
-                  }}
-                </span>
+                <strong>{{ getStudentName(enrollment) }}</strong>
+                <span>{{ enrollment.student?.email || 'No email' }}</span>
               </div>
             </div>
-
-            <span class="student-lrn">
-              {{
-                enrollment.student?.lrn ||
-                'No LRN'
-              }}
+            <span class="student-lrn">{{ enrollment.student?.lrn || 'No LRN' }}</span>
+            <span class="student-status" :class="enrollment.student?.status || 'active'">
+              {{ enrollment.student?.status || 'active' }}
             </span>
-
-            <span
-              class="student-status"
-              :class="
-                enrollment.student?.status ||
-                'active'
-              "
-            >
-              {{
-                enrollment.student?.status ||
-                'active'
-              }}
-            </span>
+            <div class="student-actions">
+              <button type="button" class="remove-student-btn" @click="openRemoveStudent(enrollment)">
+                <Trash2 :size="13" />
+                Remove
+              </button>
+            </div>
           </div>
         </div>
 
-        <div
-          v-else
-          class="students-empty"
-        >
-          <div class="students-empty-icon">
-            <Users :size="36" />
-          </div>
-
-          <h3>
-            {{
-              studentSearch
-                ? 'No students found'
-                : 'No students enrolled'
-            }}
-          </h3>
-
-          <p>
-            {{
-              studentSearch
-                ? 'Try another student name.'
-                : 'Students assigned to this class will appear here automatically.'
-            }}
-          </p>
+        <div v-else class="students-empty">
+          <div class="students-empty-icon"><Users :size="36" /></div>
+          <h3>{{ studentSearch ? 'No students found' : 'No students enrolled' }}</h3>
+          <p>{{ studentSearch ? 'Try another student name or LRN.' : 'Add official students to this class.' }}</p>
         </div>
-
       </div>
 
       <!-- ==========================================
@@ -559,240 +468,176 @@
           </span>
         </div>
 
-        <!-- ASSESSMENT LIST -->
+        <!-- ASSESSMENT TABLE -->
         <div
           v-else-if="assessments.length"
-          class="assessment-list"
+          class="assessment-table-card"
         >
-          <div
-            v-for="assessment in assessments"
-            :key="assessment.id"
-            class="assessment-card"
-          >
+          <div class="assessment-table-scroll">
+            <table class="assessment-table">
+              <thead>
+                <tr>
+                  <th class="number-col">#</th>
+                  <th>Assessment</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Duration</th>
+                  <th>Questions</th>
+                  <th>Passing</th>
+                  <th>Created</th>
+                  <th class="actions-col">Actions</th>
+                </tr>
+              </thead>
 
-            <!-- TOP -->
-            <div class="assessment-card-top">
-
-              <div class="assessment-title-wrap">
-
-                <div class="assessment-badges">
-
-                  <span
-                    class="assessment-kind"
-                    :class="
-                      assessment.assessment_type
-                    "
-                  >
-                    {{
-                      assessment.assessment_type ===
-                        'quiz'
-                        ? 'Quiz'
-                        : 'Examination'
-                    }}
-                  </span>
-
-                  <span
-                    class="status-badge"
-                    :class="
-                      normalizeStatus(
-                        assessment.status
-                      )
-                    "
-                  >
-                    {{
-                      statusLabel(
-                        assessment.status
-                      )
-                    }}
-                  </span>
-
-                </div>
-
-                <h3>
-                  {{ assessment.title }}
-                </h3>
-
-                <p
-                  v-if="assessment.description"
+              <tbody>
+                <tr
+                  v-for="(assessment, index) in assessments"
+                  :key="assessment.id"
                 >
-                  {{ assessment.description }}
-                </p>
-              </div>
+                  <td class="assessment-number">
+                    {{ index + 1 }}
+                  </td>
 
-              <!-- ACTION BUTTONS -->
-              <div class="assessment-actions">
+                  <td>
+                    <div class="assessment-table-title">
+                      <strong>{{ assessment.title }}</strong>
+                    </div>
+                  </td>
 
-                <!-- VIEW -->
-                <button
-                  type="button"
-                  class="assessment-action-btn view"
-                  title="View assessment"
-                  :disabled="
-                    viewingAssessmentLoading
-                  "
-                  @click="
-                    viewAssessment(
-                      assessment
-                    )
-                  "
-                >
-                  <Eye :size="14" />
-                  View
-                </button>
+                  <td>
+                    <span
+                      class="assessment-kind"
+                      :class="assessment.assessment_type"
+                    >
+                      {{
+                        assessment.assessment_type === 'quiz'
+                          ? 'Quiz'
+                          : 'Examination'
+                      }}
+                    </span>
+                  </td>
 
-                <!-- EDIT -->
-                <button
-                  v-if="
-                    normalizeStatus(
-                      assessment.status
-                    ) === 'draft'
-                  "
-                  type="button"
-                  class="assessment-action-btn edit"
-                  title="Edit assessment"
-                  @click="
-                    editAssessment(
-                      assessment
-                    )
-                  "
-                >
-                  <Pencil :size="14" />
-                  Edit
-                </button>
+                  <td>
+                    <span
+                      class="status-badge"
+                      :class="normalizeStatus(assessment.status)"
+                    >
+                      {{ statusLabel(assessment.status) }}
+                    </span>
+                  </td>
 
-                <!-- PUBLISH -->
-                <button
-                  v-if="normalizeStatus(assessment.status) === 'draft'"
-                  type="button"
-                  class="assessment-action-btn publish"
-                  title="Publish assessment"
-                  :disabled="publishingAssessmentId === assessment.id"
-                  @click="publishAssessment(assessment)"
-                >
-                  <ClipboardList :size="14" />
-                  {{ publishingAssessmentId === assessment.id ? 'Publishing...' : 'Publish' }}
-                </button>
+                  <td>{{ assessment.duration }} min</td>
 
-                <!-- START EXAM -->
-                <button
-                  v-else-if="normalizeStatus(assessment.status) === 'published'"
-                  type="button"
-                  class="assessment-action-btn start"
-                  title="Open faculty lobby"
-                  @click="startAssessment(assessment)"
-                >
-                  <Play :size="14" />
-                  Start Exam
-                </button>
-
-                <!-- MONITOR -->
-                <button
-                  v-else-if="
-                    normalizeStatus(
-                      assessment.status
-                    ) === 'started'
-                  "
-                  type="button"
-                  class="assessment-action-btn monitor"
-                  title="Open live monitoring"
-                  @click="
-                    monitorAssessment(
-                      assessment
-                    )
-                  "
-                >
-                  <Activity :size="14" />
-                  Monitor
-                </button>
-
-                <!-- START AGAIN -->
-                <button
-                  v-if="normalizeStatus(assessment.status) === 'finished'"
-                  type="button"
-                  class="assessment-action-btn restart"
-                  title="Start this assessment again"
-                  :disabled="restartingAssessmentId === assessment.id"
-                  @click="startAgainAssessment(assessment)"
-                >
-                  <RotateCcw :size="14" />
-                  {{ restartingAssessmentId === assessment.id ? 'Preparing...' : 'Start Again' }}
-                </button>
-
-                <!-- DELETE -->
-                <button
-                  v-if="
-                    normalizeStatus(assessment.status) === 'draft' ||
-                    normalizeStatus(assessment.status) === 'finished'
-                  "
-                  type="button"
-                  class="assessment-action-btn delete"
-                  title="Delete assessment"
-                  @click="
-                    openDeleteAssessment(
-                      assessment
-                    )
-                  "
-                >
-                  <Trash2 :size="14" />
-                  Delete
-                </button>
-
-              </div>
-            </div>
-
-            <!-- INFO -->
-            <div class="assessment-info-grid">
-
-              <div class="assessment-info-item">
-                <Clock3 :size="15" />
-                <div>
-                  <span>Duration</span>
-                  <strong>
-                    {{ assessment.duration }}
-                    Minutes
-                  </strong>
-                </div>
-              </div>
-
-              <div class="assessment-info-item">
-                <ListChecks :size="15" />
-                <div>
-                  <span>Questions</span>
-                  <strong>
+                  <td>
                     {{
                       assessment.questions_count ??
                       assessment.questions?.length ??
                       0
                     }}
-                  </strong>
-                </div>
-              </div>
+                  </td>
 
-              <div class="assessment-info-item">
-                <Target :size="15" />
-                <div>
-                  <span>Passing</span>
-                  <strong>
-                    {{ assessment.passing }}%
-                  </strong>
-                </div>
-              </div>
+                  <td>{{ assessment.passing }}%</td>
 
-              <div class="assessment-info-item">
-                <CalendarDays :size="15" />
-                <div>
-                  <span>Created</span>
-                  <strong>
-                    {{
-                      formatDate(
-                        assessment.created_at
-                      )
-                    }}
-                  </strong>
-                </div>
-              </div>
+                  <td>
+                    {{ formatDate(assessment.created_at) }}
+                  </td>
 
-            </div>
+                  <td>
+                    <div class="assessment-table-actions">
+                      <button
+                        type="button"
+                        class="assessment-action-btn view"
+                        title="View assessment and student participation"
+                        :disabled="viewingAssessmentLoading"
+                        @click="viewAssessment(assessment)"
+                      >
+                        <Eye :size="14" />
+                        View
+                      </button>
+
+                      <button
+                        v-if="normalizeStatus(assessment.status) === 'draft'"
+                        type="button"
+                        class="assessment-action-btn edit"
+                        title="Edit assessment"
+                        @click="editAssessment(assessment)"
+                      >
+                        <Pencil :size="14" />
+                        Edit
+                      </button>
+
+                      <button
+                        v-if="normalizeStatus(assessment.status) === 'draft'"
+                        type="button"
+                        class="assessment-action-btn publish"
+                        title="Publish assessment"
+                        :disabled="publishingAssessmentId === assessment.id"
+                        @click="publishAssessment(assessment)"
+                      >
+                        <ClipboardList :size="14" />
+                        {{
+                          publishingAssessmentId === assessment.id
+                            ? 'Publishing...'
+                            : 'Publish'
+                        }}
+                      </button>
+
+                      <button
+                        v-else-if="normalizeStatus(assessment.status) === 'published'"
+                        type="button"
+                        class="assessment-action-btn start"
+                        title="Open faculty lobby"
+                        @click="startAssessment(assessment)"
+                      >
+                        <Play :size="14" />
+                        Start
+                      </button>
+
+                      <button
+                        v-else-if="normalizeStatus(assessment.status) === 'started'"
+                        type="button"
+                        class="assessment-action-btn monitor"
+                        title="Open live monitoring"
+                        @click="monitorAssessment(assessment)"
+                      >
+                        <Activity :size="14" />
+                        Monitor
+                      </button>
+
+                      <button
+                        v-if="normalizeStatus(assessment.status) === 'finished'"
+                        type="button"
+                        class="assessment-action-btn restart"
+                        title="Start this assessment again"
+                        :disabled="restartingAssessmentId === assessment.id"
+                        @click="startAgainAssessment(assessment)"
+                      >
+                        <RotateCcw :size="14" />
+                        {{
+                          restartingAssessmentId === assessment.id
+                            ? 'Preparing...'
+                            : 'Start Again'
+                        }}
+                      </button>
+
+                      <button
+                        v-if="
+                          normalizeStatus(assessment.status) === 'draft' ||
+                          normalizeStatus(assessment.status) === 'finished'
+                        "
+                        type="button"
+                        class="assessment-action-btn delete"
+                        title="Delete assessment"
+                        @click="openDeleteAssessment(assessment)"
+                      >
+                        <Trash2 :size="14" />
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -827,6 +672,123 @@
       </div>
 
     </template>
+
+    <!-- ==========================================
+         ADD STUDENT MODAL
+    =========================================== -->
+    <div v-if="showAddStudentModal" class="modal-overlay" @click.self="closeAddStudentModal">
+      <div class="add-student-modal">
+        <div class="add-student-modal-header">
+          <div>
+            <h2>Add Students</h2>
+            <p>Enroll official student accounts into this class.</p>
+          </div>
+          <button type="button" class="assessment-view-close" @click="closeAddStudentModal">
+            <X :size="18" />
+          </button>
+        </div>
+
+        <div class="add-student-tabs">
+          <button type="button" :class="{ active: addStudentTab === 'individual' }" @click="addStudentTab = 'individual'">
+            <UserPlus :size="15" />
+            Add Individually
+          </button>
+          <button type="button" :class="{ active: addStudentTab === 'import' }" @click="addStudentTab = 'import'">
+            <FileSpreadsheet :size="15" />
+            Import CSV
+          </button>
+        </div>
+
+        <div v-if="addStudentTab === 'individual'" class="individual-student-section">
+          <div class="available-student-search">
+            <Search :size="16" />
+            <input v-model="availableStudentSearch" type="text" placeholder="Search by student name, LRN or email...">
+          </div>
+
+          <div v-if="availableStudentsLoading" class="available-students-state">
+            <LoaderCircle :size="20" class="spinner" />
+            Loading official students...
+          </div>
+
+          <div v-else-if="filteredAvailableStudents.length" class="available-students-list">
+            <div v-for="student in filteredAvailableStudents" :key="student.id" class="available-student-row">
+              <div class="available-student-profile">
+                <div class="student-avatar">{{ student.name.charAt(0).toUpperCase() }}</div>
+                <div>
+                  <strong>{{ student.name }}</strong>
+                  <span>LRN: {{ student.lrn || 'No LRN' }} • {{ student.email || 'No email' }}</span>
+                </div>
+              </div>
+              <button type="button" class="enroll-student-btn" :disabled="addingStudentId === student.id" @click="enrollStudent(student)">
+                <LoaderCircle v-if="addingStudentId === student.id" :size="14" class="spinner" />
+                <Plus v-else :size="14" />
+                {{ addingStudentId === student.id ? 'Adding...' : 'Add' }}
+              </button>
+            </div>
+          </div>
+
+          <div v-else class="available-students-empty">
+            <Users :size="30" />
+            <strong>No available students</strong>
+            <span>{{ availableStudentSearch ? 'No student matches your search.' : 'All active students may already be enrolled.' }}</span>
+          </div>
+        </div>
+
+        <div v-else class="student-import-section">
+          <div class="import-info">
+            <FileSpreadsheet :size="25" />
+            <div>
+              <strong>Import Students from CSV</strong>
+              <span>The file must contain an LRN column. Existing official accounts will be enrolled.</span>
+            </div>
+          </div>
+
+          <label class="student-file-upload">
+            <input type="file" accept=".csv,text/csv" @change="handleStudentFile">
+            <Upload :size="21" />
+            <strong>{{ selectedStudentFile ? selectedStudentFile.name : 'Choose CSV file' }}</strong>
+            <span>{{ selectedStudentFile ? 'Ready to import' : 'Click to select a CSV file' }}</span>
+          </label>
+
+          <div v-if="importStudentResult" class="student-import-result">
+            <div><span>Added</span><strong>{{ importStudentResult.added }}</strong></div>
+            <div><span>Already Enrolled</span><strong>{{ importStudentResult.already_enrolled }}</strong></div>
+            <div><span>Not Found</span><strong>{{ importStudentResult.not_found }}</strong></div>
+            <div><span>Inactive</span><strong>{{ importStudentResult.inactive }}</strong></div>
+          </div>
+
+          <button type="button" class="import-students-btn" :disabled="!selectedStudentFile || importingStudents" @click="importStudents">
+            <LoaderCircle v-if="importingStudents" :size="15" class="spinner" />
+            <Upload v-else :size="15" />
+            {{ importingStudents ? 'Importing...' : 'Import Students' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==========================================
+         REMOVE STUDENT MODAL
+    =========================================== -->
+    <div v-if="studentToRemove" class="modal-overlay" @click.self="closeRemoveStudent">
+      <div class="remove-student-modal">
+        <div class="remove-student-icon">
+          <Trash2 :size="27" />
+        </div>
+        <h2>Remove Student?</h2>
+        <p>
+          Remove <strong>{{ getStudentName(studentToRemove) }}</strong> from this class?
+          The student's account will not be deleted.
+        </p>
+        <div class="modal-actions">
+          <button type="button" class="cancel-btn" :disabled="removingStudent" @click="closeRemoveStudent">Cancel</button>
+          <button type="button" class="confirm-remove-student" :disabled="removingStudent" @click="confirmRemoveStudent">
+            <LoaderCircle v-if="removingStudent" :size="15" class="spinner" />
+            <Trash2 v-else :size="15" />
+            {{ removingStudent ? 'Removing...' : 'Remove' }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- ==========================================
          VIEW ASSESSMENT MODAL
@@ -917,6 +879,92 @@
             </strong>
           </div>
 
+        </div>
+
+        <div class="assessment-participation">
+          <div class="participation-heading">
+            <div>
+              <h3>Student Participation</h3>
+              <p>
+                Submitted exam sessions are counted as Taken.
+              </p>
+            </div>
+          </div>
+
+          <div class="participation-stats">
+            <div class="participation-stat">
+              <span>Total Students</span>
+              <strong>{{ students.length }}</strong>
+            </div>
+
+            <div class="participation-stat taken">
+              <span>Taken</span>
+              <strong>{{ takenStudentsCount }}</strong>
+            </div>
+
+            <div class="participation-stat remaining">
+              <span>Remaining</span>
+              <strong>{{ remainingStudentsCount }}</strong>
+            </div>
+          </div>
+
+          <div
+            v-if="participationLoading"
+            class="participation-loading"
+          >
+            <LoaderCircle :size="18" class="spinner" />
+            Loading student participation...
+          </div>
+
+          <div
+            v-else-if="participationError"
+            class="participation-error"
+          >
+            {{ participationError }}
+          </div>
+
+          <div
+            v-else
+            class="participation-table-scroll"
+          >
+            <table class="participation-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Student</th>
+                  <th>LRN</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr
+                  v-for="(enrollment, index) in assessmentStudentParticipation"
+                  :key="enrollment.id"
+                >
+                  <td>{{ index + 1 }}</td>
+                  <td>
+                    <strong>{{ getStudentName(enrollment) }}</strong>
+                  </td>
+                  <td>
+                    {{ enrollment.student?.lrn || 'N/A' }}
+                  </td>
+                  <td>
+                    <span
+                      class="participation-status"
+                      :class="hasStudentTaken(enrollment) ? 'taken' : 'remaining'"
+                    >
+                      {{
+                        hasStudentTaken(enrollment)
+                          ? 'Taken'
+                          : 'Not Taken'
+                      }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <div class="assessment-question-list">
@@ -1193,12 +1241,11 @@ import {
   CalendarDays,
   CircleAlert,
   ClipboardList,
-  Clock3,
   Eye,
+  FileSpreadsheet,
   GraduationCap,
   Layers3,
   LayoutDashboard,
-  ListChecks,
   LoaderCircle,
   Network,
   Pencil,
@@ -1207,8 +1254,9 @@ import {
   RotateCcw,
   School,
   Search,
-  Target,
   Trash2,
+  Upload,
+  UserPlus,
   Users,
   UsersRound,
   X
@@ -1322,6 +1370,16 @@ interface Assessment {
   created_at?: string | null
 }
 
+interface ExamResultSession {
+  id?: number
+  exam_id?: number
+  student_name?: string | null
+  status?: string | null
+  submitted_at?: string | null
+  score?: number | null
+  percentage?: number | null
+}
+
 // ==========================================
 // ROUTER
 // ==========================================
@@ -1376,6 +1434,23 @@ const activeTab =
 const studentSearch =
   ref('')
 
+const showAddStudentModal = ref(false)
+const addStudentTab = ref<'individual' | 'import'>('individual')
+const availableStudents = ref<StudentUser[]>([])
+const availableStudentsLoading = ref(false)
+const availableStudentSearch = ref('')
+const addingStudentId = ref<number | null>(null)
+const selectedStudentFile = ref<File | null>(null)
+const importingStudents = ref(false)
+const importStudentResult = ref<{
+  added: number
+  already_enrolled: number
+  not_found: number
+  inactive: number
+} | null>(null)
+const studentToRemove = ref<ClassStudent | null>(null)
+const removingStudent = ref(false)
+
 // ==========================================
 // VIEW ASSESSMENT STATE
 // ==========================================
@@ -1390,6 +1465,15 @@ const viewingAssessment =
 
 const viewingAssessmentLoading =
   ref(false)
+
+const assessmentResults =
+  ref<ExamResultSession[]>([])
+
+const participationLoading =
+  ref(false)
+
+const participationError =
+  ref('')
 
 // ==========================================
 // DELETE ASSESSMENT STATE
@@ -1457,6 +1541,97 @@ const filteredStudents =
       }
     )
   })
+
+const filteredAvailableStudents = computed(() => {
+  const search = availableStudentSearch.value.trim().toLowerCase()
+
+  if (!search) return availableStudents.value
+
+  return availableStudents.value.filter(student => {
+    const name = String(student.name || '').toLowerCase()
+    const lrn = String(student.lrn || '').toLowerCase()
+    const email = String(student.email || '').toLowerCase()
+
+    return name.includes(search) || lrn.includes(search) || email.includes(search)
+  })
+})
+
+// ==========================================
+// ASSESSMENT PARTICIPATION
+// ==========================================
+
+function normalizeStudentName(
+  value?: string | null
+): string {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+}
+
+const submittedStudentNames =
+  computed(() => {
+    const names = new Set<string>()
+
+    assessmentResults.value
+      .filter(result =>
+        !result.status ||
+        String(result.status)
+          .toLowerCase() === 'submitted'
+      )
+      .forEach(result => {
+        const name =
+          normalizeStudentName(
+            result.student_name
+          )
+
+        if (name) {
+          names.add(name)
+        }
+      })
+
+    return names
+  })
+
+function hasStudentTaken(
+  enrollment: ClassStudent
+): boolean {
+  const originalStudentName =
+    enrollment.student?.name ||
+    enrollment.student_name ||
+    ''
+
+  return submittedStudentNames.value.has(
+    normalizeStudentName(
+      originalStudentName
+    )
+  )
+}
+
+const assessmentStudentParticipation =
+  computed(() =>
+    [...students.value].sort((a, b) =>
+      getStudentName(a).localeCompare(
+        getStudentName(b)
+      )
+    )
+  )
+
+const takenStudentsCount =
+  computed(() =>
+    students.value.filter(
+      hasStudentTaken
+    ).length
+  )
+
+const remainingStudentsCount =
+  computed(() =>
+    Math.max(
+      students.value.length -
+        takenStudentsCount.value,
+      0
+    )
+  )
 
 // ==========================================
 // HELPERS
@@ -1627,6 +1802,114 @@ async function fetchStudents() {
 }
 
 // ==========================================
+// STUDENT MANAGEMENT
+// ==========================================
+
+async function fetchAvailableStudents() {
+  availableStudentsLoading.value = true
+  try {
+    const response = await api.get(`/faculty/classes/${classId.value}/available-students`)
+    availableStudents.value = Array.isArray(response.data?.data) ? response.data.data : []
+  } catch (error: any) {
+    console.error('AVAILABLE STUDENTS ERROR:', error)
+    availableStudents.value = []
+    alert(error.response?.data?.message || 'Failed to load available students.')
+  } finally {
+    availableStudentsLoading.value = false
+  }
+}
+
+async function openAddStudentModal() {
+  showAddStudentModal.value = true
+  addStudentTab.value = 'individual'
+  availableStudentSearch.value = ''
+  selectedStudentFile.value = null
+  importStudentResult.value = null
+  await fetchAvailableStudents()
+}
+
+function closeAddStudentModal() {
+  if (addingStudentId.value !== null || importingStudents.value) return
+  showAddStudentModal.value = false
+  availableStudentSearch.value = ''
+  selectedStudentFile.value = null
+  importStudentResult.value = null
+}
+
+async function enrollStudent(student: StudentUser) {
+  if (addingStudentId.value !== null) return
+  addingStudentId.value = student.id
+  try {
+    const response = await api.post(`/faculty/classes/${classId.value}/students`, {
+      student_id: student.id
+    })
+    alert(response.data?.message || 'Student enrolled successfully.')
+    await Promise.all([fetchStudents(), fetchAvailableStudents(), fetchClass()])
+  } catch (error: any) {
+    console.error('ENROLL STUDENT ERROR:', error)
+    alert(error.response?.data?.message || 'Failed to enroll student.')
+  } finally {
+    addingStudentId.value = null
+  }
+}
+
+function handleStudentFile(event: Event) {
+  const input = event.target as HTMLInputElement
+  selectedStudentFile.value = input.files?.[0] || null
+  importStudentResult.value = null
+}
+
+async function importStudents() {
+  if (!selectedStudentFile.value || importingStudents.value) return
+  importingStudents.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', selectedStudentFile.value)
+    const response = await api.post(
+      `/faculty/classes/${classId.value}/students/import`,
+      formData
+    )
+    importStudentResult.value = response.data?.data || {
+      added: 0,
+      already_enrolled: 0,
+      not_found: 0,
+      inactive: 0
+    }
+    selectedStudentFile.value = null
+    await Promise.all([fetchStudents(), fetchAvailableStudents(), fetchClass()])
+  } catch (error: any) {
+    console.error('IMPORT STUDENTS ERROR:', error)
+    alert(error.response?.data?.message || 'Failed to import students.')
+  } finally {
+    importingStudents.value = false
+  }
+}
+
+function openRemoveStudent(enrollment: ClassStudent) {
+  studentToRemove.value = enrollment
+}
+
+function closeRemoveStudent() {
+  if (removingStudent.value) return
+  studentToRemove.value = null
+}
+
+async function confirmRemoveStudent() {
+  if (!studentToRemove.value || removingStudent.value) return
+  removingStudent.value = true
+  try {
+    await api.delete(`/faculty/classes/${classId.value}/students/${studentToRemove.value.id}`)
+    studentToRemove.value = null
+    await Promise.all([fetchStudents(), fetchClass()])
+  } catch (error: any) {
+    console.error('REMOVE STUDENT ERROR:', error)
+    alert(error.response?.data?.message || 'Failed to remove student.')
+  } finally {
+    removingStudent.value = false
+  }
+}
+
+// ==========================================
 // FETCH ASSESSMENTS
 // ==========================================
 
@@ -1751,24 +2034,86 @@ async function viewAssessment(
   viewingAssessmentLoading.value =
     true
 
+  participationLoading.value =
+    true
+
+  participationError.value =
+    ''
+
+  assessmentResults.value = []
+
   try {
-    const response =
+    const assessmentResponse =
       await api.get(
         `/exams/${assessment.id}`
       )
 
     viewingAssessment.value =
-      response.data?.data ??
+      assessmentResponse.data?.data ??
       assessment
 
     showAssessmentView.value =
       true
+
+    try {
+      const resultsResponse =
+        await api.get(
+          `/faculty/exam-results/${assessment.id}`
+        )
+
+      const payload =
+        resultsResponse.data?.data
+
+      const rows =
+        Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.results)
+            ? payload.results
+            : Array.isArray(resultsResponse.data?.results)
+              ? resultsResponse.data.results
+              : []
+
+      assessmentResults.value =
+        rows.filter(
+          (result: ExamResultSession) => {
+            const status =
+              String(result.status || '')
+                .trim()
+                .toLowerCase()
+
+            return Boolean(result.submitted_at) ||
+              !status ||
+              ['submitted', 'completed', 'finished'].includes(status)
+          }
+        )
+    }
+    catch (resultError: any) {
+      console.error(
+        'ASSESSMENT PARTICIPATION ERROR:',
+        resultError
+      )
+
+      assessmentResults.value = []
+
+      participationError.value =
+        resultError.response
+          ?.data
+          ?.message ||
+        'Student participation could not be loaded.'
+    }
+    finally {
+      participationLoading.value =
+        false
+    }
   }
   catch (error: any) {
     console.error(
       'VIEW ASSESSMENT ERROR:',
       error
     )
+
+    participationLoading.value =
+      false
 
     alert(
       error.response
@@ -1789,6 +2134,12 @@ function closeAssessmentView() {
 
   viewingAssessment.value =
     null
+
+  assessmentResults.value = []
+
+  participationError.value = ''
+
+  participationLoading.value = false
 }
 
 // ==========================================
@@ -2073,1725 +2424,819 @@ onMounted(() => {
 </script>
 
 <style scoped>
-* {
-  box-sizing:
-    border-box;
-}
+* { box-sizing: border-box; }
 
 .class-details-page {
-  width:
-    100%;
-
-  min-height:
-    calc(100vh - 70px);
-
-  padding:
-    28px;
-
-  background:
-    #f7faf8;
-
-  color:
-    #0f172a;
-
-  font-family:
-    'Poppins',
-    sans-serif;
+  width: 100%;
+  min-height: calc(100vh - 70px);
+  padding: 28px;
+  background: #f7faf8;
+  color: #0f172a;
+  font-family: 'Poppins', sans-serif;
 }
 
-/* ==========================================
-   TOP BAR
-========================================== */
-
+/* TOP BAR */
 .details-topbar {
-  margin-bottom:
-    18px;
-
-  display:
-    flex;
-
-  align-items:
-    center;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
 }
 
 .back-btn {
-  min-height:
-    38px;
-
-  padding:
-    0 13px;
-
-  border:
-    1px solid #dbe3eb;
-
-  border-radius:
-    8px;
-
-  display:
-    inline-flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  gap:
-    7px;
-
-  background:
-    #fff;
-
-  color:
-    #475569;
-
-  font-family:
-    inherit;
-
-  font-size:
-    10px;
-
-  font-weight:
-    700;
-
-  cursor:
-    pointer;
-
-  transition:
-    .18s ease;
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid #dbe3eb;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: #fff;
+  color: #475569;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .18s ease;
 }
 
 .back-btn:hover {
-  border-color:
-    #86efac;
-
-  background:
-    #f0fdf4;
-
-  color:
-    #15803d;
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #15803d;
 }
 
-/* ==========================================
-   LOADING / ERROR
-========================================== */
-
+/* LOADING / ERROR */
 .loading-state,
 .error-state {
-  min-height:
-    260px;
-
-  padding:
-    30px;
-
-  border:
-    1px solid #e2e8f0;
-
-  border-radius:
-    14px;
-
-  background:
-    #fff;
-
-  display:
-    flex;
-
-  flex-direction:
-    column;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  gap:
-    10px;
-
-  text-align:
-    center;
+  min-height: 260px;
+  padding: 30px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
 }
 
 .loading-state {
-  color:
-    #64748b;
-
-  font-size:
-    11px;
+  color: #64748b;
+  font-size: 11px;
 }
 
 .error-icon {
-  width:
-    58px;
-
-  height:
-    58px;
-
-  border-radius:
-    50%;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  background:
-    #fee2e2;
-
-  color:
-    #dc2626;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 .error-state h3 {
-  margin:
-    4px 0 0;
-
-  font-size:
-    15px;
+  margin: 4px 0 0;
+  font-size: 15px;
 }
 
 .error-state p {
-  margin:
-    0;
-
-  color:
-    #64748b;
-
-  font-size:
-    10px;
+  margin: 0;
+  color: #64748b;
+  font-size: 10px;
 }
 
 .retry-btn {
-  margin-top:
-    5px;
-
-  min-height:
-    36px;
-
-  padding:
-    0 14px;
-
-  border:
-    none;
-
-  border-radius:
-    8px;
-
-  background:
-    #16a34a;
-
-  color:
-    #fff;
-
-  font-family:
-    inherit;
-
-  font-size:
-    10px;
-
-  font-weight:
-    700;
-
-  cursor:
-    pointer;
+  margin-top: 5px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 8px;
+  background: #16a34a;
+  color: #fff;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
-/* ==========================================
-   CLASS HEADER
-========================================== */
-
+/* CLASS HEADER */
 .class-header-card {
-  padding:
-    22px;
-
-  border:
-    1px solid #e1e8e4;
-
-  border-radius:
-    14px;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    space-between;
-
-  gap:
-    20px;
-
-  background:
-    #fff;
-
-  box-shadow:
-    0 4px 15px
-    rgba(15, 23, 42, .035);
+  padding: 22px;
+  border: 1px solid #e1e8e4;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: #fff;
+  box-shadow: 0 4px 15px rgba(15, 23, 42, .035);
 }
 
 .class-header-left {
-  min-width:
-    0;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  gap:
-    15px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
 
 .subject-icon {
-  width:
-    49px;
-
-  height:
-    49px;
-
-  flex-shrink:
-    0;
-
-  border-radius:
-    12px;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  background:
-    #e8f8ee;
-
-  color:
-    #00a843;
+  width: 49px;
+  height: 49px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e8f8ee;
+  color: #00a843;
 }
 
-.class-heading {
-  min-width:
-    0;
-}
+.class-heading { min-width: 0; }
 
 .heading-label {
-  margin-bottom:
-    3px;
-
-  color:
-    #16a34a;
-
-  font-size:
-    8px;
-
-  font-weight:
-    800;
-
-  letter-spacing:
-    .8px;
+  margin-bottom: 3px;
+  color: #16a34a;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .8px;
 }
 
 .class-heading h1 {
-  margin:
-    0;
-
-  color:
-    #0f172a;
-
-  font-size:
-    20px;
-
-  font-weight:
-    800;
-
-  line-height:
-    1.3;
+  margin: 0;
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.3;
 }
 
 .class-heading p {
-  margin:
-    6px 0 0;
-
-  color:
-    #64748b;
-
-  font-size:
-    10px;
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 10px;
 }
 
 .class-heading p span {
-  margin:
-    0 4px;
-
-  color:
-    #cbd5e1;
+  margin: 0 4px;
+  color: #cbd5e1;
 }
 
 .class-header-meta {
-  display:
-    flex;
-
-  flex-wrap:
-    wrap;
-
-  justify-content:
-    flex-end;
-
-  gap:
-    7px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
 }
 
 .academic-badge {
-  padding:
-    7px 9px;
-
-  border-radius:
-    7px;
-
-  display:
-    inline-flex;
-
-  align-items:
-    center;
-
-  gap:
-    5px;
-
-  background:
-    #f0fdf4;
-
-  color:
-    #166534;
-
-  font-size:
-    9px;
-
-  font-weight:
-    600;
+  padding: 7px 9px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 9px;
+  font-weight: 600;
 }
 
-/* ==========================================
-   TABS
-========================================== */
-
+/* TABS */
 .tabs-wrapper {
-  margin-top:
-    17px;
-
-  padding:
-    5px;
-
-  border:
-    1px solid #e2e8f0;
-
-  border-radius:
-    11px;
-
-  display:
-    inline-flex;
-
-  gap:
-    4px;
-
-  background:
-    #fff;
+  margin-top: 17px;
+  padding: 5px;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  display: inline-flex;
+  gap: 4px;
+  background: #fff;
 }
 
 .tab-btn {
-  min-height:
-    37px;
-
-  padding:
-    0 14px;
-
-  border:
-    none;
-
-  border-radius:
-    8px;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  gap:
-    6px;
-
-  background:
-    transparent;
-
-  color:
-    #64748b;
-
-  font-family:
-    inherit;
-
-  font-size:
-    10px;
-
-  font-weight:
-    700;
-
-  cursor:
-    pointer;
-
-  transition:
-    .18s ease;
+  min-height: 37px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
+  color: #64748b;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .18s ease;
 }
 
 .tab-btn:hover {
-  background:
-    #f8fafc;
-
-  color:
-    #15803d;
+  background: #f8fafc;
+  color: #15803d;
 }
 
 .tab-btn.active {
-  background:
-    #e8f8ee;
-
-  color:
-    #15803d;
+  background: #e8f8ee;
+  color: #15803d;
 }
 
-/* ==========================================
-   COMMON TAB CONTENT
-========================================== */
-
+/* COMMON TAB CONTENT */
 .overview-content,
 .students-content,
-.assessments-content {
-  margin-top:
-    18px;
-}
+.assessments-content { margin-top: 18px; }
 
-/* ==========================================
-   OVERVIEW STATS
-========================================== */
-
+/* OVERVIEW STATS */
 .stats-grid {
-  margin-bottom:
-    17px;
-
-  display:
-    grid;
-
-  grid-template-columns:
-    repeat(
-      2,
-      minmax(0, 1fr)
-    );
-
-  gap:
-    14px;
+  margin-bottom: 17px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
 }
 
 .stat-card {
-  padding:
-    18px;
-
-  border:
-    1px solid #e1e8e4;
-
-  border-radius:
-    13px;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  gap:
-    13px;
-
-  background:
-    #fff;
-
-  box-shadow:
-    0 4px 15px
-    rgba(15, 23, 42, .03);
+  padding: 18px;
+  border: 1px solid #e1e8e4;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  background: #fff;
+  box-shadow: 0 4px 15px rgba(15, 23, 42, .03);
 }
 
 .stat-icon {
-  width:
-    43px;
-
-  height:
-    43px;
-
-  flex-shrink:
-    0;
-
-  border-radius:
-    11px;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  background:
-    #e8f8ee;
-
-  color:
-    #16a34a;
+  width: 43px;
+  height: 43px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e8f8ee;
+  color: #16a34a;
 }
 
 .stat-content {
-  display:
-    flex;
-
-  flex-direction:
-    column;
+  display: flex;
+  flex-direction: column;
 }
 
 .stat-label {
-  color:
-    #64748b;
-
-  font-size:
-    9px;
-
-  font-weight:
-    600;
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 600;
 }
 
 .stat-content strong {
-  margin-top:
-    1px;
-
-  color:
-    #0f172a;
-
-  font-size:
-    22px;
-
-  font-weight:
-    800;
+  margin-top: 1px;
+  color: #0f172a;
+  font-size: 22px;
+  font-weight: 800;
 }
 
 .stat-content p {
-  margin:
-    2px 0 0;
-
-  color:
-    #94a3b8;
-
-  font-size:
-    8px;
+  margin: 2px 0 0;
+  color: #94a3b8;
+  font-size: 8px;
 }
 
-/* ==========================================
-   INFORMATION CARD
-========================================== */
-
+/* INFORMATION CARD */
 .information-card {
-  border:
-    1px solid #e1e8e4;
-
-  border-radius:
-    14px;
-
-  background:
-    #fff;
-
-  box-shadow:
-    0 4px 15px
-    rgba(15, 23, 42, .03);
-
-  overflow:
-    hidden;
+  border: 1px solid #e1e8e4;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 15px rgba(15, 23, 42, .03);
+  overflow: hidden;
 }
 
 .information-header {
-  padding:
-    18px 20px;
-
-  border-bottom:
-    1px solid #eef2f0;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    space-between;
-
-  gap:
-    15px;
+  padding: 18px 20px;
+  border-bottom: 1px solid #eef2f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
 }
 
 .information-header h2 {
-  margin:
-    0;
-
-  color:
-    #0f172a;
-
-  font-size:
-    14px;
-
-  font-weight:
-    800;
+  margin: 0;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .information-header p {
-  margin:
-    4px 0 0;
-
-  color:
-    #94a3b8;
-
-  font-size:
-    9px;
+  margin: 4px 0 0;
+  color: #94a3b8;
+  font-size: 9px;
 }
 
 .info-header-icon {
-  width:
-    38px;
-
-  height:
-    38px;
-
-  flex-shrink:
-    0;
-
-  border-radius:
-    9px;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  background:
-    #f0fdf4;
-
-  color:
-    #16a34a;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0fdf4;
+  color: #16a34a;
 }
 
 .information-grid {
-  padding:
-    20px;
-
-  display:
-    grid;
-
-  grid-template-columns:
-    repeat(
-      2,
-      minmax(0, 1fr)
-    );
-
-  gap:
-    13px;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
 }
 
 .info-item {
-  min-height:
-    72px;
-
-  padding:
-    13px;
-
-  border:
-    1px solid #eef2f0;
-
-  border-radius:
-    10px;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  gap:
-    11px;
-
-  background:
-    #fbfdfc;
+  min-height: 72px;
+  padding: 13px;
+  border: 1px solid #eef2f0;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: #fbfdfc;
 }
 
 .info-icon {
-  width:
-    36px;
-
-  height:
-    36px;
-
-  flex-shrink:
-    0;
-
-  border-radius:
-    9px;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  background:
-    #e8f8ee;
-
-  color:
-    #16a34a;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e8f8ee;
+  color: #16a34a;
 }
 
 .info-item > div:last-child {
-  min-width:
-    0;
-
-  display:
-    flex;
-
-  flex-direction:
-    column;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .info-item span {
-  margin-bottom:
-    2px;
-
-  color:
-    #94a3b8;
-
-  font-size:
-    8px;
-
-  font-weight:
-    600;
-
-  text-transform:
-    uppercase;
+  margin-bottom: 2px;
+  color: #94a3b8;
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
 .info-item strong {
-  overflow:
-    hidden;
-
-  color:
-    #334155;
-
-  font-size:
-    10px;
-
-  font-weight:
-    700;
-
-  text-overflow:
-    ellipsis;
-
-  white-space:
-    nowrap;
+  overflow: hidden;
+  color: #334155;
+  font-size: 10px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* ==========================================
-   STUDENTS
-========================================== */
-
+/* STUDENTS */
 .students-header,
 .assessment-header {
-  margin-bottom:
-    14px;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    space-between;
-
-  gap:
-    15px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
 }
 
 .students-header h2,
 .assessment-header h2 {
-  margin:
-    0;
-
-  color:
-    #0f172a;
-
-  font-size:
-    16px;
-
-  font-weight:
-    800;
+  margin: 0;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 800;
 }
 
 .students-header p,
 .assessment-header p {
-  margin:
-    4px 0 0;
-
-  color:
-    #94a3b8;
-
-  font-size:
-    9px;
+  margin: 4px 0 0;
+  color: #94a3b8;
+  font-size: 9px;
 }
 
 .student-count,
 .assessment-count {
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  gap:
-    5px;
-
-  color:
-    #64748b;
-
-  font-size:
-    9px;
-
-  white-space:
-    nowrap;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #64748b;
+  font-size: 9px;
+  white-space: nowrap;
 }
 
 .student-count svg,
-.assessment-count svg {
-  color:
-    #16a34a;
-}
+.assessment-count svg { color: #16a34a; }
 
 .student-count strong,
 .assessment-count strong {
-  color:
-    #0f172a;
-
-  font-size:
-    11px;
+  color: #0f172a;
+  font-size: 11px;
 }
 
 .student-toolbar {
-  margin-bottom:
-    14px;
-
-  padding:
-    13px;
-
-  border:
-    1px solid #e2e8f0;
-
-  border-radius:
-    11px;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  background:
-    #fff;
+  margin-bottom: 14px;
+  padding: 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  background: #fff;
 }
 
 .student-search {
-  width:
-    100%;
-
-  max-width:
-    430px;
-
-  position:
-    relative;
+  width: 100%;
+  max-width: 430px;
+  position: relative;
 }
 
 .student-search svg {
-  position:
-    absolute;
-
-  top:
-    50%;
-
-  left:
-    12px;
-
-  color:
-    #94a3b8;
-
-  transform:
-    translateY(-50%);
+  position: absolute;
+  top: 50%;
+  left: 12px;
+  color: #94a3b8;
+  transform: translateY(-50%);
 }
 
 .student-search input {
-  width:
-    100%;
-
-  height:
-    39px;
-
-  padding:
-    0 12px 0 38px;
-
-  border:
-    1px solid #dbe3eb;
-
-  border-radius:
-    8px;
-
-  outline:
-    none;
-
-  color:
-    #334155;
-
-  font-family:
-    inherit;
-
-  font-size:
-    10px;
+  width: 100%;
+  height: 39px;
+  padding: 0 12px 0 38px;
+  border: 1px solid #dbe3eb;
+  border-radius: 8px;
+  outline: none;
+  color: #334155;
+  font-family: inherit;
+  font-size: 10px;
 }
 
 .student-search input:focus {
-  border-color:
-    #22c55e;
-
-  box-shadow:
-    0 0 0 3px
-    rgba(34, 197, 94, .09);
+  border-color: #22c55e;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, .09);
 }
 
 .students-loading,
 .assessments-loading {
-  min-height:
-    150px;
-
-  border:
-    1px solid #e2e8f0;
-
-  border-radius:
-    12px;
-
-  display:
-    flex;
-
-  flex-direction:
-    column;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  gap:
-    8px;
-
-  background:
-    #fff;
-
-  color:
-    #64748b;
-
-  font-size:
-    10px;
+  min-height: 150px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #fff;
+  color: #64748b;
+  font-size: 10px;
 }
 
 .student-list-card {
-  border:
-    1px solid #e1e8e4;
-
-  border-radius:
-    13px;
-
-  background:
-    #fff;
-
-  overflow:
-    hidden;
-
-  box-shadow:
-    0 4px 15px
-    rgba(15, 23, 42, .03);
+  border: 1px solid #e1e8e4;
+  border-radius: 13px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(15, 23, 42, .03);
 }
 
 .student-table-header,
 .student-row {
-  display:
-    grid;
-
-  grid-template-columns:
-    55px
-    minmax(0, 1fr)
-    180px
-    110px;
-
-  align-items:
-    center;
+  display: grid;
+  grid-template-columns: 55px minmax(0, 1fr) 180px 110px;
+  align-items: center;
 }
 
 .student-table-header {
-  min-height:
-    44px;
-
-  padding:
-    0 16px;
-
-  background:
-    #f8fafc;
-
-  color:
-    #94a3b8;
-
-  font-size:
-    8px;
-
-  font-weight:
-    800;
-
-  text-transform:
-    uppercase;
-
-  letter-spacing:
-    .4px;
+  min-height: 44px;
+  padding: 0 16px;
+  background: #f8fafc;
+  color: #94a3b8;
+  font-size: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .4px;
 }
 
 .student-row {
-  min-height:
-    64px;
-
-  padding:
-    0 16px;
-
-  border-top:
-    1px solid #f1f5f9;
+  min-height: 64px;
+  padding: 0 16px;
+  border-top: 1px solid #f1f5f9;
 }
 
 .student-number {
-  color:
-    #94a3b8;
-
-  font-size:
-    10px;
-
-  font-weight:
-    700;
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 700;
 }
 
 .student-profile {
-  min-width:
-    0;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  gap:
-    10px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .student-avatar {
-  width:
-    34px;
-
-  height:
-    34px;
-
-  flex-shrink:
-    0;
-
-  border-radius:
-    50%;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  background:
-    #dcfce7;
-
-  color:
-    #15803d;
-
-  font-size:
-    11px;
-
-  font-weight:
-    800;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .student-profile > div:last-child {
-  min-width:
-    0;
-
-  display:
-    flex;
-
-  flex-direction:
-    column;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .student-profile strong {
-  overflow:
-    hidden;
-
-  color:
-    #334155;
-
-  font-size:
-    10px;
-
-  text-overflow:
-    ellipsis;
-
-  white-space:
-    nowrap;
+  overflow: hidden;
+  color: #334155;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .student-profile span {
-  margin-top:
-    2px;
-
-  overflow:
-    hidden;
-
-  color:
-    #94a3b8;
-
-  font-size:
-    8px;
-
-  text-overflow:
-    ellipsis;
-
-  white-space:
-    nowrap;
+  margin-top: 2px;
+  overflow: hidden;
+  color: #94a3b8;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .student-lrn {
-  color:
-    #64748b;
-
-  font-size:
-    9px;
+  color: #64748b;
+  font-size: 9px;
 }
 
 .student-status {
-  width:
-    fit-content;
-
-  padding:
-    4px 8px;
-
-  border-radius:
-    999px;
-
-  background:
-    #dcfce7;
-
-  color:
-    #166534;
-
-  font-size:
-    8px;
-
-  font-weight:
-    700;
-
-  text-transform:
-    capitalize;
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: capitalize;
 }
 
 .student-status.inactive {
-  background:
-    #f1f5f9;
-
-  color:
-    #64748b;
+  background: #f1f5f9;
+  color: #64748b;
 }
 
 .students-empty,
 .assessments-empty {
-  min-height:
-    230px;
-
-  padding:
-    30px;
-
-  border:
-    1px dashed #cbd5e1;
-
-  border-radius:
-    14px;
-
-  display:
-    flex;
-
-  flex-direction:
-    column;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  background:
-    #fff;
-
-  text-align:
-    center;
+  min-height: 230px;
+  padding: 30px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  text-align: center;
 }
 
 .students-empty-icon,
 .assessments-empty-icon {
-  width:
-    64px;
-
-  height:
-    64px;
-
-  margin-bottom:
-    12px;
-
-  border-radius:
-    50%;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  background:
-    #f0fdf4;
-
-  color:
-    #16a34a;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0fdf4;
+  color: #16a34a;
 }
 
 .students-empty h3,
 .assessments-empty h3 {
-  margin:
-    0;
-
-  color:
-    #334155;
-
-  font-size:
-    14px;
+  margin: 0;
+  color: #334155;
+  font-size: 14px;
 }
 
 .students-empty p,
 .assessments-empty p {
-  max-width:
-    390px;
-
-  margin:
-    6px 0 0;
-
-  color:
-    #94a3b8;
-
-  font-size:
-    9px;
-
-  line-height:
-    1.6;
+  max-width: 390px;
+  margin: 6px 0 0;
+  color: #94a3b8;
+  font-size: 9px;
+  line-height: 1.6;
 }
 
-/* ==========================================
-   ASSESSMENT HEADER
-========================================== */
-
+/* ASSESSMENT HEADER */
 .assessment-header-actions {
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  gap:
-    10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .create-assessment-btn,
 .create-empty-assessment-btn {
-  min-height:
-    38px;
-
-  padding:
-    0 14px;
-
-  border:
-    none;
-
-  border-radius:
-    9px;
-
-  display:
-    inline-flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  gap:
-    6px;
-
-  background:
-    #16a34a;
-
-  color:
-    #fff;
-
-  font-family:
-    inherit;
-
-  font-size:
-    10px;
-
-  font-weight:
-    700;
-
-  cursor:
-    pointer;
-
-  transition:
-    .18s ease;
+  min-height: 38px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #16a34a;
+  color: #fff;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .18s ease;
 }
 
 .create-assessment-btn:hover,
-.create-empty-assessment-btn:hover {
-  background:
-    #15803d;
-}
+.create-empty-assessment-btn:hover { background: #15803d; }
 
-.create-empty-assessment-btn {
-  margin-top:
-    14px;
-}
+.create-empty-assessment-btn { margin-top: 14px; }
 
-/* ==========================================
-   ASSESSMENT CARDS
-========================================== */
-
+/* ASSESSMENT CARDS */
 .assessment-list {
-  display:
-    flex;
-
-  flex-direction:
-    column;
-
-  gap:
-    12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .assessment-card {
-  padding:
-    18px;
-
-  border:
-    1px solid #e2e8f0;
-
-  border-radius:
-    13px;
-
-  background:
-    #fff;
-
-  box-shadow:
-    0 3px 12px
-    rgba(15, 23, 42, .03);
-
-  transition:
-    .18s ease;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 13px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(15, 23, 42, .03);
+  transition: .18s ease;
 }
 
 .assessment-card:hover {
-  border-color:
-    #bbf7d0;
-
-  box-shadow:
-    0 6px 18px
-    rgba(15, 23, 42, .05);
+  border-color: #bbf7d0;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, .05);
 }
 
 .assessment-card-top {
-  display:
-    flex;
-
-  align-items:
-    flex-start;
-
-  justify-content:
-    space-between;
-
-  gap:
-    16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.assessment-title-wrap {
-  min-width:
-    0;
-}
+.assessment-title-wrap { min-width: 0; }
 
 .assessment-badges {
-  margin-bottom:
-    7px;
-
-  display:
-    flex;
-
-  flex-wrap:
-    wrap;
-
-  align-items:
-    center;
-
-  gap:
-    6px;
+  margin-bottom: 7px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
 }
 
-.assessment-kind,
-.status-badge {
-  padding:
-    4px 8px;
-
-  border-radius:
-    999px;
-
-  font-size:
-    8px;
-
-  font-weight:
-    800;
-
-  text-transform:
-    uppercase;
+/* ASSESSMENT TYPE */
+.assessment-kind {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 58px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  text-transform: uppercase;
 }
 
 .assessment-kind.quiz {
-  background:
-    #fef3c7;
-
-  color:
-    #92400e;
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .assessment-kind.examination {
-  background:
-    #dbeafe;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
 
-  color:
-    #1d4ed8;
+/* ASSESSMENT STATUS - TEXT ONLY */
+.status-badge {
+  display: inline-block;
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+  text-transform: none;
 }
 
 .status-badge.draft {
-  background:
-    #f1f5f9;
-
-  color:
-    #475569;
+  background: transparent;
+  color: #64748b;
 }
 
-.status-badge.published {
-  background:
-    #fef3c7;
-
-  color:
-    #92400e;
+.status-badge.published,
+.status-badge.lobby-ready {
+  background: transparent;
+  color: #2563eb;
 }
 
-.status-badge.started {
-  background:
-    #dcfce7;
-
-  color:
-    #166534;
+.status-badge.started,
+.status-badge.ongoing {
+  background: transparent;
+  color: #15803d;
 }
 
 .status-badge.finished {
-  background:
-    #ede9fe;
-
-  color:
-    #6d28d9;
+  background: transparent;
+  color: #7c3aed;
 }
 
 .assessment-title-wrap h3 {
-  margin:
-    0;
-
-  color:
-    #0f172a;
-
-  font-size:
-    14px;
-
-  font-weight:
-    800;
+  margin: 0;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .assessment-title-wrap p {
-  margin:
-    5px 0 0;
-
-  color:
-    #94a3b8;
-
-  font-size:
-    9px;
-
-  line-height:
-    1.5;
+  margin: 5px 0 0;
+  color: #94a3b8;
+  font-size: 9px;
+  line-height: 1.5;
 }
 
-/* ==========================================
-   ASSESSMENT ACTIONS
-========================================== */
-
+/* ASSESSMENT ACTIONS */
 .assessment-actions {
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  flex-wrap:
-    wrap;
-
-  justify-content:
-    flex-end;
-
-  gap:
-    7px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
 }
 
 .assessment-action-btn {
-  min-height:
-    32px;
-
-  padding:
-    0 10px;
-
-  border:
-    1px solid #e2e8f0;
-
-  border-radius:
-    7px;
-
-  display:
-    inline-flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  gap:
-    5px;
-
-  background:
-    #fff;
-
-  font-family:
-    inherit;
-
-  font-size:
-    9px;
-
-  font-weight:
-    700;
-
-  cursor:
-    pointer;
-
-  transition:
-    .18s ease;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .18s ease;
 }
 
 .assessment-action-btn:disabled {
-  opacity:
-    .55;
-
-  cursor:
-    not-allowed;
+  opacity: .55;
+  cursor: not-allowed;
 }
 
 .assessment-action-btn.view {
-  border-color:
-    #bfdbfe;
-
-  background:
-    #eff6ff;
-
-  color:
-    #2563eb;
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #2563eb;
 }
 
-.assessment-action-btn.view:hover:not(:disabled) {
-  background:
-    #dbeafe;
-}
+.assessment-action-btn.view:hover:not(:disabled) { background: #dbeafe; }
 
 .assessment-action-btn.edit {
-  border-color:
-    #fde68a;
-
-  background:
-    #fffbeb;
-
-  color:
-    #92400e;
+  border-color: #fde68a;
+  background: #fffbeb;
+  color: #92400e;
 }
 
-.assessment-action-btn.edit:hover {
-  background:
-    #fef3c7;
-}
+.assessment-action-btn.edit:hover { background: #fef3c7; }
 
 .assessment-action-btn.publish {
   border-color: #86efac;
@@ -3805,36 +3250,20 @@ onMounted(() => {
 }
 
 .assessment-action-btn.start {
-  border-color:
-    #16a34a;
-
-  background:
-    #16a34a;
-
-  color:
-    #fff;
+  border-color: #16a34a;
+  background: #16a34a;
+  color: #fff;
 }
 
-.assessment-action-btn.start:hover {
-  background:
-    #15803d;
-}
+.assessment-action-btn.start:hover { background: #15803d; }
 
 .assessment-action-btn.monitor {
-  border-color:
-    #2563eb;
-
-  background:
-    #2563eb;
-
-  color:
-    #fff;
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #fff;
 }
 
-.assessment-action-btn.monitor:hover {
-  background:
-    #1d4ed8;
-}
+.assessment-action-btn.monitor:hover { background: #1d4ed8; }
 
 .assessment-action-btn.restart {
   border-color: #86efac;
@@ -3876,9 +3305,7 @@ onMounted(() => {
   cursor: pointer;
 }
 
-.confirm-restart-assessment:hover:not(:disabled) {
-  background: #15803d;
-}
+.confirm-restart-assessment:hover:not(:disabled) { background: #15803d; }
 
 .confirm-restart-assessment:disabled {
   opacity: .6;
@@ -3886,927 +3313,1099 @@ onMounted(() => {
 }
 
 .assessment-action-btn.delete {
-  border-color:
-    #fecaca;
-
-  background:
-    #fef2f2;
-
-  color:
-    #dc2626;
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #dc2626;
 }
 
-.assessment-action-btn.delete:hover {
-  background:
-    #fee2e2;
-}
+.assessment-action-btn.delete:hover { background: #fee2e2; }
 
-/* ==========================================
-   ASSESSMENT INFO
-========================================== */
-
+/* ASSESSMENT INFO */
 .assessment-info-grid {
-  margin-top:
-    15px;
-
-  display:
-    grid;
-
-  grid-template-columns:
-    repeat(
-      4,
-      minmax(0, 1fr)
-    );
-
-  gap:
-    9px;
+  margin-top: 15px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
 }
 
 .assessment-info-item {
-  min-height:
-    56px;
-
-  padding:
-    10px;
-
-  border:
-    1px solid #eef2f7;
-
-  border-radius:
-    9px;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  gap:
-    8px;
-
-  background:
-    #f8fafc;
-
-  color:
-    #16a34a;
+  min-height: 56px;
+  padding: 10px;
+  border: 1px solid #eef2f7;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  color: #16a34a;
 }
 
 .assessment-info-item > div {
-  min-width:
-    0;
-
-  display:
-    flex;
-
-  flex-direction:
-    column;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .assessment-info-item span {
-  margin-bottom:
-    2px;
-
-  color:
-    #94a3b8;
-
-  font-size:
-    7px;
-
-  font-weight:
-    700;
-
-  text-transform:
-    uppercase;
+  margin-bottom: 2px;
+  color: #94a3b8;
+  font-size: 7px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .assessment-info-item strong {
-  overflow:
-    hidden;
-
-  color:
-    #334155;
-
-  font-size:
-    9px;
-
-  text-overflow:
-    ellipsis;
-
-  white-space:
-    nowrap;
+  overflow: hidden;
+  color: #334155;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .access-code-row {
-  margin-top:
-    10px;
-
-  padding:
-    11px 12px;
-
-  border:
-    1px solid #dcfce7;
-
-  border-radius:
-    9px;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    space-between;
-
-  gap:
-    12px;
-
-  background:
-    #f0fdf4;
+  margin-top: 10px;
+  padding: 11px 12px;
+  border: 1px solid #dcfce7;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #f0fdf4;
 }
 
 .access-code-row > div {
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  gap:
-    8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .access-code-row span {
-  color:
-    #64748b;
-
-  font-size:
-    8px;
-
-  font-weight:
-    700;
+  color: #64748b;
+  font-size: 8px;
+  font-weight: 700;
 }
 
 .access-code-row strong {
-  padding:
-    5px 9px;
-
-  border-radius:
-    6px;
-
-  background:
-    #fff;
-
-  color:
-    #166534;
-
-  font-size:
-    11px;
-
-  font-weight:
-    800;
-
-  letter-spacing:
-    1px;
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: #fff;
+  color: #166534;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
 }
 
 .access-code-row small {
-  color:
-    #94a3b8;
-
-  font-size:
-    8px;
-
-  text-align:
-    right;
+  color: #94a3b8;
+  font-size: 8px;
+  text-align: right;
 }
 
-/* ==========================================
-   MODAL
-========================================== */
+/* ASSESSMENT TABLE */
+.assessment-table-card {
+  width: 100%;
+  overflow: hidden;
+  border: 1px solid #dfe7e3;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, .035);
+}
 
+.assessment-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.assessment-table th:nth-child(1),
+.assessment-table td:nth-child(1) { width: 55px; }
+
+.assessment-table th:nth-child(2),
+.assessment-table td:nth-child(2) { width: 210px; }
+
+.assessment-table th:nth-child(3),
+.assessment-table td:nth-child(3) { width: 85px; }
+
+.assessment-table th:nth-child(4),
+.assessment-table td:nth-child(4) { width: 95px; }
+
+.assessment-table th:nth-child(5),
+.assessment-table td:nth-child(5) { width: 95px; }
+
+.assessment-table th:nth-child(6),
+.assessment-table td:nth-child(6) { width: 105px; }
+
+.assessment-table th:nth-child(7),
+.assessment-table td:nth-child(7) { width: 90px; }
+
+.assessment-table th:nth-child(8),
+.assessment-table td:nth-child(8) { width: 120px; }
+
+.assessment-table th:nth-child(9),
+.assessment-table td:nth-child(9) { width: 300px; }
+
+.assessment-table {
+  width: 100%;
+  min-width: 1100px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.assessment-table th,
+.assessment-table td {
+  padding: 15px 16px;
+  border-bottom: 1px solid #edf2ef;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.assessment-table th {
+  background: #f8faf9;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.assessment-table td {
+  color: #475569;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.assessment-table tbody tr {
+  transition: background .18s ease, box-shadow .18s ease;
+}
+
+.assessment-table tbody tr:hover { background: #f8fdf9; }
+.assessment-table tbody tr:last-child td { border-bottom: none; }
+
+.number-col {
+  width: 55px;
+  text-align: center !important;
+}
+
+.assessment-number {
+  width: 55px;
+  color: #64748b !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  text-align: center !important;
+}
+
+.assessment-table-title {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.assessment-table-title strong {
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.assessment-table-title span {
+  max-width: 270px;
+  overflow: hidden;
+  color: #94a3b8;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions-col { min-width: 285px; }
+
+.assessment-table-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* ASSESSMENT PARTICIPATION */
+.assessment-participation {
+  margin-top: 18px;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.participation-heading { margin-bottom: 14px; }
+
+.participation-heading h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.participation-heading p {
+  margin: 4px 0 0;
+  color: #94a3b8;
+  font-size: 8px;
+}
+
+/* SUMMARY CARDS */
+.participation-stats {
+  margin-bottom: 16px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.participation-stat {
+  padding: 13px 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.participation-stat span {
+  display: block;
+  margin-bottom: 3px;
+  color: #64748b;
+  font-size: 8px;
+  font-weight: 600;
+}
+
+.participation-stat strong {
+  color: #0f172a;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.participation-stat.taken {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.participation-stat.taken strong { color: #15803d; }
+
+.participation-stat.remaining {
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+
+.participation-stat.remaining strong { color: #c2410c; }
+
+/* LOADING / ERROR */
+.participation-loading,
+.participation-error {
+  min-height: 80px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 9px;
+}
+
+.participation-loading {
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.participation-error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+/* TABLE CONTAINER */
+.participation-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+/* TABLE */
+.participation-table {
+  width: 100%;
+  min-width: 560px;
+  border: none;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+/* COLUMN WIDTHS */
+.participation-table th:nth-child(1),
+.participation-table td:nth-child(1) {
+  width: 55px;
+  text-align: center;
+}
+
+.participation-table th:nth-child(2),
+.participation-table td:nth-child(2) { width: 40%; }
+
+.participation-table th:nth-child(3),
+.participation-table td:nth-child(3) { width: 30%; }
+
+.participation-table th:nth-child(4),
+.participation-table td:nth-child(4) {
+  width: 120px;
+  text-align: center;
+}
+
+/* TABLE HEADER */
+.participation-table thead { background: #f8fafc; }
+
+.participation-table th {
+  height: 42px;
+  padding: 0 14px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .4px;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* TABLE ROW */
+.participation-table td {
+  height: 52px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #475569;
+  font-size: 9px;
+  vertical-align: middle;
+}
+
+.participation-table tbody tr {
+  background: #fff;
+  transition: background .15s ease;
+}
+
+.participation-table tbody tr:hover { background: #f8fdf9; }
+
+.participation-table tbody tr:last-child td { border-bottom: none; }
+
+/* STUDENT NAME */
+.participation-table td strong {
+  color: #1e293b;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* STATUS */
+.participation-status {
+  min-width: 70px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.participation-status.taken {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.participation-status.remaining {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+/* RESPONSIVE */
+@media (max-width: 720px) {
+  .participation-stats { grid-template-columns: 1fr; }
+  .assessment-participation { padding: 14px; }
+}
+
+/* MODAL */
 .modal-overlay {
-  position:
-    fixed;
-
-  inset:
-    0;
-
-  z-index:
-    9999;
-
-  padding:
-    20px;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  background:
-    rgba(15, 23, 42, .48);
-
-  backdrop-filter:
-    blur(4px);
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, .48);
+  backdrop-filter: blur(4px);
 }
 
-/* ==========================================
-   VIEW ASSESSMENT MODAL
-========================================== */
-
+/* VIEW ASSESSMENT MODAL */
 .assessment-view-modal {
-  width:
-    min(
-      760px,
-      95vw
-    );
-
-  max-height:
-    88vh;
-
-  overflow-y:
-    auto;
-
-  padding:
-    24px;
-
-  border-radius:
-    16px;
-
-  background:
-    #fff;
-
-  box-shadow:
-    0 22px 60px
-    rgba(15, 23, 42, .18);
+  width: min(760px, 95vw);
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 24px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 22px 60px rgba(15, 23, 42, .18);
 }
 
 .assessment-view-header {
-  padding-bottom:
-    17px;
-
-  border-bottom:
-    1px solid #e2e8f0;
-
-  display:
-    flex;
-
-  justify-content:
-    space-between;
-
-  align-items:
-    flex-start;
-
-  gap:
-    15px;
+  padding-bottom: 17px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
 }
 
 .assessment-view-type {
-  display:
-    inline-flex;
-
-  margin-bottom:
-    5px;
-
-  color:
-    #16a34a;
-
-  font-size:
-    9px;
-
-  font-weight:
-    800;
-
-  text-transform:
-    uppercase;
-
-  letter-spacing:
-    .5px;
+  display: inline-flex;
+  margin-bottom: 5px;
+  color: #16a34a;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .5px;
 }
 
 .assessment-view-header h2 {
-  margin:
-    0;
-
-  color:
-    #0f172a;
-
-  font-size:
-    19px;
+  margin: 0;
+  color: #0f172a;
+  font-size: 19px;
 }
 
 .assessment-view-header p {
-  margin:
-    5px 0 0;
-
-  color:
-    #64748b;
-
-  font-size:
-    11px;
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 11px;
 }
 
 .assessment-view-close {
-  width:
-    34px;
-
-  height:
-    34px;
-
-  flex-shrink:
-    0;
-
-  border:
-    none;
-
-  border-radius:
-    8px;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  background:
-    #f1f5f9;
-
-  color:
-    #64748b;
-
-  cursor:
-    pointer;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: pointer;
 }
 
 .assessment-view-info {
-  margin:
-    18px 0;
-
-  display:
-    grid;
-
-  grid-template-columns:
-    repeat(
-      4,
-      minmax(0, 1fr)
-    );
-
-  gap:
-    10px;
+  margin: 18px 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .assessment-view-info > div {
-  padding:
-    12px;
-
-  border:
-    1px solid #e2e8f0;
-
-  border-radius:
-    9px;
-
-  display:
-    flex;
-
-  flex-direction:
-    column;
-
-  gap:
-    4px;
-
-  background:
-    #f8fafc;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #f8fafc;
 }
 
 .assessment-view-info span {
-  color:
-    #94a3b8;
-
-  font-size:
-    8px;
-
-  text-transform:
-    uppercase;
+  color: #94a3b8;
+  font-size: 8px;
+  text-transform: uppercase;
 }
 
 .assessment-view-info strong {
-  color:
-    #0f172a;
-
-  font-size:
-    10px;
+  color: #0f172a;
+  font-size: 10px;
 }
 
 .assessment-question-list h3 {
-  margin:
-    0 0 12px;
-
-  color:
-    #0f172a;
-
-  font-size:
-    14px;
+  margin: 0 0 12px;
+  color: #0f172a;
+  font-size: 14px;
 }
 
 .assessment-question-empty {
-  padding:
-    30px;
-
-  border:
-    1px dashed #cbd5e1;
-
-  border-radius:
-    10px;
-
-  color:
-    #94a3b8;
-
-  font-size:
-    10px;
-
-  text-align:
-    center;
+  padding: 30px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  color: #94a3b8;
+  font-size: 10px;
+  text-align: center;
 }
 
 .assessment-question {
-  margin-bottom:
-    10px;
-
-  padding:
-    14px;
-
-  border:
-    1px solid #e2e8f0;
-
-  border-radius:
-    10px;
+  margin-bottom: 10px;
+  padding: 14px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
 }
 
 .assessment-question-top {
-  margin-bottom:
-    8px;
-
-  display:
-    flex;
-
-  justify-content:
-    space-between;
-
-  color:
-    #16a34a;
-
-  font-size:
-    10px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  color: #16a34a;
+  font-size: 10px;
 }
 
 .assessment-question p {
-  margin:
-    0 0 10px;
-
-  color:
-    #334155;
-
-  font-size:
-    11px;
-
-  line-height:
-    1.6;
+  margin: 0 0 10px;
+  color: #334155;
+  font-size: 11px;
+  line-height: 1.6;
 }
 
 .question-competency {
-  margin:
-    0 0 10px;
-
-  color:
-    #64748b;
-
-  font-size:
-    9px;
-
-  line-height:
-    1.5;
+  margin: 0 0 10px;
+  color: #64748b;
+  font-size: 9px;
+  line-height: 1.5;
 }
 
 .assessment-options {
-  display:
-    grid;
-
-  grid-template-columns:
-    repeat(
-      2,
-      minmax(0, 1fr)
-    );
-
-  gap:
-    7px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
 }
 
 .assessment-options > div {
-  padding:
-    8px 10px;
-
-  border-radius:
-    7px;
-
-  background:
-    #f8fafc;
-
-  color:
-    #475569;
-
-  font-size:
-    10px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 10px;
 }
 
 .assessment-answer {
-  margin-top:
-    10px;
-
-  color:
-    #64748b;
-
-  font-size:
-    10px;
+  margin-top: 10px;
+  color: #64748b;
+  font-size: 10px;
 }
 
-/* ==========================================
-   DELETE MODAL
-========================================== */
-
+/* DELETE MODAL */
 .delete-assessment-modal {
-  width:
-    min(
-      420px,
-      95vw
-    );
-
-  padding:
-    28px;
-
-  border-radius:
-    16px;
-
-  background:
-    #fff;
-
-  text-align:
-    center;
-
-  box-shadow:
-    0 22px 60px
-    rgba(15, 23, 42, .18);
+  width: min(420px, 95vw);
+  padding: 28px;
+  border-radius: 16px;
+  background: #fff;
+  text-align: center;
+  box-shadow: 0 22px 60px rgba(15, 23, 42, .18);
 }
 
 .delete-assessment-icon {
-  width:
-    60px;
-
-  height:
-    60px;
-
-  margin:
-    0 auto 15px;
-
-  border-radius:
-    50%;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  background:
-    #fee2e2;
-
-  color:
-    #dc2626;
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 15px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 .delete-assessment-modal h2 {
-  margin:
-    0 0 10px;
-
-  color:
-    #0f172a;
-
-  font-size:
-    18px;
+  margin: 0 0 10px;
+  color: #0f172a;
+  font-size: 18px;
 }
 
 .delete-assessment-modal p {
-  margin:
-    0;
-
-  color:
-    #64748b;
-
-  font-size:
-    11px;
-
-  line-height:
-    1.7;
+  margin: 0;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.7;
 }
 
 .modal-actions {
-  margin-top:
-    22px;
-
-  display:
-    flex;
-
-  gap:
-    10px;
+  margin-top: 22px;
+  display: flex;
+  gap: 10px;
 }
 
 .cancel-btn,
 .confirm-assessment-delete {
-  flex:
-    1;
-
-  min-height:
-    40px;
-
-  border-radius:
-    8px;
-
-  display:
-    flex;
-
-  align-items:
-    center;
-
-  justify-content:
-    center;
-
-  gap:
-    6px;
-
-  font-family:
-    inherit;
-
-  font-size:
-    10px;
-
-  font-weight:
-    700;
-
-  cursor:
-    pointer;
+  flex: 1;
+  min-height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .cancel-btn {
-  border:
-    1px solid #e2e8f0;
-
-  background:
-    #fff;
-
-  color:
-    #475569;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
 }
 
 .confirm-assessment-delete {
-  border:
-    none;
-
-  background:
-    #dc2626;
-
-  color:
-    #fff;
+  border: none;
+  background: #dc2626;
+  color: #fff;
 }
 
-.confirm-assessment-delete:hover:not(:disabled) {
-  background:
-    #b91c1c;
-}
+.confirm-assessment-delete:hover:not(:disabled) { background: #b91c1c; }
 
 .cancel-btn:disabled,
 .confirm-assessment-delete:disabled {
-  opacity:
-    .6;
-
-  cursor:
-    not-allowed;
+  opacity: .6;
+  cursor: not-allowed;
 }
 
-/* ==========================================
-   SPINNER
-========================================== */
-
-.spinner {
-  animation:
-    spin .8s linear
-    infinite;
-}
+/* SPINNER */
+.spinner { animation: spin .8s linear infinite; }
 
 @keyframes spin {
-  to {
-    transform:
-      rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
-/* ==========================================
-   RESPONSIVE
-========================================== */
-
-@media (
-  max-width: 900px
-) {
-  .assessment-info-grid {
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(0, 1fr)
-      );
-  }
-
-  .assessment-view-info {
-    grid-template-columns:
-      repeat(
-        2,
-        minmax(0, 1fr)
-      );
-  }
-
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .assessment-info-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .assessment-view-info { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .student-table-header,
-  .student-row {
-    grid-template-columns:
-      45px
-      minmax(0, 1fr)
-      130px
-      90px;
-  }
+  .student-row { grid-template-columns: 45px minmax(0, 1fr) 130px 90px; }
 }
 
-@media (
-  max-width: 720px
-) {
-  .class-details-page {
-    padding:
-      18px;
-  }
+@media (max-width: 720px) {
+  .participation-stats { grid-template-columns: 1fr; }
+  .class-details-page { padding: 18px; }
 
   .class-header-card,
   .students-header,
   .assessment-header,
   .assessment-card-top {
-    align-items:
-      flex-start;
-
-    flex-direction:
-      column;
+    align-items: flex-start;
+    flex-direction: column;
   }
 
-  .class-header-meta {
-    justify-content:
-      flex-start;
-  }
+  .class-header-meta { justify-content: flex-start; }
 
   .tabs-wrapper {
-    width:
-      100%;
-
-    display:
-      grid;
-
-    grid-template-columns:
-      repeat(
-        3,
-        1fr
-      );
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
   }
 
   .stats-grid,
-  .information-grid {
-    grid-template-columns:
-      1fr;
-  }
+  .information-grid { grid-template-columns: 1fr; }
 
   .assessment-header-actions {
-    width:
-      100%;
-
-    align-items:
-      stretch;
-
-    flex-direction:
-      column;
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
   }
 
-  .create-assessment-btn {
-    width:
-      100%;
-  }
+  .create-assessment-btn { width: 100%; }
 
   .assessment-actions {
-    width:
-      100%;
-
-    justify-content:
-      flex-start;
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .assessment-action-btn {
-    flex:
-      1;
-
-    min-width:
-      90px;
+    flex: 1;
+    min-width: 90px;
   }
 
   .access-code-row {
-    align-items:
-      flex-start;
-
-    flex-direction:
-      column;
+    align-items: flex-start;
+    flex-direction: column;
   }
 
-  .access-code-row small {
-    text-align:
-      left;
-  }
-
-  .student-table-header {
-    display:
-      none;
-  }
+  .access-code-row small { text-align: left; }
+  .student-table-header { display: none; }
 
   .student-row {
-    padding:
-      14px;
-
-    grid-template-columns:
-      36px
-      minmax(0, 1fr);
-
-    gap:
-      8px;
+    padding: 14px;
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 8px;
   }
 
   .student-lrn,
-  .student-status {
-    grid-column:
-      2;
-  }
+  .student-status { grid-column: 2; }
 
-  .assessment-options {
-    grid-template-columns:
-      1fr;
-  }
+  .assessment-options { grid-template-columns: 1fr; }
 }
 
-@media (
-  max-width: 520px
-) {
-  .class-details-page {
-    padding:
-      14px;
-  }
-
-  .class-header-card {
-    padding:
-      17px;
-  }
+@media (max-width: 520px) {
+  .class-details-page { padding: 14px; }
+  .class-header-card { padding: 17px; }
 
   .tabs-wrapper {
-    overflow-x:
-      auto;
-
-    display:
-      flex;
+    overflow-x: auto;
+    display: flex;
   }
 
   .tab-btn {
-    flex:
-      1;
-
-    min-width:
-      100px;
+    flex: 1;
+    min-width: 100px;
   }
 
   .assessment-info-grid,
-  .assessment-view-info {
-    grid-template-columns:
-      1fr;
-  }
+  .assessment-view-info { grid-template-columns: 1fr; }
 
-  .modal-actions {
-    flex-direction:
-      column;
-  }
+  .modal-actions { flex-direction: column; }
 }
+
+/* STUDENT MANAGEMENT */
+.student-table-header,
+.student-row {
+  grid-template-columns: 45px minmax(220px, 1.5fr) minmax(130px, .8fr) 100px 100px;
+}
+.add-student-btn {
+  min-height: 37px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #16a34a;
+  color: #fff;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.add-student-btn:hover { background: #15803d; }
+.student-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+.remove-student-btn {
+  min-height: 29px;
+  padding: 0 9px;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: #fff;
+  color: #dc2626;
+  font-family: inherit;
+  font-size: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.remove-student-btn:hover { background: #fef2f2; }
+.add-student-modal {
+  width: min(650px, 94vw);
+  max-height: 85vh;
+  overflow-y: auto;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .18);
+}
+.add-student-modal-header {
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.add-student-modal-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 16px;
+  font-weight: 800;
+}
+.add-student-modal-header p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 9px;
+}
+.add-student-tabs {
+  padding: 14px 22px 0;
+  display: flex;
+  gap: 6px;
+}
+.add-student-tabs button {
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #fff;
+  color: #64748b;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.add-student-tabs button.active {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+.individual-student-section,
+.student-import-section { padding: 16px 22px 22px; }
+.available-student-search {
+  height: 38px;
+  padding: 0 11px;
+  border: 1px solid #dbe3eb;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #94a3b8;
+}
+.available-student-search input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #334155;
+  font-family: inherit;
+  font-size: 9px;
+}
+.available-students-list {
+  margin-top: 12px;
+  max-height: 330px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+}
+.available-student-row {
+  padding: 11px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.available-student-row:last-child { border-bottom: none; }
+.available-student-profile {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.available-student-profile > div:last-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.available-student-profile strong {
+  color: #1e293b;
+  font-size: 9px;
+  font-weight: 700;
+}
+.available-student-profile span {
+  margin-top: 2px;
+  color: #94a3b8;
+  font-size: 7px;
+}
+.enroll-student-btn {
+  min-width: 68px;
+  min-height: 30px;
+  padding: 0 9px;
+  border: none;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: #16a34a;
+  color: #fff;
+  font-family: inherit;
+  font-size: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.enroll-student-btn:disabled,
+.import-students-btn:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+.available-students-state,
+.available-students-empty {
+  min-height: 150px;
+  margin-top: 12px;
+  border: 1px dashed #dbe3eb;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  font-size: 9px;
+}
+.available-students-state { gap: 7px; }
+.available-students-empty {
+  flex-direction: column;
+  gap: 5px;
+}
+.available-students-empty strong {
+  color: #334155;
+  font-size: 10px;
+}
+.available-students-empty span {
+  color: #94a3b8;
+  font-size: 8px;
+}
+.import-info {
+  padding: 13px;
+  border: 1px solid #bbf7d0;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f0fdf4;
+  color: #15803d;
+}
+.import-info div {
+  display: flex;
+  flex-direction: column;
+}
+.import-info strong { font-size: 9px; }
+.import-info span {
+  margin-top: 2px;
+  color: #64748b;
+  font-size: 8px;
+}
+.student-file-upload {
+  min-height: 130px;
+  margin-top: 13px;
+  padding: 20px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: #f8fafc;
+  color: #64748b;
+  cursor: pointer;
+}
+.student-file-upload:hover {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+.student-file-upload input { display: none; }
+.student-file-upload strong {
+  color: #334155;
+  font-size: 9px;
+}
+.student-file-upload span {
+  color: #94a3b8;
+  font-size: 8px;
+}
+.student-import-result {
+  margin-top: 13px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+}
+.student-import-result div {
+  padding: 9px;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  background: #f8fafc;
+}
+.student-import-result span {
+  display: block;
+  color: #64748b;
+  font-size: 7px;
+}
+.student-import-result strong {
+  display: block;
+  margin-top: 2px;
+  color: #0f172a;
+  font-size: 13px;
+}
+.import-students-btn {
+  width: 100%;
+  min-height: 37px;
+  margin-top: 13px;
+  border: none;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #16a34a;
+  color: #fff;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.remove-student-modal {
+  width: min(390px, 92vw);
+  padding: 24px;
+  border-radius: 14px;
+  background: #fff;
+  text-align: center;
+}
+.remove-student-icon {
+  width: 50px;
+  height: 50px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fee2e2;
+  color: #dc2626;
+}
+.remove-student-modal h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 15px;
+}
+.remove-student-modal p {
+  margin: 8px 0 18px;
+  color: #64748b;
+  font-size: 9px;
+  line-height: 1.7;
+}
+.confirm-remove-student {
+  min-height: 35px;
+  padding: 0 13px;
+  border: none;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: #dc2626;
+  color: #fff;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.confirm-remove-student:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
+@media (max-width: 760px) {
+  .student-table-header,
+  .student-row {
+    grid-template-columns: 38px minmax(180px, 1fr) 110px 85px 85px;
+  }
+  .student-list-card { overflow-x: auto; }
+  .student-table-header,
+  .student-row { min-width: 650px; }
+  .student-import-result { grid-template-columns: repeat(2, 1fr); }
+}
+
 </style>

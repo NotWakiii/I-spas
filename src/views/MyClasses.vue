@@ -28,7 +28,7 @@
         />
       </div>
       <select v-model="schoolYearFilter">
-        <option value="">All School Years</option>
+        <option value="" disabled>Select School Year</option>
         <option
           v-for="year in schoolYears"
           :key="year.id"
@@ -41,6 +41,7 @@
         <option value="">All Semesters</option>
         <option value="1st Semester">1st Semester</option>
         <option value="2nd Semester">2nd Semester</option>
+        <option value="3rd Semester">3rd Semester</option>
       </select>
     </div>
     <div v-if="loading" class="loading-state">
@@ -93,23 +94,22 @@
             {{ item.semester || 'No Semester' }}
           </span>
         </div>
-        <div class="card-divider"></div>
-        <div class="class-stats">
-          <div>
-            <Users :size="16" />
-            <span>
-              <strong>{{ item.students_count || 0 }}</strong>
-              Students
-            </span>
+        <div class="class-code-box" @click.stop>
+          <div class="class-code-content">
+            <span class="class-code-label">Class Code</span>
+            <strong>{{ item.class_code || 'No code' }}</strong>
           </div>
-          <div>
-            <ClipboardList :size="16" />
-            <span>
-              <strong>{{ item.exams_count || 0 }}</strong>
-              Assessments
-            </span>
-          </div>
+
+          <button
+            v-if="item.class_code"
+            type="button"
+            class="copy-code-btn"
+            @click="copyClassCode(item.class_code)"
+          >
+            Copy
+          </button>
         </div>
+        <div class="card-divider"></div>
         <button class="open-class-btn">
           Open Class
           <ChevronRight :size="17" />
@@ -419,7 +419,6 @@ import {
   ChevronRight,
   CircleAlert,
   CircleCheckBig,
-  ClipboardList,
   Layers3,
   LoaderCircle,
   Pencil,
@@ -428,7 +427,6 @@ import {
   School,
   Search,
   Trash2,
-  Users,
   X
 } from '@lucide/vue'
 import api from '../services/api'
@@ -462,6 +460,7 @@ interface Curriculum {
 interface SchoolClass {
   id: number
   faculty_id: number
+  class_code: string | null
   school_year_id: number
   semester: string
   grade: string
@@ -614,16 +613,43 @@ async function fetchOptions() {
     data.sections || []
   curricula.value =
     data.curricula || []
+
+  const activeYear =
+  schoolYears.value.find(
+    year => year.status ==='active'
+  )
+  if (activeYear) {
+    form.school_year_id = activeYear.id
+  }
 }
 async function fetchClasses() {
   const response = await api.get(
     '/faculty/classes'
   )
+
   classes.value = Array.isArray(
     response.data?.data
   )
     ? response.data.data
     : []
+
+  // Find a class under the active school year
+  const activeClass = classes.value.find(
+    item =>
+      String(
+        item.school_year?.status || ''
+      ).toLowerCase() === 'active'
+  )
+
+  // Automatically filter My Classes
+  // using the active school year and semester
+  if (activeClass) {
+    schoolYearFilter.value =
+      Number(activeClass.school_year_id)
+
+    semesterFilter.value =
+      activeClass.semester || ''
+  }
 }
 async function loadPage() {
   loading.value = true
@@ -797,6 +823,35 @@ async function saveClass() {
       'Failed to save class.'
   } finally {
     saving.value = false
+  }
+}
+async function copyClassCode(code: string) {
+  if (!code) return
+
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(code)
+    } else {
+      const textarea = document.createElement('textarea')
+
+      textarea.value = code
+      textarea.style.position = 'fixed'
+      textarea.style.opacity = '0'
+
+      document.body.appendChild(textarea)
+
+      textarea.focus()
+      textarea.select()
+
+      document.execCommand('copy')
+
+      document.body.removeChild(textarea)
+    }
+
+    showSuccess(`Class code ${code} copied.`)
+  } catch (error) {
+    console.error('COPY CLASS CODE ERROR:', error)
+    showError('Failed to copy class code.')
   }
 }
 function openClass(item: SchoolClass) {
@@ -1046,6 +1101,54 @@ onMounted(loadPage)
   color: #166534;
   font-size: 9px;
   font-weight: 600;
+}
+.class-code-box {
+  margin-top: 12px;
+  padding: 10px 11px;
+  border: 1px dashed #86efac;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: #f0fdf4;
+}
+
+.class-code-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.class-code-label {
+  color: #64748b;
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.class-code-content strong {
+  color: #15803d;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.copy-code-btn {
+  min-height: 30px;
+  padding: 0 11px;
+  border: 1px solid #bbf7d0;
+  border-radius: 7px;
+  background: #fff;
+  color: #15803d;
+  font-family: inherit;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.copy-code-btn:hover {
+  background: #dcfce7;
 }
 .card-divider {
   height: 1px;

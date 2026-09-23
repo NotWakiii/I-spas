@@ -47,6 +47,7 @@
         <table>
           <thead>
             <tr>
+              <th class="number-column">#</th>
               <th>Grade</th>
               <th>Strand</th>
               <th>Section</th>
@@ -57,9 +58,12 @@
           </thead>
           <tbody>
             <tr
-              v-for="section in sections"
+              v-for="(section, index) in sections"
               :key="section.id"
             >
+              <td class="number-cell">
+                {{ index + 1 }}
+              </td>
               <td>
                 <span class="grade-badge">
                   {{ section.grade }}
@@ -99,7 +103,7 @@
             </tr>
             <tr v-if="sections.length === 0">
               <td
-                colspan="4"
+                colspan="5"
                 class="empty-state"
               >
                 <PanelsTopLeft :size="42" />
@@ -817,7 +821,16 @@ onMounted(async () => {
   justify-content: space-between;
   gap: 20px;
 }
+.number-column,
+.number-cell {
+  width: 65px;
+  text-align: center;
+}
 
+.number-cell {
+  color: #64748b;
+  font-weight: 700;
+}
 .page-header h1 {
   margin: 0;
   color: #0f172a;
