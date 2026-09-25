@@ -370,32 +370,44 @@
         </div>
 
         <div v-else-if="filteredStudents.length" class="student-list-card">
-          <div class="student-table-header">
-            <span>#</span>
-            <span>Student</span>
-            <span>LRN</span>
-            <span>Status</span>
-            <span>Actions</span>
-          </div>
-
-          <div v-for="(enrollment,index) in filteredStudents" :key="enrollment.id" class="student-row">
-            <span class="student-number">{{ index + 1 }}</span>
-            <div class="student-profile">
-              <div class="student-avatar">{{ getStudentName(enrollment).charAt(0).toUpperCase() }}</div>
-              <div>
-                <strong>{{ getStudentName(enrollment) }}</strong>
-                <span>{{ enrollment.student?.email || 'No email' }}</span>
-              </div>
+          <div class="student-table-scroll">
+            <div class="student-table-header">
+              <span>#</span>
+              <span>Student</span>
+              <span>Email</span>
+              <span>LRN</span>
+              <span>Status</span>
+              <span>Action</span>
             </div>
-            <span class="student-lrn">{{ enrollment.student?.lrn || 'No LRN' }}</span>
-            <span class="student-status" :class="enrollment.student?.status || 'active'">
-              {{ enrollment.student?.status || 'active' }}
-            </span>
-            <div class="student-actions">
-              <button type="button" class="remove-student-btn" @click="openRemoveStudent(enrollment)">
-                <Trash2 :size="13" />
-                Remove
-              </button>
+
+            <div v-for="(enrollment,index) in filteredStudents" :key="enrollment.id" class="student-row">
+              <span class="student-number">{{ index + 1 }}</span>
+
+              <div class="student-profile">
+                <div class="student-avatar">
+                  {{ getStudentName(enrollment).charAt(0).toUpperCase() }}
+                </div>
+                <strong>{{ getStudentName(enrollment) }}</strong>
+              </div>
+
+              <span class="student-email">
+                {{ enrollment.student?.email || 'No email' }}
+              </span>
+
+              <span class="student-lrn">
+                {{ enrollment.student?.lrn || 'No LRN' }}
+              </span>
+
+              <span class="student-status" :class="enrollment.student?.status || 'active'">
+                {{ enrollment.student?.status || 'active' }}
+              </span>
+
+              <div class="student-actions">
+                <button type="button" class="remove-student-btn" @click="openRemoveStudent(enrollment)">
+                  <Trash2 :size="15" />
+                  Remove
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -4406,6 +4418,304 @@ onMounted(() => {
   .student-table-header,
   .student-row { min-width: 650px; }
   .student-import-result { grid-template-columns: repeat(2, 1fr); }
+}
+
+
+/* =========================================================
+   STUDENT TABLE - READABLE FACULTY VIEW
+   ========================================================= */
+.students-header h2 {
+  font-size: 20px;
+}
+
+.students-header p {
+  margin-top: 6px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.add-student-btn {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 9px;
+  font-size: 13px;
+}
+
+.student-toolbar {
+  padding: 14px;
+}
+
+.student-search {
+  max-width: 520px;
+}
+
+.student-search input {
+  height: 44px;
+  padding-left: 40px;
+  font-size: 13px;
+}
+
+.student-list-card {
+  overflow: hidden;
+}
+
+.student-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.student-table-header,
+.student-row {
+  display: grid;
+  grid-template-columns:
+    55px
+    minmax(220px, 1.35fr)
+    minmax(230px, 1.35fr)
+    minmax(150px, .85fr)
+    120px
+    125px;
+  align-items: center;
+  min-width: 1000px;
+}
+
+.student-table-header {
+  min-height: 52px;
+  padding: 0 20px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .45px;
+}
+
+.student-row {
+  min-height: 72px;
+  padding: 0 20px;
+  border-top: 1px solid #e8eef4;
+  transition: background .15s ease;
+}
+
+.student-row:hover {
+  background: #f8fafc;
+}
+
+.student-number {
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.student-profile {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-right: 14px;
+}
+
+.student-avatar {
+  width: 40px;
+  height: 40px;
+  font-size: 14px;
+}
+
+.student-profile strong {
+  min-width: 0;
+  overflow: hidden;
+  color: #1e293b;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.student-email,
+.student-lrn {
+  min-width: 0;
+  padding-right: 14px;
+  overflow: hidden;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.student-status {
+  padding: 6px 11px;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.student-actions {
+  justify-content: flex-start;
+}
+
+.remove-student-btn {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 7px;
+  gap: 6px;
+  font-size: 11px;
+}
+
+@media (max-width: 1100px) {
+  .student-table-header,
+  .student-row {
+    grid-template-columns:
+      50px
+      minmax(210px, 1.3fr)
+      minmax(220px, 1.3fr)
+      145px
+      110px
+      120px;
+    min-width: 930px;
+  }
+}
+
+@media (max-width: 720px) {
+  .student-table-header {
+    display: grid;
+  }
+
+  .student-row {
+    padding: 0 16px;
+    gap: 0;
+  }
+
+  .student-table-header,
+  .student-row {
+    grid-template-columns:
+      45px
+      210px
+      220px
+      145px
+      105px
+      115px;
+    min-width: 840px;
+  }
+
+  .students-header {
+    gap: 12px;
+  }
+
+  .add-student-btn {
+    width: 100%;
+  }
+}
+
+
+/* =========================================================
+   STUDENT TABLE - PHONE VIEW
+   ========================================================= */
+@media (max-width: 720px) {
+  .student-list-card {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .student-table-scroll {
+    overflow: visible;
+  }
+
+  .student-table-header {
+    display: none;
+  }
+
+  .student-row {
+    min-width: 0;
+    min-height: 0;
+    margin-bottom: 12px;
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 10px 12px;
+    border: 1px solid #dbe3eb;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, .05);
+  }
+
+  .student-row:last-child {
+    margin-bottom: 0;
+  }
+
+  .student-number {
+    grid-column: 1;
+    grid-row: 1;
+    align-self: center;
+    text-align: center;
+    font-size: 13px;
+  }
+
+  .student-profile {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 0;
+    gap: 10px;
+  }
+
+  .student-avatar {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+  }
+
+  .student-profile strong {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    font-size: 14px;
+    line-height: 1.35;
+  }
+
+  .student-email,
+  .student-lrn {
+    grid-column: 2;
+    padding: 0;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .student-email::before {
+    content: "Email: ";
+    color: #64748b;
+    font-weight: 700;
+  }
+
+  .student-lrn::before {
+    content: "LRN: ";
+    color: #64748b;
+    font-weight: 700;
+  }
+
+  .student-status {
+    grid-column: 2;
+    width: fit-content;
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  .student-actions {
+    grid-column: 2;
+    width: 100%;
+  }
+
+  .remove-student-btn {
+    width: 100%;
+    min-height: 40px;
+    justify-content: center;
+    font-size: 12px;
+  }
 }
 
 </style>

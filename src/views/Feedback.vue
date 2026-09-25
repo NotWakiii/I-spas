@@ -440,8 +440,7 @@ async function fetchFeedback() {
       groupedClasses.value.length
     ) {
       expandedClasses.value.add(
-        groupedClasses.value[0]
-          .classId
+        groupedClasses.value[0]!.classId
       )
     }
   }

@@ -413,7 +413,9 @@ async function fetchQuestions() {
 
 function resetForm() {
   form.class_ids = []
-  form.subject_id = taughtSubjects.value.length === 1 ? taughtSubjects.value[0].id : 0
+  form.subject_id = taughtSubjects.value.length === 1
+  ? (taughtSubjects.value[0]?.id ?? 0)
+  : 0
   form.question = ''
   form.question_type = 'multiple_choice'
   form.competency = ''

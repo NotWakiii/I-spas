@@ -3,7 +3,7 @@
     <div class="page-header">
       <div>
         <h1>Admin Dashboard</h1>
-        <p>View the current student population and school account analytics.</p>
+        <p>View current user, student, and class analytics.</p>
       </div>
     </div>
 
@@ -22,7 +22,7 @@
         <div class="analytics-header">
           <div>
             <h2>School Analytics</h2>
-            <p>Simple descriptive graphs based on current registered accounts.</p>
+            <p>Descriptive analytics based on current accounts and classes.</p>
           </div>
           <BarChart3 :size="23" />
         </div>
@@ -30,33 +30,70 @@
         <div class="summary-grid">
           <div class="summary-card">
             <div class="card-icon"><UsersRound :size="24" /></div>
-            <div class="card-content">
-              <span>Total Faculty</span>
-              <strong>{{ dashboard.cards.faculty }}</strong>
-            </div>
+            <div class="card-content"><span>Total Faculty</span><strong>{{ dashboard.cards.faculty }}</strong></div>
           </div>
-
           <div class="summary-card">
             <div class="card-icon"><GraduationCap :size="24" /></div>
-            <div class="card-content">
-              <span>Total Students</span>
-              <strong>{{ dashboard.cards.students }}</strong>
-            </div>
+            <div class="card-content"><span>Total Students</span><strong>{{ dashboard.cards.students }}</strong></div>
           </div>
-
           <div class="summary-card">
             <div class="card-icon"><BookOpenText :size="24" /></div>
-            <div class="card-content">
-              <span>Total Strands</span>
-              <strong>{{ dashboard.cards.strands }}</strong>
+            <div class="card-content"><span>Total Classes</span><strong>{{ dashboard.cards.classes }}</strong></div>
+          </div>
+          <div class="summary-card">
+            <div class="card-icon"><School :size="24" /></div>
+            <div class="card-content"><span>Total Sections</span><strong>{{ dashboard.cards.sections }}</strong></div>
+          </div>
+        </div>
+
+        <div class="analytics-grid">
+          <div class="chart-card">
+            <div class="chart-header">
+              <div><h3>User Distribution</h3><p>Distribution of faculty and student accounts.</p></div>
+              <UsersRound :size="21" />
+            </div>
+            <div v-if="userTotal === 0" class="empty-chart">
+              <UsersRound :size="38" /><strong>No user data available</strong>
+              <span>Add faculty or student accounts to display this graph.</span>
+            </div>
+            <div v-else class="gender-chart-layout">
+              <div class="pie-container"><canvas ref="userChartCanvas"></canvas></div>
+              <div class="gender-summary">
+                <div class="gender-row">
+                  <div class="gender-label"><span class="gender-dot male"></span><span>Faculty</span></div>
+                  <div class="gender-value"><strong>{{ dashboard.user_distribution.faculty }}</strong><span>{{ facultyPercentage }}%</span></div>
+                </div>
+                <div class="gender-row">
+                  <div class="gender-label"><span class="gender-dot female"></span><span>Students</span></div>
+                  <div class="gender-value"><strong>{{ dashboard.user_distribution.students }}</strong><span>{{ studentPercentage }}%</span></div>
+                </div>
+                <div class="gender-total"><span>Total Users</span><strong>{{ userTotal }}</strong></div>
+              </div>
             </div>
           </div>
 
-          <div class="summary-card">
-            <div class="card-icon"><School :size="24" /></div>
-            <div class="card-content">
-              <span>Total Sections</span>
-              <strong>{{ dashboard.cards.sections }}</strong>
+          <div class="chart-card">
+            <div class="chart-header">
+              <div><h3>Student Gender Distribution</h3><p>Distribution of male and female student accounts.</p></div>
+              <Users :size="21" />
+            </div>
+            <div v-if="genderTotal === 0" class="empty-chart">
+              <Users :size="38" /><strong>No student data available</strong>
+              <span>Add student accounts to display this graph.</span>
+            </div>
+            <div v-else class="gender-chart-layout">
+              <div class="pie-container"><canvas ref="genderChartCanvas"></canvas></div>
+              <div class="gender-summary">
+                <div class="gender-row">
+                  <div class="gender-label"><span class="gender-dot male"></span><span>Male</span></div>
+                  <div class="gender-value"><strong>{{ dashboard.gender_distribution.male }}</strong><span>{{ malePercentage }}%</span></div>
+                </div>
+                <div class="gender-row">
+                  <div class="gender-label"><span class="gender-dot female"></span><span>Female</span></div>
+                  <div class="gender-value"><strong>{{ dashboard.gender_distribution.female }}</strong><span>{{ femalePercentage }}%</span></div>
+                </div>
+                <div class="gender-total"><span>Total Students</span><strong>{{ genderTotal }}</strong></div>
+              </div>
             </div>
           </div>
         </div>
@@ -64,93 +101,26 @@
         <div class="analytics-grid">
           <div class="chart-card">
             <div class="chart-header">
-              <div>
-                <h3>Student Gender Distribution</h3>
-                <p>Distribution of male and female students.</p>
-              </div>
-              <Users :size="21" />
+              <div><h3>Classes by Strand</h3><p>Number of classes assigned to each strand.</p></div>
+              <ChartNoAxesColumnIncreasing :size="21" />
             </div>
-
-            <div v-if="dashboard.cards.students === 0" class="empty-chart">
-              <Users :size="38" />
-              <strong>No student data available</strong>
-              <span>Add student accounts to display this graph.</span>
+            <div v-if="dashboard.classes_by_strand.length === 0" class="empty-chart">
+              <ChartNoAxesColumnIncreasing :size="38" /><strong>No strand data available</strong>
+              <span>Add strands and classes to display this graph.</span>
             </div>
-
-            <div v-else class="gender-chart-layout">
-              <div class="pie-container">
-                <canvas ref="genderChartCanvas"></canvas>
-              </div>
-
-              <div class="gender-summary">
-                <div class="gender-row">
-                  <div class="gender-label">
-                    <span class="gender-dot male"></span>
-                    <span>Male</span>
-                  </div>
-                  <div class="gender-value">
-                    <strong>{{ dashboard.gender_distribution.male }}</strong>
-                    <span>{{ malePercentage }}%</span>
-                  </div>
-                </div>
-
-                <div class="gender-row">
-                  <div class="gender-label">
-                    <span class="gender-dot female"></span>
-                    <span>Female</span>
-                  </div>
-                  <div class="gender-value">
-                    <strong>{{ dashboard.gender_distribution.female }}</strong>
-                    <span>{{ femalePercentage }}%</span>
-                  </div>
-                </div>
-
-                <div class="gender-total">
-                  <span>Total Students</span>
-                  <strong>{{ dashboard.cards.students }}</strong>
-                </div>
-              </div>
-            </div>
+            <div v-else class="bar-chart-container side-chart"><canvas ref="strandChartCanvas"></canvas></div>
           </div>
 
           <div class="chart-card">
             <div class="chart-header">
-              <div>
-                <h3>Total Students by Strand</h3>
-                <p>Current student population grouped by strand.</p>
-              </div>
-              <ChartNoAxesColumnIncreasing :size="21" />
+              <div><h3>Classes by Grade Level</h3><p>Distribution of Grade 11 and Grade 12 classes.</p></div>
+              <ChartColumnBig :size="21" />
             </div>
-
-            <div v-if="dashboard.students_by_strand.length === 0" class="empty-chart">
-              <ChartNoAxesColumnIncreasing :size="38" />
-              <strong>No strand data available</strong>
-              <span>Add strands and students to display this graph.</span>
+            <div v-if="classGradeTotal === 0" class="empty-chart">
+              <ChartColumnBig :size="38" /><strong>No grade level data available</strong>
+              <span>Add classes to display this graph.</span>
             </div>
-
-            <div v-else class="bar-chart-container side-chart">
-              <canvas ref="strandTotalCanvas"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <div class="chart-card full-chart-card">
-          <div class="chart-header">
-            <div>
-              <h3>Students by Strand and Grade Level</h3>
-              <p>Male and female distribution for Grade 11 and Grade 12 in each strand.</p>
-            </div>
-            <ChartColumnBig :size="21" />
-          </div>
-
-          <div v-if="dashboard.students_by_strand_grade.length === 0" class="empty-chart">
-            <ChartColumnBig :size="38" />
-            <strong>No strand data available</strong>
-            <span>Add strands and students to display this graph.</span>
-          </div>
-
-          <div v-else class="bar-chart-container grade-chart">
-            <canvas ref="strandGradeCanvas"></canvas>
+            <div v-else class="bar-chart-container side-chart"><canvas ref="gradeChartCanvas"></canvas></div>
           </div>
         </div>
       </section>
@@ -162,157 +132,176 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import Chart from 'chart.js/auto'
 import {
-  BarChart3,
-  BookOpenText,
-  ChartColumnBig,
-  ChartNoAxesColumnIncreasing,
-  CircleAlert,
-  GraduationCap,
-  LoaderCircle,
-  School,
-  Users,
-  UsersRound
+  BarChart3, BookOpenText, ChartColumnBig, ChartNoAxesColumnIncreasing,
+  CircleAlert, GraduationCap, LoaderCircle, School, Users, UsersRound
 } from '@lucide/vue'
 import api from '../../services/api'
 
-interface DashboardCards {
-  faculty: number
-  students: number
-  strands: number
-  sections: number
-}
-interface GenderDistribution {
-  male: number
-  female: number
-}
-interface StrandGradeData {
-  strand_id: number
-  strand: string
-  grade: string
-  label: string
-  male: number
-  female: number
-  total: number
-}
-interface StrandTotalData {
-  strand_id: number
-  strand: string
-  total: number
-}
+interface DashboardCards { faculty: number; students: number; classes: number; sections: number }
+interface UserDistribution { faculty: number; students: number }
+interface GenderDistribution { male: number; female: number }
+interface ClassStrandData { strand_id: number; strand: string; total: number }
+interface ClassGradeData { grade: string; total: number }
 interface DashboardData {
   cards: DashboardCards
+  user_distribution: UserDistribution
   gender_distribution: GenderDistribution
-  students_by_strand_grade: StrandGradeData[]
-  students_by_strand: StrandTotalData[]
+  classes_by_strand: ClassStrandData[]
+  classes_by_grade: ClassGradeData[]
 }
+
 const loading = ref(true)
 const errorMessage = ref('')
+const userChartCanvas = ref<HTMLCanvasElement | null>(null)
 const genderChartCanvas = ref<HTMLCanvasElement | null>(null)
-const strandGradeCanvas = ref<HTMLCanvasElement | null>(null)
-const strandTotalCanvas = ref<HTMLCanvasElement | null>(null)
+const strandChartCanvas = ref<HTMLCanvasElement | null>(null)
+const gradeChartCanvas = ref<HTMLCanvasElement | null>(null)
+
+let userChart: Chart | null = null
 let genderChart: Chart | null = null
-let strandGradeChart: Chart | null = null
-let strandTotalChart: Chart | null = null
+let strandChart: Chart | null = null
+let gradeChart: Chart | null = null
+
 const dashboard = ref<DashboardData>({
-  cards: {
-    faculty: 0,
-    students: 0,
-    strands: 0,
-    sections: 0
-  },
-  gender_distribution: {
-    male: 0,
-    female: 0
-  },
-  students_by_strand_grade: [],
-  students_by_strand: []
+  cards: { faculty: 0, students: 0, classes: 0, sections: 0 },
+  user_distribution: { faculty: 0, students: 0 },
+  gender_distribution: { male: 0, female: 0 },
+  classes_by_strand: [],
+  classes_by_grade: []
 })
-const genderTotal = computed(() =>
-  dashboard.value.gender_distribution.male +
-  dashboard.value.gender_distribution.female
-)
-const malePercentage = computed(() => {
-  if (!genderTotal.value) return 0
-  return Math.round(
-    (dashboard.value.gender_distribution.male / genderTotal.value) * 100
-  )
-})
-const femalePercentage = computed(() => {
-  if (!genderTotal.value) return 0
-  return Math.round(
-    (dashboard.value.gender_distribution.female / genderTotal.value) * 100
-  )
-})
+
+const userTotal = computed(() => dashboard.value.user_distribution.faculty + dashboard.value.user_distribution.students)
+const genderTotal = computed(() => dashboard.value.gender_distribution.male + dashboard.value.gender_distribution.female)
+const classGradeTotal = computed(() => dashboard.value.classes_by_grade.reduce((sum, item) => sum + Number(item.total || 0), 0))
+const facultyPercentage = computed(() => userTotal.value ? Math.round((dashboard.value.user_distribution.faculty / userTotal.value) * 100) : 0)
+const studentPercentage = computed(() => userTotal.value ? Math.round((dashboard.value.user_distribution.students / userTotal.value) * 100) : 0)
+const malePercentage = computed(() => genderTotal.value ? Math.round((dashboard.value.gender_distribution.male / genderTotal.value) * 100) : 0)
+const femalePercentage = computed(() => genderTotal.value ? Math.round((dashboard.value.gender_distribution.female / genderTotal.value) * 100) : 0)
+
 async function fetchDashboard() {
   loading.value = true
   errorMessage.value = ''
   try {
     const response = await api.get('/admin/dashboard')
-    if (response.data?.success && response.data?.data) {
-      dashboard.value = response.data.data
-    }
+    if (response.data?.success && response.data?.data) dashboard.value = response.data.data
   } catch (error: any) {
     console.error('DASHBOARD ERROR:', error)
-    errorMessage.value =
-      error.response?.data?.message ||
-      'Failed to load dashboard information.'
+    errorMessage.value = error.response?.data?.message || 'Failed to load dashboard information.'
   } finally {
     loading.value = false
     await nextTick()
     renderCharts()
   }
 }
+
 function destroyCharts() {
-  if (genderChart) {
-    genderChart.destroy()
-    genderChart = null
-  }
-  if (strandGradeChart) {
-    strandGradeChart.destroy()
-    strandGradeChart = null
-  }
-  if (strandTotalChart) {
-    strandTotalChart.destroy()
-    strandTotalChart = null
+  userChart?.destroy()
+  genderChart?.destroy()
+  strandChart?.destroy()
+  gradeChart?.destroy()
+  userChart = genderChart = strandChart = gradeChart = null
+}
+
+function doughnutOptions(total: number): any {
+  return {
+    responsive: true, maintainAspectRatio: false, resizeDelay: 100, cutout: '68%',
+    layout: { padding: 8 },
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label(context: any) {
+        const value = Number(context.raw || 0)
+        const percentage = total ? Math.round((value / total) * 100) : 0
+        return `${context.label}: ${value} (${percentage}%)`
+      }}}
+    }
   }
 }
+
+function barOptions(): any {
+  return {
+    responsive: true, maintainAspectRatio: false, resizeDelay: 100,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 45, minRotation: 0, font: { family: 'Poppins', size: 10 } } },
+      y: { beginAtZero: true, ticks: { precision: 0, stepSize: 1, font: { family: 'Poppins', size: 10 } }, grid: { color: '#ecfdf5' }, title: { display: true, text: 'Number of Classes', font: { family: 'Poppins', size: 10 } } }
+    }
+  }
+}
+
+function horizontalBarOptions(): any {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    resizeDelay: 100,
+    indexAxis: 'y',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label(context: any) {
+            return `Classes: ${context.raw}`
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        beginAtZero: true,
+        ticks: {
+          precision: 0,
+          stepSize: 1,
+          font: { family: 'Poppins', size: 10 }
+        },
+        grid: { color: '#ecfdf5' },
+        title: {
+          display: true,
+          text: 'Number of Classes',
+          font: { family: 'Poppins', size: 10 }
+        }
+      },
+      y: {
+        grid: { display: false },
+        ticks: {
+          autoSkip: false,
+          font: { family: 'Poppins', size: 10 }
+        }
+      }
+    }
+  }
+}
+
 function renderCharts() {
   destroyCharts()
-  renderGenderChart()
-  renderStrandGradeChart()
-  renderStrandTotalChart()
-}
-function renderGenderChart() {
-  if (!genderChartCanvas.value || genderTotal.value === 0) return
+
+  if (userChartCanvas.value && userTotal.value) {
+    userChart = new Chart(userChartCanvas.value, {
+      type: 'doughnut',
+      data: { labels: ['Faculty', 'Students'], datasets: [{ data: [dashboard.value.user_distribution.faculty, dashboard.value.user_distribution.students], backgroundColor: ['#15803d', '#86efac'], borderColor: '#ffffff', borderWidth: 4, hoverBackgroundColor: ['#166534', '#4ade80'], hoverOffset: 5 }] },
+      options: doughnutOptions(userTotal.value)
+    })
+  }
+
+if (genderChartCanvas.value && genderTotal.value) {
   genderChart = new Chart(genderChartCanvas.value, {
-    type: 'doughnut',
+    type: 'pie',
     data: {
       labels: ['Male', 'Female'],
-      datasets: [
-        {
-          data: [
-            dashboard.value.gender_distribution.male,
-            dashboard.value.gender_distribution.female
-          ],
-          backgroundColor: [
-            '#15803d',
-            '#86efac'
-          ],
-          borderColor: '#ffffff',
-          borderWidth: 4,
-          hoverBackgroundColor: [
-            '#166534',
-            '#4ade80'
-          ],
-          hoverOffset: 5
-        }
-      ]
+      datasets: [{
+        data: [
+          dashboard.value.gender_distribution.male,
+          dashboard.value.gender_distribution.female
+        ],
+        backgroundColor: ['#15803d', '#86efac'],
+        borderColor: '#ffffff',
+        borderWidth: 4,
+        hoverBackgroundColor: ['#166534', '#4ade80'],
+        hoverOffset: 5
+      }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       resizeDelay: 100,
-      cutout: '68%',
       layout: {
         padding: 8
       },
@@ -322,11 +311,12 @@ function renderGenderChart() {
         },
         tooltip: {
           callbacks: {
-            label(context) {
+            label(context: any) {
               const value = Number(context.raw || 0)
               const percentage = genderTotal.value
                 ? Math.round((value / genderTotal.value) * 100)
                 : 0
+
               return `${context.label}: ${value} (${percentage}%)`
             }
           }
@@ -335,214 +325,69 @@ function renderGenderChart() {
     }
   })
 }
-function renderStrandGradeChart() {
-  if (
-    !strandGradeCanvas.value ||
-    dashboard.value.students_by_strand_grade.length === 0
-  ) return
-  const labels = dashboard.value.students_by_strand_grade.map(
-    item => item.label
-  )
-  const maleData = dashboard.value.students_by_strand_grade.map(
-    item => item.male
-  )
-  const femaleData = dashboard.value.students_by_strand_grade.map(
-    item => item.female
-  )
-  strandGradeChart = new Chart(strandGradeCanvas.value, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Male',
-          data: maleData,
-          backgroundColor: '#15803d',
-          hoverBackgroundColor: '#166534',
-          borderRadius: 5,
-          maxBarThickness: 35
-        },
-        {
-          label: 'Female',
-          data: femaleData,
-          backgroundColor: '#86efac',
-          hoverBackgroundColor: '#4ade80',
-          borderRadius: 5,
-          maxBarThickness: 35
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      resizeDelay: 100,
-      interaction: {
-        mode: 'index',
-        intersect: false
+
+  if (strandChartCanvas.value && dashboard.value.classes_by_strand.length) {
+    strandChart = new Chart(strandChartCanvas.value, {
+      type: 'bar',
+      data: { labels: dashboard.value.classes_by_strand.map(item => item.strand), datasets: [{ label: 'Classes', data: dashboard.value.classes_by_strand.map(item => item.total), backgroundColor: '#15803d', hoverBackgroundColor: '#166534', borderRadius: 6, maxBarThickness: 55 }] },
+      options: horizontalBarOptions()
+    })
+  }
+
+  if (gradeChartCanvas.value && classGradeTotal.value) {
+    gradeChart = new Chart(gradeChartCanvas.value, {
+      type: 'polarArea',
+      data: {
+        labels: dashboard.value.classes_by_grade.map(item => item.grade),
+        datasets: [{
+          label: 'Classes',
+          data: dashboard.value.classes_by_grade.map(item => item.total),
+          backgroundColor: ['#15803d', '#86efac'],
+          borderColor: '#ffffff',
+          borderWidth: 3
+        }]
       },
-      plugins: {
-        legend: {
-          position: 'top',
-          labels: {
-            usePointStyle: true,
-            boxWidth: 8,
-            boxHeight: 8,
-            padding: 18,
-            font: {
-              family: 'Poppins',
-              size: 11
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        resizeDelay: 100,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              usePointStyle: true,
+              boxWidth: 8,
+              boxHeight: 8,
+              padding: 16,
+              font: { family: 'Poppins', size: 10 }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label(context: any) {
+                return `${context.label}: ${context.raw} classes`
+              }
             }
           }
         },
-        tooltip: {
-          callbacks: {
-            footer(items) {
-              const index = items[0]?.dataIndex
-              if (index === undefined) return ''
-              const item =
-                dashboard.value.students_by_strand_grade[index]
-              return `Total: ${item.total}`
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          grid: {
-            display: false
-          },
-          ticks: {
-            autoSkip: false,
-            maxRotation: 45,
-            minRotation: 0,
-            font: {
-              family: 'Poppins',
-              size: 10
-            }
-          }
-        },
-        y: {
-          beginAtZero: true,
-          ticks: {
-            precision: 0,
-            stepSize: 1,
-            font: {
-              family: 'Poppins',
-              size: 10
-            }
-          },
-          grid: {
-            color: '#ecfdf5'
-          },
-          title: {
-            display: true,
-            text: 'Number of Students',
-            font: {
-              family: 'Poppins',
-              size: 10
-            }
+        scales: {
+          r: {
+            beginAtZero: true,
+            ticks: {
+              precision: 0,
+              stepSize: 1,
+              backdropColor: 'transparent',
+              font: { family: 'Poppins', size: 9 }
+            },
+            grid: { color: '#dcfce7' },
+            angleLines: { color: '#dcfce7' }
           }
         }
       }
-    }
-  })
+    })
+  }
 }
-function renderStrandTotalChart() {
-  if (
-    !strandTotalCanvas.value ||
-    dashboard.value.students_by_strand.length === 0
-  ) return
-  const labels = dashboard.value.students_by_strand.map(
-    item => item.strand
-  )
-  const totals = dashboard.value.students_by_strand.map(
-    item => item.total
-  )
-  const greenColors = [
-    '#14532d',
-    '#166534',
-    '#15803d',
-    '#16a34a',
-    '#22c55e',
-    '#4ade80',
-    '#86efac',
-    '#bbf7d0'
-  ]
-  strandTotalChart = new Chart(strandTotalCanvas.value, {
-    type: 'bar',
-    data: {
-      labels,
-      datasets: [
-        {
-          label: 'Total Students',
-          data: totals,
-          backgroundColor: labels.map(
-            (_, index) =>
-              greenColors[index % greenColors.length]
-          ),
-          hoverBackgroundColor: '#15803d',
-          borderRadius: 6,
-          maxBarThickness: 55
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      resizeDelay: 100,
-      plugins: {
-        legend: {
-          display: false
-        },
-        tooltip: {
-          callbacks: {
-            label(context) {
-              return `Total Students: ${context.raw}`
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          grid: {
-            display: false
-          },
-          ticks: {
-            autoSkip: false,
-            maxRotation: 45,
-            minRotation: 0,
-            font: {
-              family: 'Poppins',
-              size: 10
-            }
-          }
-        },
-        y: {
-          beginAtZero: true,
-          ticks: {
-            precision: 0,
-            stepSize: 1,
-            font: {
-              family: 'Poppins',
-              size: 10
-            }
-          },
-          grid: {
-            color: '#ecfdf5'
-          },
-          title: {
-            display: true,
-            text: 'Number of Students',
-            font: {
-              family: 'Poppins',
-              size: 10
-            }
-          }
-        }
-      }
-    }
-  })
-}
+
 onMounted(fetchDashboard)
 onBeforeUnmount(destroyCharts)
 </script>
@@ -664,7 +509,7 @@ onBeforeUnmount(destroyCharts)
 
 .analytics-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.8fr) minmax(320px, .9fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 14px;
 }
@@ -701,7 +546,7 @@ onBeforeUnmount(destroyCharts)
 .gender-chart-layout {
   min-height: 250px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(190px, 260px);
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr);
   align-items: center;
   gap: 22px;
 }
@@ -709,7 +554,7 @@ onBeforeUnmount(destroyCharts)
 .pie-container {
   position: relative;
   width: 100%;
-  max-width: 255px;
+  max-width: 230px;
   height: 230px;
   margin: 0 auto;
 }
@@ -808,7 +653,7 @@ onBeforeUnmount(destroyCharts)
 }
 
 .side-chart {
-  height: 260px;
+  height: 280px;
 }
 
 .grade-chart {
